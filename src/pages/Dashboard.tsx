@@ -284,8 +284,8 @@ export default function Dashboard() {
         </Card>
       </div>
       
-      {/* Asset Performance - Now in its own row with more emphasis */}
-      <Card className="shadow-md hover:shadow-lg transition-shadow">
+      {/* Asset Performance - Now in its own row with more emphasis and increased height */}
+      <Card className="shadow-md hover:shadow-lg transition-shadow mt-10">
         <CardHeader>
           <CardTitle className="flex items-center">
             <BarChart3 className="mr-2 h-5 w-5 text-primary" />
@@ -294,10 +294,10 @@ export default function Dashboard() {
           <CardDescription>Performance breakdown by trading instrument</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[350px]"> {/* Increased height for better visibility */}
+          <div className="h-[400px]"> {/* Increased height for better visibility */}
             <ChartContainer config={chartConfig}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={metrics.assetChartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                <BarChart data={metrics.assetChartData} margin={{ top: 20, right: 30, left: 20, bottom: 30 }}>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
                   <XAxis dataKey="asset" />
                   <YAxis />
@@ -323,8 +323,8 @@ export default function Dashboard() {
         </CardContent>
       </Card>
       
-      {/* Trade Insights - Redesigned with more focus on actionable trading advice */}
-      <Card className="shadow-md hover:shadow-lg transition-shadow bg-gradient-to-r from-secondary/5 to-transparent">
+      {/* Trade Insights - Moved to its own section with clear separation and improved styling */}
+      <Card className="shadow-md hover:shadow-lg transition-shadow bg-gradient-to-r from-secondary/5 to-transparent mt-10">
         <CardHeader>
           <CardTitle className="flex items-center">
             <Bolt className="mr-2 h-5 w-5 text-primary" />
