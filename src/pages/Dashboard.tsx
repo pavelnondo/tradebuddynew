@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trade } from "@/types";
 import { ArrowDown, ArrowUp, BarChart3, Clock, DollarSign, LineChart, PieChart, Timer, CandlestickChart, Bolt } from "lucide-react";
@@ -20,7 +19,6 @@ import {
 } from "recharts";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 
-// Sample data - in a real app, this would come from a database
 const sampleTrades: Trade[] = [
   {
     id: "1",
@@ -85,7 +83,6 @@ const sampleTrades: Trade[] = [
 ];
 
 export default function Dashboard() {
-  // Calculate metrics
   const metrics = useMemo(() => {
     const totalTrades = sampleTrades.length;
     const profitableTrades = sampleTrades.filter((trade) => trade.profitLoss > 0).length;
@@ -93,7 +90,6 @@ export default function Dashboard() {
     const totalProfitLoss = sampleTrades.reduce((sum, trade) => sum + trade.profitLoss, 0);
     const avgProfitLoss = totalTrades > 0 ? totalProfitLoss / totalTrades : 0;
     
-    // Emotion data for pie chart
     const emotionData = sampleTrades.reduce((acc, trade) => {
       acc[trade.emotion] = (acc[trade.emotion] || 0) + 1;
       return acc;
@@ -101,7 +97,6 @@ export default function Dashboard() {
     
     const emotionChartData = Object.entries(emotionData).map(([name, value]) => ({ name, value }));
     
-    // Asset performance
     const assetPerformance = sampleTrades.reduce((acc, trade) => {
       if (!acc[trade.asset]) {
         acc[trade.asset] = { asset: trade.asset, trades: 0, profitLoss: 0 };
@@ -113,7 +108,6 @@ export default function Dashboard() {
     
     const assetChartData = Object.values(assetPerformance);
     
-    // P&L over time
     const plOverTime = sampleTrades
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .reduce((acc, trade, index) => {
@@ -139,7 +133,6 @@ export default function Dashboard() {
     };
   }, []);
 
-  // Color config for charts
   const chartConfig = {
     profit: { color: "hsl(143, 85%, 46%)" },
     loss: { color: "hsl(0, 84%, 60%)" },
@@ -164,7 +157,6 @@ export default function Dashboard() {
         </div>
       </div>
       
-      {/* Key Metrics - Updated with Trading-Focused Icons */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border-l-4 border-l-primary">
           <CardHeader className="pb-2">
@@ -212,9 +204,7 @@ export default function Dashboard() {
         </Card>
       </div>
       
-      {/* Performance Charts - More Focused on Short-term Performance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* P&L Over Time */}
         <Card className="shadow-md hover:shadow-lg transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -246,7 +236,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
         
-        {/* Trading Mindset Analysis */}
         <Card className="shadow-md hover:shadow-lg transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -284,7 +273,6 @@ export default function Dashboard() {
         </Card>
       </div>
       
-      {/* Asset Performance - Now in its own row with more emphasis and increased height */}
       <Card className="shadow-md hover:shadow-lg transition-shadow mt-10">
         <CardHeader>
           <CardTitle className="flex items-center">
@@ -294,13 +282,19 @@ export default function Dashboard() {
           <CardDescription>Performance breakdown by trading instrument</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[400px]"> {/* Increased height for better visibility */}
+          <div className="h-[400px]">
             <ChartContainer config={chartConfig}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={metrics.assetChartData} margin={{ top: 20, right: 30, left: 20, bottom: 30 }}>
+                <BarChart 
+                  data={metrics.assetChartData} 
+                  margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
                   <XAxis dataKey="asset" />
-                  <YAxis />
+                  <YAxis 
+                    domain={['auto', 'auto']} 
+                    padding={{ bottom: 20, top: 20 }} 
+                  />
                   <Tooltip content={<ChartTooltipContent />} />
                   <Legend />
                   <Bar
@@ -323,8 +317,7 @@ export default function Dashboard() {
         </CardContent>
       </Card>
       
-      {/* Trade Insights - Moved to its own section with clear separation and improved styling */}
-      <Card className="shadow-md hover:shadow-lg transition-shadow bg-gradient-to-r from-secondary/5 to-transparent mt-10">
+      <Card className="shadow-md hover:shadow-lg transition-shadow bg-gradient-to-r from-secondary/5 to-transparent mt-10 mb-10">
         <CardHeader>
           <CardTitle className="flex items-center">
             <Bolt className="mr-2 h-5 w-5 text-primary" />
