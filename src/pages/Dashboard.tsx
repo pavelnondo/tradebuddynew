@@ -1,6 +1,7 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trade } from "@/types";
-import { ArrowDown, ArrowUp, BarChart3, Clock, DollarSign, LineChart, PieChart } from "lucide-react";
+import { ArrowDown, ArrowUp, BarChart3, Clock, DollarSign, LineChart, PieChart, Timer, CandlestickChart, Bolt } from "lucide-react";
 import { useMemo } from "react";
 import {
   Area,
@@ -156,33 +157,38 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold">Dashboard</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Trading Dashboard</h1>
+        <div className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
+          Short-term Trading Performance
+        </div>
+      </div>
       
-      {/* Key Metrics */}
+      {/* Key Metrics - Updated with Trading-Focused Icons */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+        <Card className="border-l-4 border-l-primary">
           <CardHeader className="pb-2">
-            <CardDescription>Total Trades</CardDescription>
+            <CardDescription>Today's Trades</CardDescription>
             <CardTitle className="text-2xl flex items-center">
-              <Clock className="mr-2 h-5 w-5 text-muted-foreground" />
+              <Timer className="mr-2 h-5 w-5 text-primary" />
               {metrics.totalTrades}
             </CardTitle>
           </CardHeader>
         </Card>
         
-        <Card>
+        <Card className="border-l-4 border-l-primary">
           <CardHeader className="pb-2">
             <CardDescription>Win Rate</CardDescription>
             <CardTitle className="text-2xl flex items-center">
-              <BarChart3 className="mr-2 h-5 w-5 text-muted-foreground" />
+              <CandlestickChart className="mr-2 h-5 w-5 text-primary" />
               {metrics.winRate.toFixed(1)}%
             </CardTitle>
           </CardHeader>
         </Card>
         
-        <Card>
+        <Card className="border-l-4 border-l-primary">
           <CardHeader className="pb-2">
-            <CardDescription>Total P&L</CardDescription>
+            <CardDescription>Daily P&L</CardDescription>
             <CardTitle className={`text-2xl flex items-center ${metrics.totalProfitLoss >= 0 ? 'text-green-500' : 'text-red-500'}`}>
               <DollarSign className="mr-2 h-5 w-5" />
               {metrics.totalProfitLoss >= 0 ? '+' : ''}
@@ -191,9 +197,9 @@ export default function Dashboard() {
           </CardHeader>
         </Card>
         
-        <Card>
+        <Card className="border-l-4 border-l-primary">
           <CardHeader className="pb-2">
-            <CardDescription>Avg. P&L per Trade</CardDescription>
+            <CardDescription>Avg. Trade P&L</CardDescription>
             <CardTitle className={`text-2xl flex items-center ${metrics.avgProfitLoss >= 0 ? 'text-green-500' : 'text-red-500'}`}>
               {metrics.avgProfitLoss >= 0 ? (
                 <ArrowUp className="mr-2 h-5 w-5" />
@@ -206,14 +212,14 @@ export default function Dashboard() {
         </Card>
       </div>
       
-      {/* Charts */}
+      {/* Performance Charts - More Focused on Short-term Performance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* P&L Over Time */}
-        <Card>
+        <Card className="shadow-md hover:shadow-lg transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center">
-              <LineChart className="mr-2 h-5 w-5" />
-              P&L Over Time
+              <LineChart className="mr-2 h-5 w-5 text-primary" />
+              Intraday P&L Trend
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -221,7 +227,7 @@ export default function Dashboard() {
               <ChartContainer config={chartConfig}>
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={metrics.plOverTime} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
                     <XAxis dataKey="date" />
                     <YAxis />
                     <Tooltip content={<ChartTooltipContent />} />
@@ -240,12 +246,12 @@ export default function Dashboard() {
           </CardContent>
         </Card>
         
-        {/* Emotion Analysis */}
-        <Card>
+        {/* Trading Mindset Analysis */}
+        <Card className="shadow-md hover:shadow-lg transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center">
-              <PieChart className="mr-2 h-5 w-5" />
-              Emotion Analysis
+              <Bolt className="mr-2 h-5 w-5 text-primary" />
+              Trading Mindset Analysis
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -278,20 +284,21 @@ export default function Dashboard() {
         </Card>
       </div>
       
-      {/* Asset Performance - Now in its own row */}
-      <Card>
+      {/* Asset Performance - Now in its own row with more emphasis */}
+      <Card className="shadow-md hover:shadow-lg transition-shadow">
         <CardHeader>
           <CardTitle className="flex items-center">
-            <BarChart3 className="mr-2 h-5 w-5" />
-            Asset Performance
+            <BarChart3 className="mr-2 h-5 w-5 text-primary" />
+            Instrument Performance
           </CardTitle>
+          <CardDescription>Performance breakdown by trading instrument</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px]">
+          <div className="h-[350px]"> {/* Increased height for better visibility */}
             <ChartContainer config={chartConfig}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={metrics.assetChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
+                <BarChart data={metrics.assetChartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
                   <XAxis dataKey="asset" />
                   <YAxis />
                   <Tooltip content={<ChartTooltipContent />} />
@@ -316,25 +323,61 @@ export default function Dashboard() {
         </CardContent>
       </Card>
       
-      {/* Insights - Now in its own row */}
-      <Card>
+      {/* Trade Insights - Redesigned with more focus on actionable trading advice */}
+      <Card className="shadow-md hover:shadow-lg transition-shadow bg-gradient-to-r from-secondary/5 to-transparent">
         <CardHeader>
-          <CardTitle>Trade Insights</CardTitle>
+          <CardTitle className="flex items-center">
+            <Bolt className="mr-2 h-5 w-5 text-primary" />
+            Trading Insights
+          </CardTitle>
+          <CardDescription>
+            Actionable insights to improve your trading performance
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <p>
-            <strong>Best Performing Asset:</strong>{" "}
-            {metrics.assetChartData.sort((a, b) => b.profitLoss - a.profitLoss)[0]?.asset || "N/A"}
-          </p>
-          <p>
-            <strong>Most Frequent Emotion:</strong>{" "}
-            {metrics.emotionChartData.sort((a, b) => b.value - a.value)[0]?.name || "N/A"}
-          </p>
-          <p>
-            <strong>Suggested Improvement:</strong> Consider analyzing why your trades with the emotion "
-            {metrics.emotionChartData.sort((a, b) => b.value - a.value)[0]?.name || "Confident"}" are more frequent. 
-            Is this helping or hurting your performance?
-          </p>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-card p-4 rounded-lg border shadow-sm">
+              <h3 className="font-semibold mb-2 text-primary">Best Performing Asset</h3>
+              <p className="text-sm">
+                <span className="text-lg font-bold">
+                  {metrics.assetChartData.sort((a, b) => b.profitLoss - a.profitLoss)[0]?.asset || "N/A"}
+                </span>
+                <br />
+                Focus on short-term trades with this instrument for highest profit potential.
+              </p>
+            </div>
+            
+            <div className="bg-card p-4 rounded-lg border shadow-sm">
+              <h3 className="font-semibold mb-2 text-primary">Primary Trading Emotion</h3>
+              <p className="text-sm">
+                <span className="text-lg font-bold">
+                  {metrics.emotionChartData.sort((a, b) => b.value - a.value)[0]?.name || "N/A"}
+                </span>
+                <br />
+                Pay attention to how this emotion affects your decision-making in fast markets.
+              </p>
+            </div>
+            
+            <div className="bg-card p-4 rounded-lg border shadow-sm">
+              <h3 className="font-semibold mb-2 text-primary">Suggested Action</h3>
+              <p className="text-sm">
+                Consider setting tighter stop losses on your 
+                <span className="font-bold">{" "}{metrics.assetChartData.sort((a, b) => a.profitLoss - b.profitLoss)[0]?.asset || "N/A"}{" "}</span> 
+                trades to minimize drawdowns in volatile markets.
+              </p>
+            </div>
+          </div>
+          
+          <div className="bg-muted/50 p-4 rounded-lg">
+            <h3 className="font-semibold mb-2 flex items-center">
+              <Timer className="mr-2 h-4 w-4" />
+              Daily Trading Recommendation
+            </h3>
+            <p className="text-sm">
+              Based on your trading history, you perform best when trading {metrics.assetChartData.sort((a, b) => b.profitLoss - a.profitLoss)[0]?.asset || "top assets"} with a {metrics.emotionChartData.sort((a, b) => b.value - a.value)[0]?.name || "balanced"} mindset. 
+              Consider focusing on quick intraday opportunities rather than overnight positions for improved risk management.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

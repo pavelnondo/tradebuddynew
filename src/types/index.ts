@@ -15,4 +15,7 @@ export interface Trade {
   notes: string;
   emotion: EmotionType;
   screenshot?: string; // URL to the screenshot
+  duration?: number; // Trade duration in minutes (for short-term focus)
+  setup?: string; // Trading setup/strategy used
+  executionQuality?: number; // Rating of how well the trade was executed (1-10)
 }
