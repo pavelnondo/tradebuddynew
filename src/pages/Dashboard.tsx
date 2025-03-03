@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trade } from "@/types";
 import { ArrowDown, ArrowUp, BarChart3, Clock, DollarSign, LineChart, PieChart } from "lucide-react";
@@ -156,7 +155,7 @@ export default function Dashboard() {
   const COLORS = ["#4ade80", "#fb923c", "#f87171", "#60a5fa", "#a78bfa", "#facc15"];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <h1 className="text-3xl font-bold">Dashboard</h1>
       
       {/* Key Metrics */}
@@ -277,47 +276,47 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
-        
-        {/* Asset Performance */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <BarChart3 className="mr-2 h-5 w-5" />
-              Asset Performance
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ChartContainer config={chartConfig}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={metrics.assetChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="asset" />
-                    <YAxis />
-                    <Tooltip content={<ChartTooltipContent />} />
-                    <Legend />
-                    <Bar
-                      dataKey="profitLoss"
-                      name="Profit/Loss"
-                      fill={chartConfig.profit.color}
-                      radius={[4, 4, 0, 0]}
-                    >
-                      {metrics.assetChartData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={entry.profitLoss >= 0 ? chartConfig.profit.color : chartConfig.loss.color}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            </div>
-          </CardContent>
-        </Card>
       </div>
       
-      {/* Insights */}
+      {/* Asset Performance - Now in its own row */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <BarChart3 className="mr-2 h-5 w-5" />
+            Asset Performance
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px]">
+            <ChartContainer config={chartConfig}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={metrics.assetChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="asset" />
+                  <YAxis />
+                  <Tooltip content={<ChartTooltipContent />} />
+                  <Legend />
+                  <Bar
+                    dataKey="profitLoss"
+                    name="Profit/Loss"
+                    fill={chartConfig.profit.color}
+                    radius={[4, 4, 0, 0]}
+                  >
+                    {metrics.assetChartData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.profitLoss >= 0 ? chartConfig.profit.color : chartConfig.loss.color}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Insights - Now in its own row */}
       <Card>
         <CardHeader>
           <CardTitle>Trade Insights</CardTitle>
