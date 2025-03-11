@@ -1,11 +1,13 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { toast } from "@/hooks/use-toast";
 import { Trade, TradeType } from "@/types";
-import { Download, Filter, Image, Search } from "lucide-react";
+import { Download, Filter, Image, Search, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 export default function TradeHistory() {
@@ -15,7 +17,9 @@ export default function TradeHistory() {
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
   
   // Get trades from localStorage
-  const trades = JSON.parse(localStorage.getItem('trades') || '[]') as Trade[];
+  const [trades, setTrades] = useState<Trade[]>(() => {
+    return JSON.parse(localStorage.getItem('trades') || '[]') as Trade[];
+  });
   
   // Apply filters to trades
   const filteredTrades = trades.filter((trade) => {
@@ -40,6 +44,25 @@ export default function TradeHistory() {
     
     return true;
   });
+  
+  // Delete trade
+  const deleteTrade = (id: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent row click
+    
+    const updatedTrades = trades.filter(trade => trade.id !== id);
+    setTrades(updatedTrades);
+    localStorage.setItem('trades', JSON.stringify(updatedTrades));
+    
+    // If we're deleting the currently selected trade, clear the selection
+    if (selectedTrade && selectedTrade.id === id) {
+      setSelectedTrade(null);
+    }
+    
+    toast({
+      title: "Trade Deleted",
+      description: "The trade has been removed from your history.",
+    });
+  };
   
   // Download trade data as CSV
   const downloadCsv = () => {
@@ -159,29 +182,30 @@ export default function TradeHistory() {
                   <TableHead>Emotion</TableHead>
                   <TableHead>Screenshot</TableHead>
                   <TableHead>Notes</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredTrades.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-4">
+                    <TableCell colSpan={11} className="text-center py-4">
                       No trades found. Try adjusting your filters.
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredTrades.map((trade) => (
-                    <TableRow key={trade.id} className="cursor-pointer hover:bg-muted/50" onClick={() => viewTrade(trade)}>
-                      <TableCell>{new Date(trade.date).toLocaleString()}</TableCell>
-                      <TableCell className="font-medium">{trade.asset}</TableCell>
-                      <TableCell>{trade.tradeType}</TableCell>
-                      <TableCell>${trade.entryPrice.toFixed(2)}</TableCell>
-                      <TableCell>${trade.exitPrice.toFixed(2)}</TableCell>
-                      <TableCell>{trade.positionSize}</TableCell>
-                      <TableCell className={trade.profitLoss >= 0 ? "text-green-500" : "text-red-500"}>
+                    <TableRow key={trade.id} className="cursor-pointer hover:bg-muted/50">
+                      <TableCell onClick={() => viewTrade(trade)}>{new Date(trade.date).toLocaleString()}</TableCell>
+                      <TableCell onClick={() => viewTrade(trade)} className="font-medium">{trade.asset}</TableCell>
+                      <TableCell onClick={() => viewTrade(trade)}>{trade.tradeType}</TableCell>
+                      <TableCell onClick={() => viewTrade(trade)}>${trade.entryPrice.toFixed(2)}</TableCell>
+                      <TableCell onClick={() => viewTrade(trade)}>${trade.exitPrice.toFixed(2)}</TableCell>
+                      <TableCell onClick={() => viewTrade(trade)}>{trade.positionSize}</TableCell>
+                      <TableCell onClick={() => viewTrade(trade)} className={trade.profitLoss >= 0 ? "text-green-500" : "text-red-500"}>
                         {trade.profitLoss >= 0 ? "+" : ""}${trade.profitLoss.toFixed(2)}
                       </TableCell>
-                      <TableCell>{trade.emotion}</TableCell>
-                      <TableCell>
+                      <TableCell onClick={() => viewTrade(trade)}>{trade.emotion}</TableCell>
+                      <TableCell onClick={() => viewTrade(trade)}>
                         {trade.screenshot ? (
                           <Dialog>
                             <DialogTrigger asChild>
@@ -209,7 +233,17 @@ export default function TradeHistory() {
                           <span className="text-muted-foreground">None</span>
                         )}
                       </TableCell>
-                      <TableCell className="max-w-[200px] truncate">{trade.notes}</TableCell>
+                      <TableCell onClick={() => viewTrade(trade)} className="max-w-[200px] truncate">{trade.notes}</TableCell>
+                      <TableCell>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                          onClick={(e) => deleteTrade(trade.id, e)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -282,6 +316,18 @@ export default function TradeHistory() {
                 />
               </div>
             )}
+            <div className="mt-4 flex justify-end">
+              <Button 
+                variant="destructive" 
+                onClick={(e) => {
+                  deleteTrade(selectedTrade.id, e);
+                  setSelectedTrade(null);
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Trade
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
       )}

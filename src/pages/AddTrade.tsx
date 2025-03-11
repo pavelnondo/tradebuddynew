@@ -41,10 +41,10 @@ export default function AddTrade() {
     defaultValues: {
       asset: "",
       tradeType: "Buy",
-      entryPrice: 0,
-      exitPrice: 0,
-      positionSize: 0,
-      profitLoss: 0,
+      entryPrice: undefined,
+      exitPrice: undefined,
+      positionSize: undefined,
+      profitLoss: undefined,
       date: new Date().toISOString().slice(0, 16),
       notes: "",
       emotion: "Confident",
@@ -93,7 +93,17 @@ export default function AddTrade() {
         description: "Your trade has been successfully logged.",
       });
 
-      form.reset();
+      form.reset({
+        asset: "",
+        tradeType: "Buy",
+        entryPrice: undefined,
+        exitPrice: undefined,
+        positionSize: undefined,
+        profitLoss: undefined,
+        date: new Date().toISOString().slice(0, 16),
+        notes: "",
+        emotion: "Confident",
+      });
     } catch (error) {
       toast({
         title: "Error",
@@ -209,11 +219,18 @@ export default function AddTrade() {
                 <FormField
                   control={form.control}
                   name="entryPrice"
-                  render={({ field }) => (
+                  render={({ field: { value, onChange, ...fieldProps } }) => (
                     <FormItem>
                       <FormLabel>Entry Price</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.01" {...field} />
+                        <Input 
+                          type="number" 
+                          step="0.01" 
+                          placeholder="0.00"
+                          value={value === undefined ? "" : value}
+                          onChange={onChange}
+                          {...fieldProps} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -223,11 +240,18 @@ export default function AddTrade() {
                 <FormField
                   control={form.control}
                   name="exitPrice"
-                  render={({ field }) => (
+                  render={({ field: { value, onChange, ...fieldProps } }) => (
                     <FormItem>
                       <FormLabel>Exit Price</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.01" {...field} />
+                        <Input 
+                          type="number" 
+                          step="0.01" 
+                          placeholder="0.00"
+                          value={value === undefined ? "" : value}
+                          onChange={onChange}
+                          {...fieldProps} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -237,11 +261,18 @@ export default function AddTrade() {
                 <FormField
                   control={form.control}
                   name="positionSize"
-                  render={({ field }) => (
+                  render={({ field: { value, onChange, ...fieldProps } }) => (
                     <FormItem>
                       <FormLabel>Position Size</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.01" {...field} />
+                        <Input 
+                          type="number" 
+                          step="0.01" 
+                          placeholder="0.00"
+                          value={value === undefined ? "" : value}
+                          onChange={onChange}
+                          {...fieldProps} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -251,11 +282,18 @@ export default function AddTrade() {
                 <FormField
                   control={form.control}
                   name="profitLoss"
-                  render={({ field }) => (
+                  render={({ field: { value, onChange, ...fieldProps } }) => (
                     <FormItem>
                       <FormLabel>Profit/Loss</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.01" {...field} />
+                        <Input 
+                          type="number" 
+                          step="0.01" 
+                          placeholder="0.00"
+                          value={value === undefined ? "" : value}
+                          onChange={onChange}
+                          {...fieldProps} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
