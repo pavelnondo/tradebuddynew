@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -63,11 +64,19 @@ export default function AddTrade() {
         });
       }
 
-      // Create trade object
+      // Create trade object - ensure all required properties are provided
       const trade: Trade = {
         id: crypto.randomUUID(),
-        ...data,
-        screenshot: screenshotUrl,
+        date: data.date,
+        asset: data.asset,
+        tradeType: data.tradeType,
+        entryPrice: data.entryPrice,
+        exitPrice: data.exitPrice,
+        positionSize: data.positionSize,
+        profitLoss: data.profitLoss,
+        notes: data.notes || "",
+        emotion: data.emotion,
+        screenshot: screenshotUrl || undefined,
       };
 
       // Get existing trades from localStorage
