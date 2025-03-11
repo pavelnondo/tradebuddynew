@@ -106,7 +106,7 @@ export default function TradeHistory() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Trade History</h1>
-        <Button variant="outline" onClick={downloadCsv}>
+        <Button variant="outline" onClick={downloadCsv} disabled={filteredTrades.length === 0}>
           <Download className="mr-2 h-4 w-4" />
           Export CSV
         </Button>
@@ -189,7 +189,7 @@ export default function TradeHistory() {
                 {filteredTrades.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={11} className="text-center py-4">
-                      No trades found. Try adjusting your filters.
+                      No trades found. Try adjusting your filters or add new trades.
                     </TableCell>
                   </TableRow>
                 ) : (
