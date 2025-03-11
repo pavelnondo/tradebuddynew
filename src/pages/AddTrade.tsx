@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -6,18 +5,18 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { EmotionType, TradeType } from "@/types";
+import { EmotionType, Trade, TradeType } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-// Define form schema with validation
 const tradeFormSchema = z.object({
   asset: z.string().min(1, "Asset is required"),
   tradeType: z.enum(["Buy", "Sell", "Long", "Short"] as const),
   entryPrice: z.coerce.number().positive("Entry price must be positive"),
   exitPrice: z.coerce.number().positive("Exit price must be positive"),
   positionSize: z.coerce.number().positive("Position size must be positive"),
+  profitLoss: z.coerce.number(),
   date: z.string(),
   notes: z.string().optional(),
   emotion: z.enum([
@@ -36,7 +35,6 @@ const tradeFormSchema = z.object({
 type TradeFormValues = z.infer<typeof tradeFormSchema>;
 
 export default function AddTrade() {
-  // Initialize form
   const form = useForm<TradeFormValues>({
     resolver: zodResolver(tradeFormSchema),
     defaultValues: {
@@ -45,46 +43,55 @@ export default function AddTrade() {
       entryPrice: 0,
       exitPrice: 0,
       positionSize: 0,
-      date: new Date().toISOString().slice(0, 16), // Format: YYYY-MM-DDThh:mm
+      profitLoss: 0,
+      date: new Date().toISOString().slice(0, 16),
       notes: "",
       emotion: "Confident",
     },
   });
 
-  // Calculate profit/loss based on form values
-  const calculateProfitLoss = () => {
-    const values = form.getValues();
-    const { entryPrice, exitPrice, positionSize, tradeType } = values;
-    
-    if (!entryPrice || !exitPrice || !positionSize) return 0;
-    
-    let profitLoss = 0;
-    
-    if (tradeType === "Buy" || tradeType === "Long") {
-      profitLoss = (exitPrice - entryPrice) * positionSize;
-    } else {
-      profitLoss = (entryPrice - exitPrice) * positionSize;
-    }
-    
-    return profitLoss;
-  };
+  const onSubmit = async (data: TradeFormValues) => {
+    try {
+      // Handle screenshot if provided
+      let screenshotUrl = "";
+      if (data.screenshot && data.screenshot[0]) {
+        const file = data.screenshot[0];
+        screenshotUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+      }
 
-  // Form submission handler
-  const onSubmit = (data: TradeFormValues) => {
-    // Calculate profit/loss
-    const profitLoss = calculateProfitLoss();
-    
-    // In a real app, this would save to a database
-    console.log("Submitting trade:", { ...data, profitLoss });
-    
-    // Show success toast
-    toast({
-      title: "Trade Added",
-      description: "Your trade has been successfully logged.",
-    });
-    
-    // Reset form
-    form.reset();
+      // Create trade object
+      const trade: Trade = {
+        id: crypto.randomUUID(),
+        ...data,
+        screenshot: screenshotUrl,
+      };
+
+      // Get existing trades from localStorage
+      const existingTrades = JSON.parse(localStorage.getItem('trades') || '[]');
+      
+      // Add new trade
+      const updatedTrades = [...existingTrades, trade];
+      
+      // Save to localStorage
+      localStorage.setItem('trades', JSON.stringify(updatedTrades));
+
+      toast({
+        title: "Trade Added",
+        description: "Your trade has been successfully logged.",
+      });
+
+      form.reset();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save trade. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -189,7 +196,7 @@ export default function AddTrade() {
                 />
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <FormField
                   control={form.control}
                   name="entryPrice"
@@ -231,18 +238,20 @@ export default function AddTrade() {
                     </FormItem>
                   )}
                 />
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="font-medium">Profit/Loss:</span>
-                  <span className={`font-bold ${
-                    calculateProfitLoss() >= 0 ? "text-green-500" : "text-red-500"
-                  }`}>
-                    {calculateProfitLoss() >= 0 ? "+" : ""}
-                    ${calculateProfitLoss().toFixed(2)}
-                  </span>
-                </div>
+
+                <FormField
+                  control={form.control}
+                  name="profitLoss"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Profit/Loss</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
               
               <FormField
@@ -278,7 +287,7 @@ export default function AddTrade() {
                       />
                     </FormControl>
                     <FormDescription>
-                      Upload a screenshot of your chart or trade.
+                      Upload a screenshot of your trade (optional)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

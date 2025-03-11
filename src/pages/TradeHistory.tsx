@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -9,78 +8,17 @@ import { Trade, TradeType } from "@/types";
 import { Download, Filter, Image, Search } from "lucide-react";
 import { useState } from "react";
 
-// Sample data - in a real app, this would come from a database
-const sampleTrades: Trade[] = [
-  {
-    id: "1",
-    date: "2023-04-01T10:30:00Z",
-    asset: "BTC",
-    tradeType: "Long",
-    entryPrice: 28000,
-    exitPrice: 29000,
-    positionSize: 0.5,
-    profitLoss: 500,
-    notes: "Strong breakout above resistance",
-    emotion: "Confident",
-  },
-  {
-    id: "2",
-    date: "2023-04-02T14:15:00Z",
-    asset: "AAPL",
-    tradeType: "Short",
-    entryPrice: 180,
-    exitPrice: 175,
-    positionSize: 10,
-    profitLoss: 50,
-    notes: "Earnings miss, quick in and out",
-    emotion: "Nervous",
-  },
-  {
-    id: "3",
-    date: "2023-04-03T09:45:00Z",
-    asset: "ETH",
-    tradeType: "Long",
-    entryPrice: 1800,
-    exitPrice: 1750,
-    positionSize: 2,
-    profitLoss: -100,
-    notes: "Failed breakout, stopped out",
-    emotion: "Frustrated",
-  },
-  {
-    id: "4",
-    date: "2023-04-04T11:20:00Z",
-    asset: "TSLA",
-    tradeType: "Buy",
-    entryPrice: 220,
-    exitPrice: 235,
-    positionSize: 5,
-    profitLoss: 75,
-    notes: "Strong momentum after news",
-    emotion: "Excited",
-  },
-  {
-    id: "5",
-    date: "2023-04-05T15:30:00Z",
-    asset: "BTC",
-    tradeType: "Short",
-    entryPrice: 30000,
-    exitPrice: 29500,
-    positionSize: 0.3,
-    profitLoss: 150,
-    notes: "Overbought conditions, short term reversal",
-    emotion: "Calm",
-  },
-];
-
 export default function TradeHistory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [tradeTypeFilter, setTradeTypeFilter] = useState<string>("all");
   const [emotionFilter, setEmotionFilter] = useState<string>("all");
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
   
+  // Get trades from localStorage
+  const trades = JSON.parse(localStorage.getItem('trades') || '[]') as Trade[];
+  
   // Apply filters to trades
-  const filteredTrades = sampleTrades.filter((trade) => {
+  const filteredTrades = trades.filter((trade) => {
     // Search term filter
     if (
       searchTerm &&
