@@ -4,44 +4,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
 import { Filter, Search, Tag, Trash } from "lucide-react";
-import { useState } from "react";
-
-// Sample screenshot data
-const sampleScreenshots = [
-  {
-    id: "1",
-    title: "BTC Breakout",
-    asset: "BTC",
-    date: "2023-04-01T10:30:00Z",
-    tags: ["Breakout", "Support", "Resistance"],
-    url: "https://images.unsplash.com/photo-1643119099605-01903ee84e9c",
-  },
-  {
-    id: "2",
-    title: "AAPL Earnings",
-    asset: "AAPL",
-    date: "2023-04-02T14:15:00Z",
-    tags: ["Earnings", "Gap", "Volatility"],
-    url: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3",
-  },
-  {
-    id: "3",
-    title: "ETH Support Test",
-    asset: "ETH",
-    date: "2023-04-03T09:45:00Z",
-    tags: ["Support", "Trendline", "Volume"],
-    url: "https://images.unsplash.com/photo-1621761191319-c6fb62004040",
-  },
-  {
-    id: "4",
-    title: "TSLA Momentum",
-    asset: "TSLA",
-    date: "2023-04-04T11:20:00Z",
-    tags: ["Momentum", "Trend", "MACD"],
-    url: "https://images.unsplash.com/photo-1612010167108-3e6b327405f0",
-  },
-];
+import { useEffect, useState } from "react";
 
 interface Screenshot {
   id: string;
@@ -53,17 +18,26 @@ interface Screenshot {
 }
 
 export default function Screenshots() {
+  const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [assetFilter, setAssetFilter] = useState<string>("all");
   const [tagFilter, setTagFilter] = useState<string>("all");
   const [selectedScreenshot, setSelectedScreenshot] = useState<Screenshot | null>(null);
   
+  // Load screenshots from localStorage on component mount
+  useEffect(() => {
+    const storedScreenshots = localStorage.getItem('screenshots');
+    if (storedScreenshots) {
+      setScreenshots(JSON.parse(storedScreenshots));
+    }
+  }, []);
+  
   // Get unique assets and tags for filters
-  const uniqueAssets = [...new Set(sampleScreenshots.map((ss) => ss.asset))];
-  const uniqueTags = [...new Set(sampleScreenshots.flatMap((ss) => ss.tags))];
+  const uniqueAssets = [...new Set(screenshots.map((ss) => ss.asset))];
+  const uniqueTags = [...new Set(screenshots.flatMap((ss) => ss.tags))];
   
   // Apply filters to screenshots
-  const filteredScreenshots = sampleScreenshots.filter((ss) => {
+  const filteredScreenshots = screenshots.filter((ss) => {
     // Search term filter
     if (
       searchTerm &&
@@ -89,6 +63,23 @@ export default function Screenshots() {
   // View screenshot details
   const viewScreenshot = (screenshot: Screenshot) => {
     setSelectedScreenshot(screenshot);
+  };
+
+  // Delete screenshot
+  const deleteScreenshot = (id: string) => {
+    const updatedScreenshots = screenshots.filter(screenshot => screenshot.id !== id);
+    setScreenshots(updatedScreenshots);
+    localStorage.setItem('screenshots', JSON.stringify(updatedScreenshots));
+    
+    // If deleting the currently selected screenshot, close the dialog
+    if (selectedScreenshot && selectedScreenshot.id === id) {
+      setSelectedScreenshot(null);
+    }
+    
+    toast({
+      title: "Screenshot Deleted",
+      description: "The screenshot has been permanently removed.",
+    });
   };
 
   return (
@@ -186,7 +177,12 @@ export default function Screenshots() {
                 <Button variant="ghost" size="sm" onClick={() => viewScreenshot(screenshot)}>
                   View
                 </Button>
-                <Button variant="ghost" size="sm" className="text-destructive">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-destructive"
+                  onClick={() => deleteScreenshot(screenshot.id)}
+                >
                   <Trash className="mr-1 h-3 w-3" />
                   Delete
                 </Button>
@@ -225,6 +221,15 @@ export default function Screenshots() {
                     </div>
                   ))}
                 </div>
+              </div>
+              <div className="flex justify-end">
+                <Button 
+                  variant="destructive" 
+                  onClick={() => deleteScreenshot(selectedScreenshot.id)}
+                >
+                  <Trash className="mr-2 h-4 w-4" />
+                  Delete Screenshot
+                </Button>
               </div>
             </div>
           </DialogContent>
