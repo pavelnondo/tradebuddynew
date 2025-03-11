@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trade } from "@/types";
 import { ArrowDown, ArrowUp, BarChart3, Clock, DollarSign, LineChart, PieChart, Timer, CandlestickChart, Bolt } from "lucide-react";
@@ -242,27 +241,35 @@ export default function Dashboard() {
           <CardDescription>Performance breakdown by trading instrument</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[400px]">
+          <div className="h-[300px]">
             {metrics.assetChartData.length > 0 ? (
               <ChartContainer config={chartConfig}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart 
                     data={metrics.assetChartData} 
-                    margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 50 }}
+                    barSize={30}
                   >
                     <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                    <XAxis dataKey="asset" />
+                    <XAxis 
+                      dataKey="asset" 
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                      tick={{ fontSize: 12 }}
+                    />
                     <YAxis 
                       domain={['auto', 'auto']} 
-                      padding={{ bottom: 20, top: 20 }} 
+                      padding={{ bottom: 20, top: 20 }}
                     />
                     <Tooltip content={<ChartTooltipContent />} />
-                    <Legend />
+                    <Legend wrapperStyle={{ bottom: 0 }} />
                     <Bar
                       dataKey="profitLoss"
                       name="Profit/Loss"
                       fill={chartConfig.profit.color}
                       radius={[4, 4, 0, 0]}
+                      maxBarSize={50}
                     >
                       {metrics.assetChartData.map((entry, index) => (
                         <Cell
@@ -281,7 +288,7 @@ export default function Dashboard() {
         </CardContent>
       </Card>
       
-      <Card className="shadow-md hover:shadow-lg transition-shadow bg-gradient-to-r from-secondary/5 to-transparent mt-10 mb-10">
+      <Card className="shadow-md hover:shadow-lg transition-shadow bg-gradient-to-r from-secondary/5 to-transparent mt-6 mb-10">
         <CardHeader>
           <CardTitle className="flex items-center">
             <Bolt className="mr-2 h-5 w-5 text-primary" />
