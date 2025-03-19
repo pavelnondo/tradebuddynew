@@ -56,7 +56,7 @@ export function Layout({ children }: LayoutProps) {
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Link to="/" className="text-xl font-bold">
-            Trade Journal Pro
+            Trade Buddy
           </Link>
           <div className="flex items-center gap-2">
             {user ? (
@@ -104,7 +104,7 @@ export function Layout({ children }: LayoutProps) {
 
       <footer className="border-t py-4">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} Trade Journal Pro. All rights reserved.
+          &copy; {new Date().getFullYear()} Trade Buddy. All rights reserved.
         </div>
       </footer>
     </div>

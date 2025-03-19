@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { TrendingUp } from "lucide-react"; // Using TrendingUp icon as logo
 
 export default function Signup() {
   const { user, signup } = useAuth();
@@ -56,10 +57,17 @@ export default function Signup() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
-          <CardDescription>
-            Enter your information to create a Trade Journal Pro account
-          </CardDescription>
+          <div className="flex items-center justify-center mb-2">
+            <div className="bg-primary p-2 rounded-full">
+              <TrendingUp className="h-8 w-8 text-primary-foreground" />
+            </div>
+          </div>
+          <div className="text-center">
+            <CardTitle className="text-2xl font-bold">Trade Buddy</CardTitle>
+            <CardDescription>
+              Create an account to start tracking your trades
+            </CardDescription>
+          </div>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
