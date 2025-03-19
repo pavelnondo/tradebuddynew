@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trade } from "@/types";
 import { ArrowDown, ArrowUp, BarChart3, Clock, DollarSign, LineChart, PieChart, Timer, CandlestickChart, Bolt } from "lucide-react";
@@ -5,8 +6,6 @@ import { useMemo } from "react";
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
   CartesianGrid,
   Cell,
   Legend,
@@ -39,17 +38,6 @@ export default function Dashboard() {
     
     const emotionChartData = Object.entries(emotionData).map(([name, value]) => ({ name, value }));
     
-    const assetPerformance = trades.reduce((acc, trade) => {
-      if (!acc[trade.asset]) {
-        acc[trade.asset] = { asset: trade.asset, trades: 0, profitLoss: 0 };
-      }
-      acc[trade.asset].trades += 1;
-      acc[trade.asset].profitLoss += trade.profitLoss;
-      return acc;
-    }, {} as Record<string, { asset: string; trades: number; profitLoss: number }>);
-    
-    const assetChartData = Object.values(assetPerformance);
-    
     const plOverTime = trades
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .reduce((acc, trade, index) => {
@@ -70,7 +58,6 @@ export default function Dashboard() {
       totalProfitLoss,
       avgProfitLoss,
       emotionChartData,
-      assetChartData,
       plOverTime,
     };
   }, [trades]);
@@ -164,14 +151,24 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
+            <div className="h-[350px]">
               {metrics.plOverTime.length > 0 ? (
                 <ChartContainer config={chartConfig}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={metrics.plOverTime} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                  <ResponsiveContainer width="99%" height="99%">
+                    <AreaChart 
+                      data={metrics.plOverTime} 
+                      margin={{ top: 15, right: 15, left: 15, bottom: 15 }}
+                    >
                       <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                      <XAxis dataKey="date" />
-                      <YAxis />
+                      <XAxis 
+                        dataKey="date" 
+                        tick={{ fontSize: 11 }}
+                        tickMargin={10}
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 11 }}
+                        tickMargin={10}
+                      />
                       <Tooltip content={<ChartTooltipContent />} />
                       <Area
                         type="monotone"
@@ -199,28 +196,35 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
+            <div className="h-[350px]">
               {metrics.emotionChartData.length > 0 ? (
                 <ChartContainer config={chartConfig}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RechartPieChart>
+                  <ResponsiveContainer width="99%" height="99%">
+                    <RechartPieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
                       <Pie
                         data={metrics.emotionChartData}
                         cx="50%"
                         cy="50%"
-                        labelLine={false}
-                        outerRadius={80}
+                        labelLine={true}
+                        outerRadius={100}
+                        innerRadius={0}
                         fill="#8884d8"
                         dataKey="value"
                         nameKey="name"
                         label={(entry) => entry.name}
+                        paddingAngle={2}
                       >
                         {metrics.emotionChartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
                       <Tooltip content={<ChartTooltipContent />} />
-                      <Legend />
+                      <Legend 
+                        layout="horizontal" 
+                        verticalAlign="bottom" 
+                        align="center"
+                        wrapperStyle={{ paddingTop: 20 }}
+                      />
                     </RechartPieChart>
                   </ResponsiveContainer>
                 </ChartContainer>
@@ -250,12 +254,22 @@ export default function Dashboard() {
                   <h3 className="font-semibold mb-2 text-primary">Best Performing Asset</h3>
                   <p className="text-sm">
                     <span className="text-lg font-bold">
-                      {metrics.assetChartData.length > 0 
-                        ? metrics.assetChartData.sort((a, b) => b.profitLoss - a.profitLoss)[0]?.asset 
+                      {metrics.emotionChartData.length > 0 
+                        ? trades.reduce((acc, trade) => {
+                            if (!acc[trade.asset]) acc[trade.asset] = { asset: trade.asset, pl: 0 };
+                            acc[trade.asset].pl += trade.profitLoss;
+                            return acc;
+                          }, {} as Record<string, { asset: string, pl: number }>)
+                          && Object.values(trades.reduce((acc, trade) => {
+                            if (!acc[trade.asset]) acc[trade.asset] = { asset: trade.asset, pl: 0 };
+                            acc[trade.asset].pl += trade.profitLoss;
+                            return acc;
+                          }, {} as Record<string, { asset: string, pl: number }>))
+                            .sort((a, b) => b.pl - a.pl)[0]?.asset || "No data"
                         : "No data"}
                     </span>
                     <br />
-                    {metrics.assetChartData.length > 0 
+                    {metrics.emotionChartData.length > 0 
                       ? "Focus on short-term trades with this instrument for highest profit potential."
                       : "Add trades to see your best performing assets."}
                   </p>
@@ -279,11 +293,21 @@ export default function Dashboard() {
                 <div className="bg-card p-4 rounded-lg border shadow-sm">
                   <h3 className="font-semibold mb-2 text-primary">Suggested Action</h3>
                   <p className="text-sm">
-                    {metrics.assetChartData.length > 0 ? (
+                    {metrics.emotionChartData.length > 0 ? (
                       <>
                         Consider setting tighter stop losses on your
                         <span className="font-bold">
-                          {" "}{metrics.assetChartData.sort((a, b) => a.profitLoss - b.profitLoss)[0]?.asset}{" "}
+                          {" "}{trades.reduce((acc, trade) => {
+                            if (!acc[trade.asset]) acc[trade.asset] = { asset: trade.asset, pl: 0 };
+                            acc[trade.asset].pl += trade.profitLoss;
+                            return acc;
+                          }, {} as Record<string, { asset: string, pl: number }>)
+                          && Object.values(trades.reduce((acc, trade) => {
+                            if (!acc[trade.asset]) acc[trade.asset] = { asset: trade.asset, pl: 0 };
+                            acc[trade.asset].pl += trade.profitLoss;
+                            return acc;
+                          }, {} as Record<string, { asset: string, pl: number }>))
+                            .sort((a, b) => a.pl - b.pl)[0]?.asset || "underperforming assets"}{" "}
                         </span> 
                         trades to minimize drawdowns in volatile markets.
                       </>
@@ -300,9 +324,21 @@ export default function Dashboard() {
                   Daily Trading Recommendation
                 </h3>
                 <p className="text-sm">
-                  {metrics.assetChartData.length > 0 && metrics.emotionChartData.length > 0 ? (
+                  {metrics.emotionChartData.length > 0 ? (
                     <>
-                      Based on your trading history, you perform best when trading {metrics.assetChartData.sort((a, b) => b.profitLoss - a.profitLoss)[0]?.asset} with a {metrics.emotionChartData.sort((a, b) => b.value - a.value)[0]?.name} mindset. 
+                      Based on your trading history, you perform best when trading {
+                        trades.reduce((acc, trade) => {
+                          if (!acc[trade.asset]) acc[trade.asset] = { asset: trade.asset, pl: 0 };
+                          acc[trade.asset].pl += trade.profitLoss;
+                          return acc;
+                        }, {} as Record<string, { asset: string, pl: number }>)
+                        && Object.values(trades.reduce((acc, trade) => {
+                          if (!acc[trade.asset]) acc[trade.asset] = { asset: trade.asset, pl: 0 };
+                          acc[trade.asset].pl += trade.profitLoss;
+                          return acc;
+                        }, {} as Record<string, { asset: string, pl: number }>))
+                          .sort((a, b) => b.pl - a.pl)[0]?.asset || "your best assets"
+                      } with a {metrics.emotionChartData.sort((a, b) => b.value - a.value)[0]?.name} mindset. 
                       Consider focusing on quick intraday opportunities rather than overnight positions for improved risk management.
                     </>
                   ) : (
@@ -319,63 +355,6 @@ export default function Dashboard() {
               </p>
             </div>
           )}
-        </CardContent>
-      </Card>
-      
-      {/* Instrument Performance Section - Moved to bottom of page */}
-      <Card className="shadow-md hover:shadow-lg transition-shadow mt-10 mb-10">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <BarChart3 className="mr-2 h-5 w-5 text-primary" />
-            Instrument Performance
-          </CardTitle>
-          <CardDescription>Performance breakdown by trading instrument</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[350px]">
-            {metrics.assetChartData.length > 0 ? (
-              <ChartContainer config={chartConfig}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart 
-                    data={metrics.assetChartData} 
-                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-                    barSize={25}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                    <XAxis 
-                      dataKey="asset" 
-                      angle={-45}
-                      textAnchor="end"
-                      height={70}
-                      tick={{ fontSize: 12 }}
-                    />
-                    <YAxis 
-                      domain={['auto', 'auto']} 
-                      padding={{ bottom: 20, top: 20 }}
-                    />
-                    <Tooltip content={<ChartTooltipContent />} />
-                    <Legend wrapperStyle={{ bottom: 5 }} />
-                    <Bar
-                      dataKey="profitLoss"
-                      name="Profit/Loss"
-                      fill={chartConfig.profit.color}
-                      radius={[4, 4, 0, 0]}
-                      maxBarSize={40}
-                    >
-                      {metrics.assetChartData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={entry.profitLoss >= 0 ? chartConfig.profit.color : chartConfig.loss.color}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            ) : (
-              renderEmptyState("No asset performance data available. Add trades to see instrument performance.")
-            )}
-          </div>
         </CardContent>
       </Card>
     </div>
