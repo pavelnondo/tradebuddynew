@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -87,6 +86,28 @@ export default function AddTrade() {
       
       // Save to localStorage
       localStorage.setItem('trades', JSON.stringify(updatedTrades));
+
+      // If there's a screenshot, also save it to the screenshots collection
+      if (screenshotUrl) {
+        // Get existing screenshots
+        const existingScreenshots = JSON.parse(localStorage.getItem('screenshots') || '[]');
+        
+        // Create screenshot object
+        const screenshot = {
+          id: crypto.randomUUID(),
+          title: `${data.asset} ${data.tradeType} Trade`,
+          asset: data.asset,
+          date: data.date,
+          tags: [data.tradeType, data.emotion],
+          url: screenshotUrl,
+        };
+        
+        // Add new screenshot
+        const updatedScreenshots = [...existingScreenshots, screenshot];
+        
+        // Save to localStorage
+        localStorage.setItem('screenshots', JSON.stringify(updatedScreenshots));
+      }
 
       toast({
         title: "Trade Added",

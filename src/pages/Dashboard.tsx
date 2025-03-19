@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trade } from "@/types";
 import { ArrowDown, ArrowUp, BarChart3, Clock, DollarSign, LineChart, PieChart, Timer, CandlestickChart, Bolt } from "lucide-react";
@@ -233,62 +232,6 @@ export default function Dashboard() {
         </Card>
       </div>
       
-      <Card className="shadow-md hover:shadow-lg transition-shadow mt-10">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <BarChart3 className="mr-2 h-5 w-5 text-primary" />
-            Instrument Performance
-          </CardTitle>
-          <CardDescription>Performance breakdown by trading instrument</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[350px]">
-            {metrics.assetChartData.length > 0 ? (
-              <ChartContainer config={chartConfig}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart 
-                    data={metrics.assetChartData} 
-                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-                    barSize={25}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                    <XAxis 
-                      dataKey="asset" 
-                      angle={-45}
-                      textAnchor="end"
-                      height={70}
-                      tick={{ fontSize: 12 }}
-                    />
-                    <YAxis 
-                      domain={['auto', 'auto']} 
-                      padding={{ bottom: 20, top: 20 }}
-                    />
-                    <Tooltip content={<ChartTooltipContent />} />
-                    <Legend wrapperStyle={{ bottom: 5 }} />
-                    <Bar
-                      dataKey="profitLoss"
-                      name="Profit/Loss"
-                      fill={chartConfig.profit.color}
-                      radius={[4, 4, 0, 0]}
-                      maxBarSize={40}
-                    >
-                      {metrics.assetChartData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={entry.profitLoss >= 0 ? chartConfig.profit.color : chartConfig.loss.color}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            ) : (
-              renderEmptyState("No asset performance data available. Add trades to see instrument performance.")
-            )}
-          </div>
-        </CardContent>
-      </Card>
-      
       <Card className="shadow-md hover:shadow-lg transition-shadow bg-gradient-to-r from-secondary/5 to-transparent mt-8 mb-10">
         <CardHeader>
           <CardTitle className="flex items-center">
@@ -376,6 +319,63 @@ export default function Dashboard() {
               </p>
             </div>
           )}
+        </CardContent>
+      </Card>
+      
+      {/* Instrument Performance Section - Moved to bottom of page */}
+      <Card className="shadow-md hover:shadow-lg transition-shadow mt-10 mb-10">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <BarChart3 className="mr-2 h-5 w-5 text-primary" />
+            Instrument Performance
+          </CardTitle>
+          <CardDescription>Performance breakdown by trading instrument</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[350px]">
+            {metrics.assetChartData.length > 0 ? (
+              <ChartContainer config={chartConfig}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart 
+                    data={metrics.assetChartData} 
+                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                    barSize={25}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                    <XAxis 
+                      dataKey="asset" 
+                      angle={-45}
+                      textAnchor="end"
+                      height={70}
+                      tick={{ fontSize: 12 }}
+                    />
+                    <YAxis 
+                      domain={['auto', 'auto']} 
+                      padding={{ bottom: 20, top: 20 }}
+                    />
+                    <Tooltip content={<ChartTooltipContent />} />
+                    <Legend wrapperStyle={{ bottom: 5 }} />
+                    <Bar
+                      dataKey="profitLoss"
+                      name="Profit/Loss"
+                      fill={chartConfig.profit.color}
+                      radius={[4, 4, 0, 0]}
+                      maxBarSize={40}
+                    >
+                      {metrics.assetChartData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.profitLoss >= 0 ? chartConfig.profit.color : chartConfig.loss.color}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            ) : (
+              renderEmptyState("No asset performance data available. Add trades to see instrument performance.")
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

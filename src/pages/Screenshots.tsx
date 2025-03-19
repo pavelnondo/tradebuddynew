@@ -82,11 +82,57 @@ export default function Screenshots() {
     });
   };
 
+  // Handle the upload of a new screenshot
+  const handleUploadNew = () => {
+    // Create a file input element
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    
+    // Handle file selection
+    fileInput.onchange = async (event) => {
+      const target = event.target as HTMLInputElement;
+      if (target.files && target.files[0]) {
+        const file = target.files[0];
+        
+        // Convert file to base64
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64String = reader.result as string;
+          
+          // Create new screenshot object
+          const newScreenshot: Screenshot = {
+            id: crypto.randomUUID(),
+            title: file.name.split('.')[0] || 'Untitled Screenshot',
+            asset: 'General',
+            date: new Date().toISOString(),
+            tags: ['Manual Upload'],
+            url: base64String,
+          };
+          
+          // Update state and localStorage
+          const updatedScreenshots = [...screenshots, newScreenshot];
+          setScreenshots(updatedScreenshots);
+          localStorage.setItem('screenshots', JSON.stringify(updatedScreenshots));
+          
+          toast({
+            title: "Screenshot Uploaded",
+            description: "Your screenshot has been successfully added to the gallery.",
+          });
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    
+    // Trigger file selection dialog
+    fileInput.click();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Screenshots Gallery</h1>
-        <Button>Upload New</Button>
+        <Button onClick={handleUploadNew}>Upload New</Button>
       </div>
       
       {/* Filters */}
