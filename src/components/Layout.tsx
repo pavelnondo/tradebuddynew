@@ -1,8 +1,10 @@
 
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, LogOut, User } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,6 +13,9 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const { toast } = useToast();
 
   // Toggle dark/light theme
   const toggleTheme = () => {
@@ -28,6 +33,15 @@ export function Layout({ children }: LayoutProps) {
     }
   }, []);
 
+  const handleLogout = () => {
+    logout();
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out",
+    });
+    navigate("/login");
+  };
+
   const navItems = [
     { path: "/", label: "Dashboard" },
     { path: "/trades", label: "Trade History" },
@@ -44,9 +58,26 @@ export function Layout({ children }: LayoutProps) {
           <Link to="/" className="text-xl font-bold">
             Trade Journal Pro
           </Link>
-          <Button variant="ghost" size="icon" onClick={toggleTheme}>
-            {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
-          </Button>
+          <div className="flex items-center gap-2">
+            {user ? (
+              <>
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <User size={16} />
+                  {user.name || user.email}
+                </Button>
+                <Button variant="ghost" size="icon" onClick={handleLogout}>
+                  <LogOut size={20} />
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => navigate("/login")}>
+                Login
+              </Button>
+            )}
+            <Button variant="ghost" size="icon" onClick={toggleTheme}>
+              {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
+            </Button>
+          </div>
         </div>
       </header>
 
