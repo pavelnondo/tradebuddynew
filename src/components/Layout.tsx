@@ -51,6 +51,17 @@ export function Layout({ children }: LayoutProps) {
     { path: "/settings", label: "Settings" },
   ];
 
+  // Get user display name from user metadata or fall back to email
+  const getUserDisplayName = () => {
+    if (!user) return "";
+    
+    // Try to get name from user_metadata
+    const name = user.user_metadata?.name;
+    
+    // If name exists in metadata, return it, otherwise return email (or part of it)
+    return name || user.email?.split('@')[0] || user.email;
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <header className="border-b">
@@ -63,7 +74,7 @@ export function Layout({ children }: LayoutProps) {
               <>
                 <Button variant="ghost" size="sm" className="gap-2">
                   <User size={16} />
-                  {user.name || user.email}
+                  {getUserDisplayName()}
                 </Button>
                 <Button variant="ghost" size="icon" onClick={handleLogout}>
                   <LogOut size={20} />
