@@ -20,6 +20,7 @@ export default function TradeHistory() {
   
   // Use Supabase trades hook
   const { fetchTrades, deleteTrade: deleteSupabaseTrade, isLoading, error } = useSupabaseTrades();
+  const { toast } = useToast();
   
   // Fetch trades from Supabase on component mount
   useEffect(() => {
