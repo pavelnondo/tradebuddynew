@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trade } from "@/types";
 import { ArrowDown, ArrowUp, BarChart3, Clock, DollarSign, LineChart, PieChart, Timer, CandlestickChart, Bolt, Loader2 } from "lucide-react";
@@ -71,20 +70,33 @@ export default function Dashboard() {
     };
   }, [trades]);
 
+  // Updated chart config with better emotion color mapping
   const chartConfig = {
     profit: { color: "hsl(143, 85%, 46%)" },
     loss: { color: "hsl(0, 84%, 60%)" },
-    confident: { color: "#4ade80" },
-    nervous: { color: "#fb923c" },
-    greedy: { color: "#f87171" },
-    fearful: { color: "#60a5fa" },
-    calm: { color: "#a78bfa" },
-    excited: { color: "#facc15" },
-    frustrated: { color: "#f43f5e" },
-    satisfied: { color: "#22d3ee" },
+    // Positive emotions with greens, blues and calm colors
+    confident: { color: "#4ade80" }, // Green - positive
+    calm: { color: "#a78bfa" }, // Purple - positive
+    satisfied: { color: "#22d3ee" }, // Cyan - positive
+    excited: { color: "#facc15" }, // Yellow - positive
+    // Negative emotions with reds and oranges
+    nervous: { color: "#fb923c" }, // Orange - caution
+    greedy: { color: "#f87171" }, // Light red - negative
+    fearful: { color: "#3b82f6" }, // Blue - mixed/cautious
+    frustrated: { color: "#ea384c" }, // Bright red - negative
   };
 
-  const COLORS = ["#4ade80", "#fb923c", "#f87171", "#60a5fa", "#a78bfa", "#facc15"];
+  // Updated colors array for the pie chart cells
+  const COLORS = [
+    "#4ade80", // Green (confident) - positive
+    "#a78bfa", // Purple (calm) - positive
+    "#22d3ee", // Cyan (satisfied) - positive
+    "#facc15", // Yellow (excited) - positive
+    "#fb923c", // Orange (nervous) - caution
+    "#f87171", // Light red (greedy) - negative
+    "#3b82f6", // Blue (fearful) - mixed/cautious
+    "#ea384c", // Bright red (frustrated) - negative
+  ];
 
   // Function to render empty state for charts
   const renderEmptyState = (message: string) => (
