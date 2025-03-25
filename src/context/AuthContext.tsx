@@ -12,6 +12,8 @@ interface AuthContextType {
   signup: (email: string, password: string, name?: string) => Promise<void>;
   logout: () => Promise<void>;
   resetLoginRedirectHandled: () => void;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,6 +48,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Clear the hash from the URL
           window.history.replaceState(null, document.title, window.location.pathname);
         }
+      }
+      
+      // Check for password recovery token
+      if (hasHash && window.location.hash.includes('type=recovery')) {
+        // Don't display auth error in this case, as we'll handle it in the ResetPassword component
+        window.history.replaceState(null, document.title, '/reset-password');
       }
       
       setLoginRedirectHandled(true);
@@ -119,6 +127,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const forgotPassword = async (email: string) => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) {
+        throw error;
+      }
+    } catch (error: any) {
+      console.error('Password reset request failed:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resetPassword = async (password: string) => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: password,
+      });
+      
+      if (error) {
+        throw error;
+      }
+    } catch (error: any) {
+      console.error('Password update failed:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = async () => {
     try {
       await supabase.auth.signOut();
@@ -141,7 +185,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login, 
       signup, 
       logout,
-      resetLoginRedirectHandled
+      resetLoginRedirectHandled,
+      forgotPassword,
+      resetPassword
     }}>
       {children}
     </AuthContext.Provider>
