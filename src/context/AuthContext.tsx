@@ -3,7 +3,6 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate, useLocation } from "react-router-dom";
 
 interface AuthContextType {
   user: User | null;
@@ -23,8 +22,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [loginRedirectHandled, setLoginRedirectHandled] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
-  const location = useLocation();
 
   // Handle the URL hash for authentication results
   useEffect(() => {
@@ -32,8 +29,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (loginRedirectHandled) return;
       
       // Check for error parameters in the URL
-      if (location.hash && location.hash.includes('error=')) {
-        const params = new URLSearchParams(location.hash.substring(1));
+      const hasHash = window.location.hash && window.location.hash.length > 0;
+      if (hasHash && window.location.hash.includes('error=')) {
+        const params = new URLSearchParams(window.location.hash.substring(1));
         const error = params.get('error');
         const errorDescription = params.get('error_description');
         
@@ -47,9 +45,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           // Clear the hash from the URL
           window.history.replaceState(null, document.title, window.location.pathname);
-          setLoginRedirectHandled(true);
-          navigate('/login');
-          return;
         }
       }
       
@@ -57,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     handleAuthRedirect();
-  }, [location, loginRedirectHandled, toast, navigate]);
+  }, [loginRedirectHandled, toast]);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -66,11 +61,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log("Auth state changed:", event);
         setSession(session);
         setUser(session?.user ?? null);
-        
-        // Redirect to dashboard on successful login
-        if (event === 'SIGNED_IN' && session) {
-          navigate('/');
-        }
       }
     );
 
@@ -82,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, []);
 
   const resetLoginRedirectHandled = () => {
     setLoginRedirectHandled(false);
@@ -132,7 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       await supabase.auth.signOut();
-      navigate('/login');
+      // Navigation will be handled by the Router based on auth state
     } catch (error) {
       console.error('Logout failed:', error);
       toast({

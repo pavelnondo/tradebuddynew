@@ -35,31 +35,31 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const AppRoutes = () => {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
-        <Route path="/trades" element={<ProtectedRoute><Layout><TradeHistory /></Layout></ProtectedRoute>} />
-        <Route path="/add-trade" element={<ProtectedRoute><Layout><AddTrade /></Layout></ProtectedRoute>} />
-        <Route path="/analysis" element={<ProtectedRoute><Layout><Analysis /></Layout></ProtectedRoute>} />
-        <Route path="/screenshots" element={<ProtectedRoute><Layout><Screenshots /></Layout></ProtectedRoute>} />
-        <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
+      <Route path="/trades" element={<ProtectedRoute><Layout><TradeHistory /></Layout></ProtectedRoute>} />
+      <Route path="/add-trade" element={<ProtectedRoute><Layout><AddTrade /></Layout></ProtectedRoute>} />
+      <Route path="/analysis" element={<ProtectedRoute><Layout><Analysis /></Layout></ProtectedRoute>} />
+      <Route path="/screenshots" element={<ProtectedRoute><Layout><Screenshots /></Layout></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 };
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <AppRoutes />
-      </TooltipProvider>
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <AppRoutes />
+        </TooltipProvider>
+      </AuthProvider>
+    </BrowserRouter>
   </QueryClientProvider>
 );
 
