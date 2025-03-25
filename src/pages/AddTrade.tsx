@@ -1,14 +1,18 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { useSupabaseTrades } from "@/hooks/useSupabaseTrades";
 import { EmotionType, Trade, TradeType } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 const tradeFormSchema = z.object({
   asset: z.string().min(1, "Asset is required"),
@@ -35,6 +39,10 @@ const tradeFormSchema = z.object({
 type TradeFormValues = z.infer<typeof tradeFormSchema>;
 
 export default function AddTrade() {
+  const { toast } = useToast();
+  const { addTrade, uploadScreenshot, isLoading } = useSupabaseTrades();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const form = useForm<TradeFormValues>({
     resolver: zodResolver(tradeFormSchema),
     defaultValues: {
@@ -51,21 +59,23 @@ export default function AddTrade() {
   });
 
   const onSubmit = async (data: TradeFormValues) => {
+    setIsSubmitting(true);
     try {
       // Handle screenshot if provided
       let screenshotUrl = "";
       if (data.screenshot && data.screenshot[0]) {
-        const file = data.screenshot[0];
-        screenshotUrl = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(file);
-        });
+        screenshotUrl = await uploadScreenshot(data.screenshot[0]);
+        if (!screenshotUrl) {
+          toast({
+            title: "Screenshot upload failed",
+            description: "The screenshot could not be uploaded, but the trade will still be saved.",
+            variant: "destructive",
+          });
+        }
       }
 
-      // Create trade object - ensure all required properties are provided
-      const trade: Trade = {
-        id: crypto.randomUUID(),
+      // Create trade object
+      const trade: Omit<Trade, "id"> = {
         date: data.date,
         asset: data.asset,
         tradeType: data.tradeType,
@@ -76,61 +86,43 @@ export default function AddTrade() {
         notes: data.notes || "",
         emotion: data.emotion,
         screenshot: screenshotUrl || undefined,
+        setup: undefined,
+        duration: undefined,
+        executionQuality: undefined,
       };
 
-      // Get existing trades from localStorage
-      const existingTrades = JSON.parse(localStorage.getItem('trades') || '[]');
+      // Save to Supabase
+      const savedTrade = await addTrade(trade as Trade);
       
-      // Add new trade
-      const updatedTrades = [...existingTrades, trade];
-      
-      // Save to localStorage
-      localStorage.setItem('trades', JSON.stringify(updatedTrades));
+      if (savedTrade) {
+        toast({
+          title: "Trade Added",
+          description: "Your trade has been successfully logged to Supabase.",
+        });
 
-      // If there's a screenshot, also save it to the screenshots collection
-      if (screenshotUrl) {
-        // Get existing screenshots
-        const existingScreenshots = JSON.parse(localStorage.getItem('screenshots') || '[]');
-        
-        // Create screenshot object
-        const screenshot = {
-          id: crypto.randomUUID(),
-          title: `${data.asset} ${data.tradeType} Trade`,
-          asset: data.asset,
-          date: data.date,
-          tags: [data.tradeType, data.emotion],
-          url: screenshotUrl,
-        };
-        
-        // Add new screenshot
-        const updatedScreenshots = [...existingScreenshots, screenshot];
-        
-        // Save to localStorage
-        localStorage.setItem('screenshots', JSON.stringify(updatedScreenshots));
+        // Reset form
+        form.reset({
+          asset: "",
+          tradeType: "Buy",
+          entryPrice: undefined,
+          exitPrice: undefined,
+          positionSize: undefined,
+          profitLoss: undefined,
+          date: new Date().toISOString().slice(0, 16),
+          notes: "",
+          emotion: "Confident",
+        });
+      } else {
+        throw new Error("Failed to save trade");
       }
-
-      toast({
-        title: "Trade Added",
-        description: "Your trade has been successfully logged.",
-      });
-
-      form.reset({
-        asset: "",
-        tradeType: "Buy",
-        entryPrice: undefined,
-        exitPrice: undefined,
-        positionSize: undefined,
-        profitLoss: undefined,
-        date: new Date().toISOString().slice(0, 16),
-        notes: "",
-        emotion: "Confident",
-      });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to save trade. Please try again.",
+        description: error.message || "Failed to save trade. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -362,7 +354,16 @@ export default function AddTrade() {
                 )}
               />
               
-              <Button type="submit" className="w-full">Log Trade</Button>
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving Trade...
+                  </>
+                ) : (
+                  "Log Trade"
+                )}
+              </Button>
             </form>
           </Form>
         </CardContent>

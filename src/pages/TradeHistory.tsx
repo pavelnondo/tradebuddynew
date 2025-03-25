@@ -5,21 +5,31 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { toast } from "@/hooks/use-toast";
-import { Trade, TradeType } from "@/types";
-import { Download, Filter, Image, Search, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { useSupabaseTrades } from "@/hooks/useSupabaseTrades";
+import { Trade } from "@/types";
+import { Download, Filter, Image, Search, Trash2, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function TradeHistory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [tradeTypeFilter, setTradeTypeFilter] = useState<string>("all");
   const [emotionFilter, setEmotionFilter] = useState<string>("all");
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
+  const [trades, setTrades] = useState<Trade[]>([]);
   
-  // Get trades from localStorage
-  const [trades, setTrades] = useState<Trade[]>(() => {
-    return JSON.parse(localStorage.getItem('trades') || '[]') as Trade[];
-  });
+  // Use Supabase trades hook
+  const { fetchTrades, deleteTrade: deleteSupabaseTrade, isLoading, error } = useSupabaseTrades();
+  
+  // Fetch trades from Supabase on component mount
+  useEffect(() => {
+    const loadTrades = async () => {
+      const tradesData = await fetchTrades();
+      setTrades(tradesData);
+    };
+    
+    loadTrades();
+  }, [fetchTrades]);
   
   // Apply filters to trades
   const filteredTrades = trades.filter((trade) => {
@@ -46,22 +56,30 @@ export default function TradeHistory() {
   });
   
   // Delete trade
-  const deleteTrade = (id: string, event: React.MouseEvent) => {
+  const handleDeleteTrade = async (id: string, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent row click
     
-    const updatedTrades = trades.filter(trade => trade.id !== id);
-    setTrades(updatedTrades);
-    localStorage.setItem('trades', JSON.stringify(updatedTrades));
+    const success = await deleteSupabaseTrade(id);
     
-    // If we're deleting the currently selected trade, clear the selection
-    if (selectedTrade && selectedTrade.id === id) {
-      setSelectedTrade(null);
+    if (success) {
+      setTrades(trades.filter(trade => trade.id !== id));
+      
+      // If we're deleting the currently selected trade, clear the selection
+      if (selectedTrade && selectedTrade.id === id) {
+        setSelectedTrade(null);
+      }
+      
+      toast({
+        title: "Trade Deleted",
+        description: "The trade has been removed from your history.",
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to delete trade. Please try again.",
+        variant: "destructive",
+      });
     }
-    
-    toast({
-      title: "Trade Deleted",
-      description: "The trade has been removed from your history.",
-    });
   };
   
   // Download trade data as CSV
@@ -186,7 +204,22 @@ export default function TradeHistory() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTrades.length === 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={11} className="text-center py-8">
+                      <div className="flex justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      </div>
+                      <p className="mt-2 text-muted-foreground">Loading trades...</p>
+                    </TableCell>
+                  </TableRow>
+                ) : error ? (
+                  <TableRow>
+                    <TableCell colSpan={11} className="text-center py-4 text-red-500">
+                      Error loading trades: {error}
+                    </TableCell>
+                  </TableRow>
+                ) : filteredTrades.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={11} className="text-center py-4">
                       No trades found. Try adjusting your filters or add new trades.
@@ -239,7 +272,7 @@ export default function TradeHistory() {
                           variant="ghost" 
                           size="icon" 
                           className="text-red-500 hover:text-red-700 hover:bg-red-100"
-                          onClick={(e) => deleteTrade(trade.id, e)}
+                          onClick={(e) => handleDeleteTrade(trade.id, e)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -320,7 +353,7 @@ export default function TradeHistory() {
               <Button 
                 variant="destructive" 
                 onClick={(e) => {
-                  deleteTrade(selectedTrade.id, e);
+                  handleDeleteTrade(selectedTrade.id, e);
                   setSelectedTrade(null);
                 }}
               >
