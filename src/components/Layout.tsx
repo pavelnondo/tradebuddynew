@@ -33,8 +33,15 @@ export function Layout({ children }: LayoutProps) {
     }
   }, []);
 
-  const handleLogout = () => {
-    logout();
+  // Handle user auth state changes
+  useEffect(() => {
+    if (!user) {
+      navigate("/login");
+    }
+  }, [user, navigate]);
+
+  const handleLogout = async () => {
+    await logout();
     toast({
       title: "Logged out",
       description: "You have been successfully logged out",
