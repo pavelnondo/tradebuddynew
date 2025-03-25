@@ -9,7 +9,93 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          id: string
+          settings: Json | null
+          updated_at: string | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          id: string
+          settings?: Json | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          id?: string
+          settings?: Json | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
+      trades: {
+        Row: {
+          asset: string
+          created_at: string | null
+          date: string
+          duration: number | null
+          emotion: Database["public"]["Enums"]["emotion_type"] | null
+          entry_price: number
+          execution_quality: number | null
+          exit_price: number
+          id: string
+          notes: string | null
+          position_size: number
+          profit_loss: number
+          screenshot: string | null
+          setup: string | null
+          trade_type: Database["public"]["Enums"]["trade_type"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          asset: string
+          created_at?: string | null
+          date?: string
+          duration?: number | null
+          emotion?: Database["public"]["Enums"]["emotion_type"] | null
+          entry_price: number
+          execution_quality?: number | null
+          exit_price: number
+          id?: string
+          notes?: string | null
+          position_size: number
+          profit_loss: number
+          screenshot?: string | null
+          setup?: string | null
+          trade_type: Database["public"]["Enums"]["trade_type"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          asset?: string
+          created_at?: string | null
+          date?: string
+          duration?: number | null
+          emotion?: Database["public"]["Enums"]["emotion_type"] | null
+          entry_price?: number
+          execution_quality?: number | null
+          exit_price?: number
+          id?: string
+          notes?: string | null
+          position_size?: number
+          profit_loss?: number
+          screenshot?: string | null
+          setup?: string | null
+          trade_type?: Database["public"]["Enums"]["trade_type"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +104,16 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      emotion_type:
+        | "Confident"
+        | "Nervous"
+        | "Greedy"
+        | "Fearful"
+        | "Calm"
+        | "Excited"
+        | "Frustrated"
+        | "Satisfied"
+      trade_type: "Buy" | "Sell" | "Long" | "Short"
     }
     CompositeTypes: {
       [_ in never]: never
