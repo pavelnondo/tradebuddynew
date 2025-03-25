@@ -36,12 +36,12 @@ export default function Signup() {
       await signup(email, password, name);
       toast({
         title: "Account created",
-        description: "Welcome to Trade Journal Pro!",
+        description: "Please check your email to confirm your account",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Signup failed",
-        description: error instanceof Error ? error.message : "Please try again",
+        description: error.message || "Please try again",
         variant: "destructive",
       });
     } finally {

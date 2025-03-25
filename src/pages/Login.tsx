@@ -26,10 +26,10 @@ export default function Login() {
         title: "Login successful",
         description: "Welcome back!",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Login failed",
-        description: error instanceof Error ? error.message : "Please check your credentials",
+        description: error.message || "Please check your credentials",
         variant: "destructive",
       });
     } finally {
