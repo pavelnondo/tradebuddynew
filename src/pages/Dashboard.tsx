@@ -1,8 +1,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trade } from "@/types";
-import { ArrowDown, ArrowUp, BarChart3, Clock, DollarSign, LineChart, PieChart, Timer, CandlestickChart, Bolt } from "lucide-react";
-import { useMemo } from "react";
+import { ArrowDown, ArrowUp, BarChart3, Clock, DollarSign, LineChart, PieChart, Timer, CandlestickChart, Bolt, Loader2 } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
 import {
   Area,
   AreaChart,
@@ -17,13 +17,22 @@ import {
   YAxis,
 } from "recharts";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
+import { useSupabaseTrades } from "@/hooks/useSupabaseTrades";
 
 export default function Dashboard() {
-  // Get actual trades from localStorage instead of using sample data
-  const trades = useMemo(() => {
-    return JSON.parse(localStorage.getItem('trades') || '[]') as Trade[];
-  }, []);
-
+  const [trades, setTrades] = useState<Trade[]>([]);
+  const { fetchTrades, isLoading, error } = useSupabaseTrades();
+  
+  // Fetch trades from Supabase on component mount
+  useEffect(() => {
+    const loadTrades = async () => {
+      const tradesData = await fetchTrades();
+      setTrades(tradesData);
+    };
+    
+    loadTrades();
+  }, [fetchTrades]);
+  
   const metrics = useMemo(() => {
     const totalTrades = trades.length;
     const profitableTrades = trades.filter((trade) => trade.profitLoss > 0).length;
@@ -83,6 +92,28 @@ export default function Dashboard() {
       <p className="text-muted-foreground text-center">{message}</p>
     </div>
   );
+  
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh]">
+        <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Loading your trading dashboard...</p>
+      </div>
+    );
+  }
+  
+  // Error state
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh]">
+        <div className="bg-red-100 p-6 rounded-lg max-w-md text-center">
+          <h2 className="text-xl font-bold text-red-700 mb-2">Error Loading Data</h2>
+          <p className="text-red-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
