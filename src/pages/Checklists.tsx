@@ -184,6 +184,18 @@ export default function Checklists() {
     navigate('/add-trade', { state: { checklistId } });
   };
   
+  // Handle dialog close
+  const handleNewDialogOpenChange = (open: boolean) => {
+    setIsNewChecklistOpen(open);
+    if (!open) resetChecklistForm();
+  };
+  
+  // Handle edit dialog close
+  const handleEditDialogOpenChange = (open: boolean) => {
+    setIsEditChecklistOpen(open);
+    if (!open) resetChecklistForm();
+  };
+  
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -271,7 +283,7 @@ export default function Checklists() {
       )}
       
       {/* New Checklist Dialog */}
-      <Dialog open={isNewChecklistOpen} onOpenChange={setIsNewChecklistOpen} onClose={resetChecklistForm}>
+      <Dialog open={isNewChecklistOpen} onOpenChange={handleNewDialogOpenChange}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Create New Trading Checklist</DialogTitle>
@@ -353,7 +365,7 @@ export default function Checklists() {
       </Dialog>
       
       {/* Edit Checklist Dialog */}
-      <Dialog open={isEditChecklistOpen} onOpenChange={setIsEditChecklistOpen} onClose={resetChecklistForm}>
+      <Dialog open={isEditChecklistOpen} onOpenChange={handleEditDialogOpenChange}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit Trading Checklist</DialogTitle>

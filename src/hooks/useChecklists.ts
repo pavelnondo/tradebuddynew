@@ -5,6 +5,9 @@ import { useAuth } from '@/context/AuthContext';
 import { Checklist, ChecklistItem } from '@/types';
 import { toast } from '@/hooks/use-toast';
 
+// Define a type for Supabase JSON
+type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
+
 export function useChecklists() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +29,7 @@ export function useChecklists() {
       
       return data.map(checklist => ({
         ...checklist,
-        items: checklist.items as ChecklistItem[]
+        items: checklist.items as unknown as ChecklistItem[]
       }));
     } catch (err: any) {
       setError(err.message || 'Failed to fetch checklists');
@@ -53,7 +56,7 @@ export function useChecklists() {
       
       return {
         ...data,
-        items: data.items as ChecklistItem[]
+        items: data.items as unknown as ChecklistItem[]
       };
     } catch (err: any) {
       setError(err.message || 'Failed to fetch checklist');
@@ -76,7 +79,7 @@ export function useChecklists() {
           user_id: user.id,
           name: checklist.name,
           description: checklist.description || null,
-          items: checklist.items
+          items: checklist.items as unknown as Json
         })
         .select()
         .single();
@@ -90,7 +93,7 @@ export function useChecklists() {
       
       return {
         ...data,
-        items: data.items as ChecklistItem[]
+        items: data.items as unknown as ChecklistItem[]
       };
     } catch (err: any) {
       setError(err.message || 'Failed to create checklist');
@@ -115,7 +118,7 @@ export function useChecklists() {
       const updateData: any = {};
       if (updates.name !== undefined) updateData.name = updates.name;
       if (updates.description !== undefined) updateData.description = updates.description;
-      if (updates.items !== undefined) updateData.items = updates.items;
+      if (updates.items !== undefined) updateData.items = updates.items as unknown as Json;
       
       const { data, error } = await supabase
         .from('checklists')
@@ -133,7 +136,7 @@ export function useChecklists() {
       
       return {
         ...data,
-        items: data.items as ChecklistItem[]
+        items: data.items as unknown as ChecklistItem[]
       };
     } catch (err: any) {
       setError(err.message || 'Failed to update checklist');
