@@ -70,33 +70,33 @@ export default function Dashboard() {
     };
   }, [trades]);
 
-  // Updated chart config with better emotion color mapping
+  // Updated chart config with correct emotion color mapping
   const chartConfig = {
     profit: { color: "hsl(143, 85%, 46%)" },
     loss: { color: "hsl(0, 84%, 60%)" },
-    // Positive emotions with greens, blues and calm colors
-    confident: { color: "#4ade80" }, // Green - positive
-    calm: { color: "#a78bfa" }, // Purple - positive
-    satisfied: { color: "#22d3ee" }, // Cyan - positive
-    excited: { color: "#facc15" }, // Yellow - positive
-    // Negative emotions with reds and oranges
-    nervous: { color: "#fb923c" }, // Orange - caution
-    greedy: { color: "#f87171" }, // Light red - negative
-    fearful: { color: "#3b82f6" }, // Blue - mixed/cautious
-    frustrated: { color: "#ea384c" }, // Bright red - negative
+    // Positive emotions with calming, positive colors
+    Confident: { color: "#4ade80" }, // Green - positive
+    Calm: { color: "#a78bfa" }, // Purple - positive
+    Satisfied: { color: "#22d3ee" }, // Cyan - positive
+    Excited: { color: "#facc15" }, // Yellow - positive
+    // Negative emotions with warning and alarming colors
+    Nervous: { color: "#fb923c" }, // Orange - caution
+    Greedy: { color: "#f87171" }, // Light red - negative
+    Fearful: { color: "#3b82f6" }, // Blue - mixed/cautious
+    Frustrated: { color: "#ea384c" }, // Bright red - negative
   };
 
-  // Updated colors array for the pie chart cells
-  const COLORS = [
-    "#4ade80", // Green (confident) - positive
-    "#a78bfa", // Purple (calm) - positive
-    "#22d3ee", // Cyan (satisfied) - positive
-    "#facc15", // Yellow (excited) - positive
-    "#fb923c", // Orange (nervous) - caution
-    "#f87171", // Light red (greedy) - negative
-    "#3b82f6", // Blue (fearful) - mixed/cautious
-    "#ea384c", // Bright red (frustrated) - negative
-  ];
+  // Updated colors array for the pie chart cells with correct emotion colors
+  const EMOTION_COLORS = {
+    Confident: "#4ade80", // Green - positive
+    Calm: "#a78bfa", // Purple - positive
+    Satisfied: "#22d3ee", // Cyan - positive
+    Excited: "#facc15", // Yellow - positive
+    Nervous: "#fb923c", // Orange - caution
+    Greedy: "#f87171", // Light red - negative 
+    Fearful: "#3b82f6", // Blue - mixed/cautious
+    Frustrated: "#ea384c", // Bright red - negative
+  };
 
   // Function to render empty state for charts
   const renderEmptyState = (message: string) => (
@@ -258,7 +258,10 @@ export default function Dashboard() {
                         paddingAngle={2}
                       >
                         {metrics.emotionChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={EMOTION_COLORS[entry.name as keyof typeof EMOTION_COLORS] || "#9ca3af"} 
+                          />
                         ))}
                       </Pie>
                       <Tooltip content={<ChartTooltipContent />} />
