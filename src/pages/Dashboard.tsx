@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trade } from "@/types";
 import { ArrowDown, ArrowUp, BarChart3, Clock, DollarSign, LineChart, PieChart, Timer, CandlestickChart, Bolt, Loader2 } from "lucide-react";
@@ -17,9 +18,14 @@ import {
 } from "recharts";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { useSupabaseTrades } from "@/hooks/useSupabaseTrades";
+import { InitialBalanceForm } from "@/components/InitialBalanceForm";
 
 export default function Dashboard() {
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [initialBalance, setInitialBalance] = useState<number>(() => {
+    const savedBalance = localStorage.getItem('initialTradingBalance');
+    return savedBalance ? parseFloat(savedBalance) : 10000; // Default to 10,000 if not set
+  });
   const { fetchTrades, isLoading, error } = useSupabaseTrades();
   
   // Fetch trades from Supabase on component mount
@@ -32,12 +38,19 @@ export default function Dashboard() {
     loadTrades();
   }, [fetchTrades]);
   
+  // Save initial balance to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('initialTradingBalance', initialBalance.toString());
+  }, [initialBalance]);
+  
   const metrics = useMemo(() => {
     const totalTrades = trades.length;
     const profitableTrades = trades.filter((trade) => trade.profitLoss > 0).length;
     const winRate = totalTrades > 0 ? (profitableTrades / totalTrades) * 100 : 0;
     const totalProfitLoss = trades.reduce((sum, trade) => sum + trade.profitLoss, 0);
     const avgProfitLoss = totalTrades > 0 ? totalProfitLoss / totalTrades : 0;
+    const currentBalance = initialBalance + totalProfitLoss;
+    const percentageReturn = initialBalance > 0 ? (totalProfitLoss / initialBalance) * 100 : 0;
     
     const emotionData = trades.reduce((acc, trade) => {
       acc[trade.emotion] = (acc[trade.emotion] || 0) + 1;
@@ -50,14 +63,15 @@ export default function Dashboard() {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .reduce((acc, trade, index) => {
         const date = new Date(trade.date).toLocaleDateString();
-        const prevValue = index > 0 ? acc[index - 1].cumulative : 0;
+        const prevBalance = index > 0 ? acc[index - 1].balance : initialBalance;
         acc.push({
           date,
           value: trade.profitLoss,
-          cumulative: prevValue + trade.profitLoss,
+          cumulative: index > 0 ? acc[index - 1].cumulative + trade.profitLoss : trade.profitLoss,
+          balance: prevBalance + trade.profitLoss
         });
         return acc;
-      }, [] as { date: string; value: number; cumulative: number }[]);
+      }, [] as { date: string; value: number; cumulative: number; balance: number }[]);
     
     return {
       totalTrades,
@@ -67,8 +81,10 @@ export default function Dashboard() {
       avgProfitLoss,
       emotionChartData,
       plOverTime,
+      currentBalance,
+      percentageReturn
     };
-  }, [trades]);
+  }, [trades, initialBalance]);
 
   // Updated chart config with correct emotion color mapping
   const chartConfig = {
@@ -136,6 +152,39 @@ export default function Dashboard() {
         </div>
       </div>
       
+      {/* Balance Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <InitialBalanceForm 
+          initialBalance={initialBalance} 
+          onSave={setInitialBalance} 
+        />
+        
+        <Card className="border-l-4 border-l-primary">
+          <CardHeader className="pb-2">
+            <CardDescription>Current Balance</CardDescription>
+            <CardTitle className={`text-2xl flex items-center ${metrics.currentBalance >= initialBalance ? 'text-green-500' : 'text-red-500'}`}>
+              <DollarSign className="mr-2 h-5 w-5" />
+              ${metrics.currentBalance.toFixed(2)}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        
+        <Card className="border-l-4 border-l-primary">
+          <CardHeader className="pb-2">
+            <CardDescription>Return</CardDescription>
+            <CardTitle className={`text-2xl flex items-center ${metrics.percentageReturn >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {metrics.percentageReturn >= 0 ? (
+                <ArrowUp className="mr-2 h-5 w-5" />
+              ) : (
+                <ArrowDown className="mr-2 h-5 w-5" />
+              )}
+              {metrics.percentageReturn.toFixed(2)}%
+            </CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+      
+      {/* Original metrics cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border-l-4 border-l-primary">
           <CardHeader className="pb-2">
@@ -190,7 +239,7 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle className="flex items-center">
               <LineChart className="mr-2 h-5 w-5 text-primary" />
-              Intraday P&L Trend
+              Account Balance Trend
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -215,8 +264,8 @@ export default function Dashboard() {
                       <Tooltip content={<ChartTooltipContent />} />
                       <Area
                         type="monotone"
-                        dataKey="cumulative"
-                        name="Cumulative P&L"
+                        dataKey="balance"
+                        name="Account Balance"
                         stroke={metrics.totalProfitLoss >= 0 ? chartConfig.profit.color : chartConfig.loss.color}
                         fill={metrics.totalProfitLoss >= 0 ? chartConfig.profit.color : chartConfig.loss.color}
                         fillOpacity={0.2}
@@ -225,7 +274,7 @@ export default function Dashboard() {
                   </ResponsiveContainer>
                 </ChartContainer>
               ) : (
-                renderEmptyState("No trade data available. Add trades to see your P&L trend.")
+                renderEmptyState("No trade data available. Add trades to see your account balance trend.")
               )}
             </div>
           </CardContent>
