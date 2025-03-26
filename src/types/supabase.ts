@@ -7,6 +7,12 @@ export type TradeInsert = Omit<DbTrade, 'id' | 'created_at' | 'updated_at'>;
 
 export type TradeUpdate = Partial<Omit<DbTrade, 'id' | 'created_at' | 'updated_at' | 'user_id'>>;
 
+export type DbChecklist = Database['public']['Tables']['checklists']['Row'];
+
+export type ChecklistInsert = Omit<DbChecklist, 'id' | 'created_at' | 'updated_at'>;
+
+export type ChecklistUpdate = Partial<Omit<DbChecklist, 'id' | 'created_at' | 'updated_at' | 'user_id'>>;
+
 export interface Profile {
   id: string;
   username?: string | null;

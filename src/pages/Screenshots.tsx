@@ -5,7 +5,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Filter, Search, Tag, Trash } from "lucide-react";
+import { useSupabaseTrades } from "@/hooks/useSupabaseTrades";
+import { Filter, Search, Tag, Trash, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface Screenshot {
@@ -23,14 +24,65 @@ export default function Screenshots() {
   const [assetFilter, setAssetFilter] = useState<string>("all");
   const [tagFilter, setTagFilter] = useState<string>("all");
   const [selectedScreenshot, setSelectedScreenshot] = useState<Screenshot | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Load screenshots from localStorage on component mount
+  // Get trades to extract screenshots
+  const { fetchTrades } = useSupabaseTrades();
+  
+  // Load screenshots from localStorage and from trades on component mount
   useEffect(() => {
-    const storedScreenshots = localStorage.getItem('screenshots');
-    if (storedScreenshots) {
-      setScreenshots(JSON.parse(storedScreenshots));
-    }
-  }, []);
+    const loadScreenshots = async () => {
+      setIsLoading(true);
+      
+      // Load from localStorage
+      const storedScreenshots = localStorage.getItem('screenshots');
+      let localScreenshots: Screenshot[] = [];
+      if (storedScreenshots) {
+        localScreenshots = JSON.parse(storedScreenshots);
+      }
+      
+      // Load from Supabase trades
+      try {
+        const trades = await fetchTrades();
+        const tradeScreenshots = trades
+          .filter(trade => trade.screenshot)
+          .map(trade => ({
+            id: `trade-${trade.id}`,
+            title: `${trade.asset} ${trade.tradeType} Trade`,
+            asset: trade.asset,
+            date: trade.date,
+            tags: [trade.tradeType, trade.emotion, 'Trade Screenshot'],
+            url: trade.screenshot as string
+          }));
+
+        // Combine and deduplicate screenshots
+        const combinedScreenshots = [...localScreenshots];
+        
+        // Add trade screenshots only if they don't already exist
+        tradeScreenshots.forEach(tradeScreenshot => {
+          if (!combinedScreenshots.some(ss => ss.url === tradeScreenshot.url)) {
+            combinedScreenshots.push(tradeScreenshot);
+          }
+        });
+        
+        // Update state and localStorage
+        setScreenshots(combinedScreenshots);
+        localStorage.setItem('screenshots', JSON.stringify(combinedScreenshots));
+      } catch (error) {
+        console.error("Error fetching trade screenshots:", error);
+        toast({
+          title: "Error Loading Screenshots",
+          description: "Failed to load trade screenshots. Local screenshots are still available.",
+          variant: "destructive"
+        });
+        setScreenshots(localScreenshots);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadScreenshots();
+  }, [fetchTrades]);
   
   // Get unique assets and tags for filters
   const uniqueAssets = [...new Set(screenshots.map((ss) => ss.asset))];
@@ -188,7 +240,12 @@ export default function Screenshots() {
       
       {/* Screenshots Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredScreenshots.length === 0 ? (
+        {isLoading ? (
+          <div className="col-span-full flex flex-col items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+            <p className="text-muted-foreground">Loading screenshots...</p>
+          </div>
+        ) : filteredScreenshots.length === 0 ? (
           <div className="col-span-full text-center py-12">
             <p className="text-muted-foreground">No screenshots found. Try adjusting your filters.</p>
           </div>

@@ -18,4 +18,21 @@ export interface Trade {
   duration?: number;
   setup?: string;
   executionQuality?: number;
+  checklist_id?: string;
+  checklist_completed?: ChecklistItem[];
+}
+
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  completed?: boolean;
+}
+
+export interface Checklist {
+  id: string;
+  name: string;
+  description?: string;
+  items: ChecklistItem[];
+  created_at: string;
+  updated_at: string;
 }
