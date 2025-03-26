@@ -81,7 +81,7 @@ export default function Dashboard() {
     Excited: { color: "#facc15" }, // Yellow - positive
     // Negative emotions with warning and alarming colors
     Nervous: { color: "#fb923c" }, // Orange - caution
-    Greedy: { color: "#f87171" }, // Light red - negative
+    Greedy: { color: "#f87171" }, // Light red - negative 
     Fearful: { color: "#3b82f6" }, // Blue - mixed/cautious
     Frustrated: { color: "#ea384c" }, // Bright red - negative
   };
@@ -248,14 +248,15 @@ export default function Dashboard() {
                         data={metrics.emotionChartData}
                         cx="50%"
                         cy="50%"
-                        labelLine={true}
-                        outerRadius={100}
-                        innerRadius={0}
+                        labelLine={false}
+                        outerRadius={95}
+                        innerRadius={5}
                         fill="#8884d8"
                         dataKey="value"
                         nameKey="name"
-                        label={(entry) => entry.name}
-                        paddingAngle={2}
+                        paddingAngle={4}
+                        strokeWidth={1}
+                        stroke="#fff"
                       >
                         {metrics.emotionChartData.map((entry, index) => (
                           <Cell 
@@ -269,7 +270,9 @@ export default function Dashboard() {
                         layout="horizontal" 
                         verticalAlign="bottom" 
                         align="center"
-                        wrapperStyle={{ paddingTop: 20 }}
+                        wrapperStyle={{ paddingTop: 30 }}
+                        iconSize={10}
+                        iconType="circle"
                       />
                     </RechartPieChart>
                   </ResponsiveContainer>
