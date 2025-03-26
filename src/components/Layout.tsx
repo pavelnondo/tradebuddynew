@@ -53,8 +53,10 @@ export function Layout({ children }: LayoutProps) {
     { path: "/", label: "Dashboard" },
     { path: "/trades", label: "Trade History" },
     { path: "/add-trade", label: "Add Trade" },
+    { path: "/strategy", label: "Strategy" },
     { path: "/analysis", label: "Analysis" },
     { path: "/screenshots", label: "Screenshots" },
+    { path: "/checklists", label: "Checklists" },
     { path: "/settings", label: "Settings" },
   ];
 
