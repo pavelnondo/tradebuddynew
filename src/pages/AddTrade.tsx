@@ -1,4 +1,103 @@
 
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+import { format } from 'date-fns';
+import { CalendarIcon, Upload, UploadCloud, RefreshCw, CheckSquare } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Calendar } from '@/components/ui/calendar';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Slider } from '@/components/ui/slider';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { toast } from '@/hooks/use-toast';
+
+import { Trade, TradeType, EmotionType, Checklist, ChecklistItem } from '@/types';
+import { useSupabaseTrades } from '@/hooks/useSupabaseTrades';
+import { useChecklists } from '@/hooks/useChecklists';
+
+// Form validation schema using Zod
+const formSchema = z.object({
+  date: z.date({
+    required_error: "Trade date is required",
+  }),
+  asset: z.string().min(1, "Asset is required"),
+  tradeType: z.enum(["Buy", "Sell", "Long", "Short"] as const),
+  entryPrice: z.coerce.number().positive("Entry price must be positive"),
+  exitPrice: z.coerce.number().min(0, "Exit price must be non-negative"),
+  positionSize: z.coerce.number().positive("Position size must be positive"),
+  profitLoss: z.coerce.number(),
+  notes: z.string().optional(),
+  emotion: z.enum(["Confident", "Nervous", "Greedy", "Fearful", "Calm", "Excited", "Frustrated", "Satisfied"] as const),
+  setup: z.string().optional(),
+  executionQuality: z.coerce.number().min(1).max(10).optional(),
+  duration: z.coerce.number().optional(),
+  checklist_id: z.string().optional(),
+});
+
+export default function AddTrade() {
+  // Get location and navigate for routing
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // States for handling screenshot and checklist
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedChecklist, setSelectedChecklist] = useState<Checklist | null>(null);
+  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
+  const [checklists, setChecklists] = useState<Checklist[]>([]);
+  
+  // Initialize hooks
+  const { addTrade, uploadScreenshot } = useSupabaseTrades();
+  const { fetchChecklists, getChecklist } = useChecklists();
+  
+  // Initialize form
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      date: new Date(),
+      asset: "",
+      tradeType: "Buy" as TradeType,
+      entryPrice: 0,
+      exitPrice: 0,
+      positionSize: 0,
+      profitLoss: 0,
+      notes: "",
+      emotion: "Calm" as EmotionType,
+      setup: "",
+      executionQuality: 5,
+      duration: undefined,
+      checklist_id: undefined,
+    },
+  });
+  
+  // Load checklists on component mount
+  useEffect(() => {
+    const loadChecklists = async () => {
+      const data = await fetchChecklists();
+      setChecklists(data);
+      
+      // Check if we have a checklist ID from location state (from checklist page)
+      const locationState = location.state as { checklistId?: string } | undefined;
+      if (locationState?.checklistId) {
+        handleChecklistChange(locationState.checklistId);
+      }
+    };
+    
+    loadChecklists();
+  }, [fetchChecklists, location]);
+  
   // Handle checklist selection change
   const handleChecklistChange = async (checklistId: string) => {
     // If "none" is selected, set to undefined (no checklist)
@@ -17,3 +116,579 @@
       setChecklistItems(checklist.items.map(item => ({ ...item, completed: false })));
     }
   };
+  
+  // Handle checklist item toggle
+  const handleChecklistItemToggle = (id: string, completed: boolean) => {
+    setChecklistItems(
+      checklistItems.map(item => 
+        item.id === id ? { ...item, completed } : item
+      )
+    );
+  };
+  
+  // Calculate profit/loss automatically
+  const calculateProfitLoss = () => {
+    const entryPrice = form.getValues("entryPrice");
+    const exitPrice = form.getValues("exitPrice");
+    const positionSize = form.getValues("positionSize");
+    const tradeType = form.getValues("tradeType");
+    
+    if (entryPrice && exitPrice && positionSize) {
+      let pnl: number;
+      
+      if (tradeType === "Buy" || tradeType === "Long") {
+        pnl = (exitPrice - entryPrice) * positionSize;
+      } else {
+        pnl = (entryPrice - exitPrice) * positionSize;
+      }
+      
+      form.setValue("profitLoss", parseFloat(pnl.toFixed(2)));
+    }
+  };
+  
+  // Monitor entry/exit price and position size to auto-calculate P/L
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === "entryPrice" || name === "exitPrice" || name === "positionSize" || name === "tradeType") {
+        calculateProfitLoss();
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [form.watch]);
+  
+  // Handle screenshot file selection
+  const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setScreenshotFile(file);
+      
+      // Create a preview URL
+      const fileUrl = URL.createObjectURL(file);
+      setPreviewUrl(fileUrl);
+    }
+  };
+  
+  // Clear screenshot
+  const clearScreenshot = () => {
+    setScreenshotFile(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setPreviewUrl(null);
+  };
+  
+  // Form submission handler
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsSubmitting(true);
+    
+    try {
+      // Upload screenshot if present
+      let screenshotUrl = undefined;
+      if (screenshotFile) {
+        setIsUploading(true);
+        screenshotUrl = await uploadScreenshot(screenshotFile);
+        setIsUploading(false);
+      }
+      
+      // Prepare the trade data
+      const trade: Trade = {
+        id: '', // Will be assigned by Supabase
+        date: format(values.date, 'yyyy-MM-dd'),
+        asset: values.asset,
+        tradeType: values.tradeType,
+        entryPrice: values.entryPrice,
+        exitPrice: values.exitPrice,
+        positionSize: values.positionSize,
+        profitLoss: values.profitLoss,
+        notes: values.notes || '',
+        emotion: values.emotion,
+        setup: values.setup,
+        executionQuality: values.executionQuality,
+        duration: values.duration,
+        screenshot: screenshotUrl,
+        checklist_id: values.checklist_id,
+        checklist_completed: selectedChecklist ? checklistItems : undefined,
+      };
+      
+      // Add the trade to the database
+      const result = await addTrade(trade);
+      
+      if (result) {
+        toast({
+          title: "Trade Added",
+          description: "Your trade has been successfully added to your journal.",
+        });
+        
+        // Navigate back to trade history
+        navigate('/trades');
+      } else {
+        throw new Error("Failed to add trade");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add trade",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Add New Trade</h1>
+      </div>
+      
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Trade Details</CardTitle>
+              <CardDescription>
+                Enter the basic information about your trade.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Trade Date */}
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={`w-full pl-3 text-left font-normal ${!field.value ? "text-muted-foreground" : ""}`}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) =>
+                            date > new Date() || date < new Date("1900-01-01")
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Asset */}
+              <FormField
+                control={form.control}
+                name="asset"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Asset</FormLabel>
+                    <FormControl>
+                      <Input placeholder="AAPL, EURUSD, BTC, etc." {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Enter the ticker or name of the asset you traded.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Trade Type */}
+              <FormField
+                control={form.control}
+                name="tradeType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Trade Type</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex flex-wrap gap-6"
+                      >
+                        <FormItem className="flex items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="Buy" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Buy</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="Sell" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Sell</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="Long" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Long</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="Short" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Short</FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Entry Price */}
+              <FormField
+                control={form.control}
+                name="entryPrice"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Entry Price</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" {...field} onChange={(e) => {
+                        field.onChange(e);
+                      }} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Exit Price */}
+              <FormField
+                control={form.control}
+                name="exitPrice"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Exit Price</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" {...field} onChange={(e) => {
+                        field.onChange(e);
+                      }} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Position Size */}
+              <FormField
+                control={form.control}
+                name="positionSize"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Position Size</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" {...field} onChange={(e) => {
+                        field.onChange(e);
+                      }} />
+                    </FormControl>
+                    <FormDescription>
+                      Number of shares, contracts, or units.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Profit/Loss */}
+              <FormField
+                control={form.control}
+                name="profitLoss"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Profit/Loss</FormLabel>
+                    <div className="flex items-center gap-2">
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          step="0.01" 
+                          className={field.value >= 0 ? "text-green-600" : "text-red-600"} 
+                          {...field} 
+                          disabled
+                        />
+                      </FormControl>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="icon"
+                        onClick={calculateProfitLoss}
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <FormDescription>
+                      Automatically calculated based on entry/exit prices and position size.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Duration (optional) */}
+              <FormField
+                control={form.control}
+                name="duration"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Duration (minutes)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        placeholder="Optional"
+                        {...field}
+                        value={field.value || ''} 
+                        onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      How long did you hold this position?
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Emotion */}
+              <FormField
+                control={form.control}
+                name="emotion"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Emotion During Trade</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select emotion" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Confident">Confident</SelectItem>
+                        <SelectItem value="Nervous">Nervous</SelectItem>
+                        <SelectItem value="Greedy">Greedy</SelectItem>
+                        <SelectItem value="Fearful">Fearful</SelectItem>
+                        <SelectItem value="Calm">Calm</SelectItem>
+                        <SelectItem value="Excited">Excited</SelectItem>
+                        <SelectItem value="Frustrated">Frustrated</SelectItem>
+                        <SelectItem value="Satisfied">Satisfied</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      How were you feeling when making this trade?
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Setup */}
+              <FormField
+                control={form.control}
+                name="setup"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Setup</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Breakout, Support/Resistance, etc." {...field} value={field.value || ''} />
+                    </FormControl>
+                    <FormDescription>
+                      What trading setup did you use for this trade?
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Execution Quality */}
+              <FormField
+                control={form.control}
+                name="executionQuality"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center justify-between mb-2">
+                      <FormLabel>Execution Quality</FormLabel>
+                      <span className="text-sm">{field.value}/10</span>
+                    </div>
+                    <FormControl>
+                      <Slider 
+                        min={1} 
+                        max={10} 
+                        step={1} 
+                        defaultValue={[field.value || 5]} 
+                        onValueChange={(vals) => field.onChange(vals[0])}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      How well did you execute this trade according to your plan?
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Notes */}
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Add any thoughts or observations about this trade..."
+                        className="min-h-[120px]"
+                        {...field}
+                        value={field.value || ''}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Checklist */}
+              <FormField
+                control={form.control}
+                name="checklist_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Trading Checklist</FormLabel>
+                    <Select 
+                      onValueChange={handleChecklistChange} 
+                      value={field.value || "none"}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a checklist" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {checklists.map((checklist) => (
+                          <SelectItem key={checklist.id} value={checklist.id}>
+                            {checklist.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Select a trading checklist to ensure discipline and consistency.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Checklist Items */}
+              {selectedChecklist && checklistItems.length > 0 && (
+                <div className="border rounded-md p-4 space-y-3">
+                  <h3 className="font-medium">{selectedChecklist.name} Checklist</h3>
+                  <div className="space-y-2">
+                    {checklistItems.map((item) => (
+                      <div key={item.id} className="flex items-start space-x-2">
+                        <Checkbox 
+                          id={item.id} 
+                          checked={item.completed}
+                          onCheckedChange={(checked) => handleChecklistItemToggle(item.id, !!checked)}
+                        />
+                        <label 
+                          htmlFor={item.id}
+                          className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          {item.text}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Screenshot Upload */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-medium">Screenshot</h3>
+                  {screenshotFile && (
+                    <Button type="button" variant="ghost" size="sm" onClick={clearScreenshot}>
+                      Clear
+                    </Button>
+                  )}
+                </div>
+                
+                {!screenshotFile ? (
+                  <div className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center">
+                    <UploadCloud className="h-8 w-8 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Drag and drop or click to upload
+                    </p>
+                    <label htmlFor="screenshot-upload">
+                      <Button 
+                        type="button" 
+                        variant="secondary" 
+                        size="sm" 
+                        className="cursor-pointer"
+                        onClick={() => document.getElementById('screenshot-upload')?.click()}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Choose File
+                      </Button>
+                      <Input 
+                        id="screenshot-upload" 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={handleScreenshotChange}
+                      />
+                    </label>
+                  </div>
+                ) : (
+                  <div className="border rounded-lg overflow-hidden">
+                    <img 
+                      src={previewUrl!} 
+                      alt="Trade Screenshot" 
+                      className="w-full h-auto max-h-[300px] object-contain" 
+                    />
+                  </div>
+                )}
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate('/trades')}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={isSubmitting || isUploading}
+              >
+                {(isSubmitting || isUploading) && (
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                )}
+                Add Trade
+              </Button>
+            </CardFooter>
+          </Card>
+        </form>
+      </Form>
+    </div>
+  );
+}

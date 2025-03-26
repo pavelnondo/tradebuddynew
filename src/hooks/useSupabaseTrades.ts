@@ -1,9 +1,11 @@
-
 import { useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Trade, ChecklistItem } from '@/types';
 import { DbTrade, TradeInsert, TradeUpdate } from '@/types/supabase';
+
+// Define a type for Supabase JSON
+type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
 
 // Convert database trade to frontend trade
 const dbTradeToTrade = (dbTrade: DbTrade): Trade => {
@@ -23,7 +25,7 @@ const dbTradeToTrade = (dbTrade: DbTrade): Trade => {
     setup: dbTrade.setup,
     executionQuality: dbTrade.execution_quality,
     checklist_id: dbTrade.checklist_id,
-    checklist_completed: dbTrade.checklist_completed as ChecklistItem[] || [],
+    checklist_completed: dbTrade.checklist_completed as unknown as ChecklistItem[] || [],
   };
 };
 
@@ -45,7 +47,7 @@ const tradeToDbTrade = (trade: Trade, userId: string): TradeInsert => {
     setup: trade.setup,
     execution_quality: trade.executionQuality,
     checklist_id: trade.checklist_id,
-    checklist_completed: trade.checklist_completed,
+    checklist_completed: trade.checklist_completed as unknown as Json,
   };
 };
 
@@ -127,7 +129,7 @@ export function useSupabaseTrades() {
       if (updates.setup !== undefined) dbUpdates.setup = updates.setup;
       if (updates.executionQuality !== undefined) dbUpdates.execution_quality = updates.executionQuality;
       if (updates.checklist_id !== undefined) dbUpdates.checklist_id = updates.checklist_id;
-      if (updates.checklist_completed !== undefined) dbUpdates.checklist_completed = updates.checklist_completed;
+      if (updates.checklist_completed !== undefined) dbUpdates.checklist_completed = updates.checklist_completed as unknown as Json;
       
       const { data, error } = await supabase
         .from('trades')
