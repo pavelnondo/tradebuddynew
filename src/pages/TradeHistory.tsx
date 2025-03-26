@@ -7,9 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { useSupabaseTrades } from "@/hooks/useSupabaseTrades";
-import { Trade } from "@/types";
-import { Download, Filter, Image, Search, Trash2, Loader2 } from "lucide-react";
+import { ChecklistItem, Trade } from "@/types";
+import { Download, Filter, Image, Search, Trash2, Loader2, CheckSquare } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 
 export default function TradeHistory() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -121,6 +123,13 @@ export default function TradeHistory() {
     setSelectedTrade(trade);
   };
 
+  // Calculate checklist completion percentage
+  const calculateCompletionPercentage = (items: ChecklistItem[] = []) => {
+    if (items.length === 0) return 0;
+    const completedItems = items.filter(item => item.completed).length;
+    return Math.round((completedItems / items.length) * 100);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -199,6 +208,7 @@ export default function TradeHistory() {
                   <TableHead>Size</TableHead>
                   <TableHead>P/L</TableHead>
                   <TableHead>Emotion</TableHead>
+                  <TableHead>Checklist</TableHead>
                   <TableHead>Screenshot</TableHead>
                   <TableHead>Notes</TableHead>
                   <TableHead>Actions</TableHead>
@@ -207,7 +217,7 @@ export default function TradeHistory() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center py-8">
+                    <TableCell colSpan={12} className="text-center py-8">
                       <div className="flex justify-center">
                         <Loader2 className="h-6 w-6 animate-spin text-primary" />
                       </div>
@@ -216,13 +226,13 @@ export default function TradeHistory() {
                   </TableRow>
                 ) : error ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center py-4 text-red-500">
+                    <TableCell colSpan={12} className="text-center py-4 text-red-500">
                       Error loading trades: {error}
                     </TableCell>
                   </TableRow>
                 ) : filteredTrades.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center py-4">
+                    <TableCell colSpan={12} className="text-center py-4">
                       No trades found. Try adjusting your filters or add new trades.
                     </TableCell>
                   </TableRow>
@@ -239,6 +249,21 @@ export default function TradeHistory() {
                         {trade.profitLoss >= 0 ? "+" : ""}${trade.profitLoss.toFixed(2)}
                       </TableCell>
                       <TableCell onClick={() => viewTrade(trade)}>{trade.emotion}</TableCell>
+                      <TableCell onClick={() => viewTrade(trade)}>
+                        {trade.checklist_completed && trade.checklist_completed.length > 0 ? (
+                          <div className="flex items-center space-x-2">
+                            <Progress 
+                              value={calculateCompletionPercentage(trade.checklist_completed)} 
+                              className="h-2 w-12" 
+                            />
+                            <span className="text-xs">
+                              {calculateCompletionPercentage(trade.checklist_completed)}%
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">None</span>
+                        )}
+                      </TableCell>
                       <TableCell onClick={() => viewTrade(trade)}>
                         {trade.screenshot ? (
                           <Dialog>
@@ -340,8 +365,51 @@ export default function TradeHistory() {
                 <p className="text-sm whitespace-pre-wrap">{selectedTrade.notes}</p>
               </div>
             </div>
+            
+            {/* Display Checklist if available */}
+            {selectedTrade.checklist_completed && selectedTrade.checklist_completed.length > 0 && (
+              <div className="mt-4">
+                <h3 className="font-semibold mb-2 flex items-center">
+                  <CheckSquare className="mr-2 h-4 w-4" />
+                  Trading Checklist Completion
+                </h3>
+                <div className="mb-2">
+                  <Progress 
+                    value={calculateCompletionPercentage(selectedTrade.checklist_completed)} 
+                    className="h-2 mb-1" 
+                  />
+                  <p className="text-xs text-muted-foreground text-right">
+                    {calculateCompletionPercentage(selectedTrade.checklist_completed)}% completed
+                  </p>
+                </div>
+                <Card className="border-dashed">
+                  <CardContent className="py-4">
+                    <div className="space-y-2">
+                      {selectedTrade.checklist_completed.map((item) => (
+                        <div key={item.id} className="flex items-start space-x-2">
+                          <Checkbox
+                            id={`view-checklist-item-${item.id}`}
+                            checked={item.completed}
+                            disabled
+                          />
+                          <label
+                            htmlFor={`view-checklist-item-${item.id}`}
+                            className={`text-sm ${
+                              item.completed ? "line-through text-muted-foreground" : ""
+                            }`}
+                          >
+                            {item.text}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+            
             {selectedTrade.screenshot && (
-              <div>
+              <div className="mt-4">
                 <h3 className="font-semibold mb-2">Screenshot</h3>
                 <img
                   src={selectedTrade.screenshot}

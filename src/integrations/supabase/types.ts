@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      checklists: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          items: Json
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          items?: Json
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          items?: Json
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -39,6 +69,8 @@ export type Database = {
       trades: {
         Row: {
           asset: string
+          checklist_completed: Json | null
+          checklist_id: string | null
           created_at: string | null
           date: string
           duration: number | null
@@ -58,6 +90,8 @@ export type Database = {
         }
         Insert: {
           asset: string
+          checklist_completed?: Json | null
+          checklist_id?: string | null
           created_at?: string | null
           date?: string
           duration?: number | null
@@ -77,6 +111,8 @@ export type Database = {
         }
         Update: {
           asset?: string
+          checklist_completed?: Json | null
+          checklist_id?: string | null
           created_at?: string | null
           date?: string
           duration?: number | null
@@ -94,7 +130,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "trades_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "checklists"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

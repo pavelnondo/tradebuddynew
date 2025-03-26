@@ -7,12 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useSupabaseTrades } from "@/hooks/useSupabaseTrades";
-import { EmotionType, Trade, TradeType } from "@/types";
+import { EmotionType, Trade, TradeType, Checklist, ChecklistItem } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Loader2, FileCheck, InfoIcon } from "lucide-react";
+import { useChecklists } from "@/hooks/useChecklists";
+import { useLocation } from "react-router-dom";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const tradeFormSchema = z.object({
   asset: z.string().min(1, "Asset is required"),
@@ -34,6 +38,7 @@ const tradeFormSchema = z.object({
     "Satisfied",
   ] as const),
   screenshot: z.instanceof(FileList).optional(),
+  checklist_id: z.string().optional(),
 });
 
 type TradeFormValues = z.infer<typeof tradeFormSchema>;
@@ -42,6 +47,11 @@ export default function AddTrade() {
   const { toast } = useToast();
   const { addTrade, uploadScreenshot, isLoading } = useSupabaseTrades();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [checklists, setChecklists] = useState<Checklist[]>([]);
+  const [selectedChecklist, setSelectedChecklist] = useState<Checklist | null>(null);
+  const [checklistItems, setChecklistItems] = useState<(ChecklistItem & { completed: boolean })[]>([]);
+  const location = useLocation();
+  const { fetchChecklists, getChecklist, isLoading: isLoadingChecklists } = useChecklists();
 
   const form = useForm<TradeFormValues>({
     resolver: zodResolver(tradeFormSchema),
@@ -55,8 +65,56 @@ export default function AddTrade() {
       date: new Date().toISOString().slice(0, 16),
       notes: "",
       emotion: "Confident",
+      checklist_id: undefined,
     },
   });
+
+  // Load checklists on component mount
+  useEffect(() => {
+    const loadChecklists = async () => {
+      const data = await fetchChecklists();
+      setChecklists(data);
+      
+      // Check if a checklist ID was passed via location state
+      const { state } = location;
+      if (state && state.checklistId) {
+        const checklist = await getChecklist(state.checklistId);
+        if (checklist) {
+          form.setValue('checklist_id', checklist.id);
+          setSelectedChecklist(checklist);
+          setChecklistItems(checklist.items.map(item => ({ ...item, completed: false })));
+        }
+      }
+    };
+    
+    loadChecklists();
+  }, [fetchChecklists, getChecklist, location, form]);
+
+  // Handle checklist selection change
+  const handleChecklistChange = async (checklistId: string) => {
+    form.setValue('checklist_id', checklistId);
+    
+    if (!checklistId) {
+      setSelectedChecklist(null);
+      setChecklistItems([]);
+      return;
+    }
+    
+    const checklist = await getChecklist(checklistId);
+    if (checklist) {
+      setSelectedChecklist(checklist);
+      setChecklistItems(checklist.items.map(item => ({ ...item, completed: false })));
+    }
+  };
+
+  // Toggle checklist item completion
+  const toggleChecklistItem = (id: string, completed: boolean) => {
+    setChecklistItems(
+      checklistItems.map(item => 
+        item.id === id ? { ...item, completed } : item
+      )
+    );
+  };
 
   const onSubmit = async (data: TradeFormValues) => {
     setIsSubmitting(true);
@@ -89,12 +147,36 @@ export default function AddTrade() {
         setup: undefined,
         duration: undefined,
         executionQuality: undefined,
+        checklist_id: data.checklist_id,
+        checklist_completed: checklistItems,
       };
 
       // Save to Supabase
       const savedTrade = await addTrade(trade as Trade);
       
       if (savedTrade) {
+        // If there's a screenshot, add it to the screenshots gallery
+        if (screenshotUrl) {
+          const storedScreenshots = localStorage.getItem('screenshots');
+          let screenshots = storedScreenshots ? JSON.parse(storedScreenshots) : [];
+          
+          // Add the new screenshot
+          const newScreenshot = {
+            id: `trade-${savedTrade.id}`,
+            title: `${data.asset} ${data.tradeType} Trade`,
+            asset: data.asset,
+            date: data.date,
+            tags: [data.tradeType, data.emotion, 'Trade Screenshot'],
+            url: screenshotUrl
+          };
+          
+          // Check if screenshot already exists by URL
+          if (!screenshots.some((s: any) => s.url === screenshotUrl)) {
+            screenshots.push(newScreenshot);
+            localStorage.setItem('screenshots', JSON.stringify(screenshots));
+          }
+        }
+        
         toast({
           title: "Trade Added",
           description: "Your trade has been successfully logged to Supabase.",
@@ -111,7 +193,12 @@ export default function AddTrade() {
           date: new Date().toISOString().slice(0, 16),
           notes: "",
           emotion: "Confident",
+          checklist_id: undefined,
         });
+        
+        // Reset checklist state
+        setSelectedChecklist(null);
+        setChecklistItems([]);
       } else {
         throw new Error("Failed to save trade");
       }
@@ -227,6 +314,93 @@ export default function AddTrade() {
                   )}
                 />
               </div>
+              
+              {/* Trading Checklist Selection */}
+              <FormField
+                control={form.control}
+                name="checklist_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      Trading Checklist
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-xs">
+                              Apply a trading checklist to ensure you're following your strategy. Create checklists in the Checklists page.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        handleChecklistChange(value);
+                      }}
+                      value={field.value || ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a checklist (optional)" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {checklists.map((checklist) => (
+                          <SelectItem key={checklist.id} value={checklist.id}>
+                            {checklist.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Apply a trading checklist to track your strategy adherence.
+                    </FormDescription>
+                  </FormItem>
+                )}
+              />
+              
+              {/* Display Checklist Items if a checklist is selected */}
+              {selectedChecklist && (
+                <Card className="border-dashed">
+                  <CardHeader className="py-3">
+                    <CardTitle className="text-base font-medium flex items-center">
+                      <FileCheck className="mr-2 h-4 w-4" />
+                      {selectedChecklist.name} Checklist
+                    </CardTitle>
+                    {selectedChecklist.description && (
+                      <CardDescription>{selectedChecklist.description}</CardDescription>
+                    )}
+                  </CardHeader>
+                  <CardContent className="py-2">
+                    <div className="space-y-3">
+                      {checklistItems.map((item) => (
+                        <div key={item.id} className="flex items-start space-x-2">
+                          <Checkbox
+                            id={`checklist-item-${item.id}`}
+                            checked={item.completed}
+                            onCheckedChange={(checked) => 
+                              toggleChecklistItem(item.id, checked as boolean)
+                            }
+                          />
+                          <label
+                            htmlFor={`checklist-item-${item.id}`}
+                            className={`text-sm ${
+                              item.completed ? "line-through text-muted-foreground" : ""
+                            }`}
+                          >
+                            {item.text}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <FormField
@@ -347,14 +521,14 @@ export default function AddTrade() {
                       />
                     </FormControl>
                     <FormDescription>
-                      Upload a screenshot of your trade (optional)
+                      Upload a screenshot of your trade (optional). It will be saved to your screenshots gallery too.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
+              <Button type="submit" className="w-full" disabled={isSubmitting || isLoading}>
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
