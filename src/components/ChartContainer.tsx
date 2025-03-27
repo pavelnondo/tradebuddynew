@@ -31,7 +31,19 @@ export function ChartContainer({
           <p className="text-muted-foreground text-center">{emptyMessage}</p>
         </div>
       ) : (
-        <div className="h-full w-full">{children}</div>
+        <Card className="h-full">
+          {(title || icon) && (
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center text-sm font-medium">
+                {icon && <span className="mr-2">{icon}</span>}
+                {title}
+              </CardTitle>
+            </CardHeader>
+          )}
+          <CardContent className="p-0">
+            <div className="h-full w-full">{children}</div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
