@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trade } from "@/types";
 import { Activity, Coins, DollarSign, LineChart, ListFilter, PieChart, TrendingDown, TrendingUp, Clock } from "lucide-react";
@@ -386,7 +387,7 @@ export default function Analysis() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[350px]"> {/* Increased height */}
+              <div className="h-[350px]">
                 {analysisData.balanceOverTime.length > 0 ? (
                   <ChartContainer 
                     title="Account Balance & Drawdown"
@@ -880,4 +881,53 @@ export default function Analysis() {
                 )}
                 
                 {/* Most winning emotion */}
-                {analysisData.emotionPerformance.length
+                {analysisData.emotionPerformance.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-1">Most Profitable Emotional State</h3>
+                    <p className="text-sm">
+                      Trading while feeling <strong>
+                        {analysisData.emotionPerformance.sort((a, b) => b.winRate - a.winRate)[0].emotion}
+                      </strong> yields your highest win rate at 
+                      {analysisData.emotionPerformance.sort((a, b) => b.winRate - a.winRate)[0].winRate.toFixed(1)}%.
+                    </p>
+                  </div>
+                )}
+                
+                {/* Best performing trade type */}
+                {analysisData.tradeTypePerformance.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-1">Most Profitable Trade Type</h3>
+                    <p className="text-sm">
+                      <strong>
+                        {analysisData.tradeTypePerformance.sort((a, b) => b.profitLoss - a.profitLoss)[0].type}
+                      </strong> trades have been your most profitable with ${
+                        analysisData.tradeTypePerformance.sort((a, b) => b.profitLoss - a.profitLoss)[0].profitLoss.toFixed(2)
+                      } in total profits.
+                    </p>
+                  </div>
+                )}
+                
+                {/* Best trading hours */}
+                {analysisData.tradesByHour.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-1">Best Trading Hours</h3>
+                    <p className="text-sm">
+                      Your most profitable trading hour is <strong>
+                        {analysisData.tradesByHour.sort((a, b) => b.profitLoss - a.profitLoss)[0].hourFormatted}
+                      </strong> with ${
+                        analysisData.tradesByHour.sort((a, b) => b.profitLoss - a.profitLoss)[0].profitLoss.toFixed(2)
+                      } in profits and a {
+                        analysisData.tradesByHour.sort((a, b) => b.profitLoss - a.profitLoss)[0].winRate.toFixed(1)
+                      }% win rate.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
