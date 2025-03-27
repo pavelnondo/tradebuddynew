@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trade } from "@/types";
 import { Activity, Coins, DollarSign, LineChart, ListFilter, PieChart, TrendingDown, TrendingUp, Clock } from "lucide-react";
@@ -18,7 +17,8 @@ import {
   Area,
   AreaChart
 } from "recharts";
-import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
+import { ChartContainer } from "@/components/ChartContainer";
+import { ChartTooltipContent } from "@/components/ui/chart";
 import { useSupabaseTrades } from "@/hooks/useSupabaseTrades";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -386,30 +386,47 @@ export default function Analysis() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[300px]">
+              <div className="h-[350px]"> {/* Increased height */}
                 {analysisData.balanceOverTime.length > 0 ? (
-                  <ChartContainer config={chartConfig}>
-                    <ResponsiveContainer width="100%" height="100%">
+                  <ChartContainer 
+                    title="Account Balance & Drawdown"
+                    icon={<LineChart className="h-5 w-5 text-primary" />}
+                    isEmpty={analysisData.balanceOverTime.length === 0}
+                    emptyMessage="No balance data available yet."
+                  >
+                    <ResponsiveContainer width="99%" height="99%">
                       <AreaChart 
                         data={analysisData.balanceOverTime}
-                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                        margin={{ top: 20, right: 60, left: 30, bottom: 20 }} {/* Increased margins */}
                       >
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="date" />
+                        <XAxis 
+                          dataKey="date" 
+                          tick={{ fontSize: 10 }}
+                          tickMargin={10}
+                        />
                         <YAxis 
                           yAxisId="left" 
                           orientation="left" 
                           stroke={chartConfig.balance.color}
-                          label={{ value: 'Balance ($)', angle: -90, position: 'insideLeft' }}
+                          label={{ value: 'Balance ($)', angle: -90, position: 'insideLeft', offset: -15 }}
+                          tick={{ fontSize: 10 }}
+                          tickMargin={8}
                         />
                         <YAxis 
                           yAxisId="right" 
                           orientation="right" 
                           stroke={chartConfig.drawdown.color}
-                          label={{ value: 'Drawdown (%)', angle: 90, position: 'insideRight' }}
+                          label={{ value: 'Drawdown (%)', angle: 90, position: 'insideRight', offset: -15 }}
+                          tick={{ fontSize: 10 }}
+                          tickMargin={8}
                         />
                         <Tooltip content={<ChartTooltipContent />} />
-                        <Legend />
+                        <Legend 
+                          verticalAlign="top" 
+                          height={36}
+                          wrapperStyle={{ paddingTop: 10 }}
+                        />
                         <Area 
                           yAxisId="left"
                           type="monotone" 
@@ -432,7 +449,9 @@ export default function Analysis() {
                     </ResponsiveContainer>
                   </ChartContainer>
                 ) : (
-                  renderEmptyState("No balance data available yet.")
+                  <div className="flex items-center justify-center h-full w-full">
+                    <p className="text-muted-foreground text-center">No balance data available yet.</p>
+                  </div>
                 )}
               </div>
             </CardContent>
@@ -535,6 +554,7 @@ export default function Analysis() {
           
           {/* Win/Loss Ratio and Asset Performance */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Win/Loss Ratio */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -545,9 +565,14 @@ export default function Analysis() {
               <CardContent>
                 <div className="h-[300px]">
                   {analysisData.winLossRatio[0].value > 0 || analysisData.winLossRatio[1].value > 0 ? (
-                    <ChartContainer config={chartConfig}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <RechartPieChart>
+                    <ChartContainer 
+                      title="Win/Loss Ratio"
+                      icon={<PieChart className="h-5 w-5 text-primary" />}
+                      isEmpty={analysisData.winLossRatio.length === 0}
+                      emptyMessage="No win/loss data available yet."
+                    >
+                      <ResponsiveContainer width="99%" height="99%">
+                        <RechartPieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
                           <Pie
                             data={analysisData.winLossRatio}
                             cx="50%"
@@ -562,12 +587,18 @@ export default function Analysis() {
                             <Cell key="loss-cell" fill={chartConfig.losses.color} />
                           </Pie>
                           <Tooltip content={<ChartTooltipContent />} />
-                          <Legend />
+                          <Legend 
+                            verticalAlign="bottom" 
+                            height={36}
+                            wrapperStyle={{ paddingTop: 20 }}
+                          />
                         </RechartPieChart>
                       </ResponsiveContainer>
                     </ChartContainer>
                   ) : (
-                    renderEmptyState("No win/loss data available yet.")
+                    <div className="flex items-center justify-center h-full w-full">
+                      <p className="text-muted-foreground text-center">No win/loss data available yet.</p>
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -584,14 +615,33 @@ export default function Analysis() {
               <CardContent>
                 <div className="h-[300px]">
                   {analysisData.assetPerformance.length > 0 ? (
-                    <ChartContainer config={chartConfig}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={analysisData.assetPerformance} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <ChartContainer 
+                      title="Asset Performance"
+                      icon={<LineChart className="h-5 w-5 text-primary" />}
+                      isEmpty={analysisData.assetPerformance.length === 0}
+                      emptyMessage="No asset performance data available yet."
+                    >
+                      <ResponsiveContainer width="99%" height="99%">
+                        <BarChart 
+                          data={analysisData.assetPerformance} 
+                          margin={{ top: 20, right: 30, left: 30, bottom: 20 }}
+                        >
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="asset" />
-                          <YAxis />
+                          <XAxis 
+                            dataKey="asset"
+                            tick={{ fontSize: 10 }}
+                            tickMargin={10}
+                          />
+                          <YAxis 
+                            tick={{ fontSize: 10 }}
+                            tickMargin={8}
+                          />
                           <Tooltip content={<ChartTooltipContent />} />
-                          <Legend />
+                          <Legend 
+                            verticalAlign="top" 
+                            height={36}
+                            wrapperStyle={{ paddingTop: 10 }}
+                          />
                           <Bar
                             dataKey="profitLoss"
                             name="Profit/Loss"
@@ -608,7 +658,9 @@ export default function Analysis() {
                       </ResponsiveContainer>
                     </ChartContainer>
                   ) : (
-                    renderEmptyState("No asset performance data available yet.")
+                    <div className="flex items-center justify-center h-full w-full">
+                      <p className="text-muted-foreground text-center">No asset performance data available yet.</p>
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -625,14 +677,33 @@ export default function Analysis() {
               <CardContent>
                 <div className="h-[300px]">
                   {analysisData.emotionPerformance.length > 0 ? (
-                    <ChartContainer config={chartConfig}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={analysisData.emotionPerformance} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <ChartContainer 
+                      title="Emotions vs Win Rate"
+                      icon={<LineChart className="h-5 w-5 text-primary" />}
+                      isEmpty={analysisData.emotionPerformance.length === 0}
+                      emptyMessage="No emotion data available yet."
+                    >
+                      <ResponsiveContainer width="99%" height="99%">
+                        <BarChart 
+                          data={analysisData.emotionPerformance} 
+                          margin={{ top: 20, right: 30, left: 30, bottom: 20 }}
+                        >
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="emotion" />
-                          <YAxis />
+                          <XAxis 
+                            dataKey="emotion"
+                            tick={{ fontSize: 10 }}
+                            tickMargin={10}
+                          />
+                          <YAxis 
+                            tick={{ fontSize: 10 }}
+                            tickMargin={8}
+                          />
                           <Tooltip content={<ChartTooltipContent />} />
-                          <Legend />
+                          <Legend 
+                            verticalAlign="top" 
+                            height={36}
+                            wrapperStyle={{ paddingTop: 10 }}
+                          />
                           <Bar
                             dataKey="winRate"
                             name="Win Rate (%)"
@@ -643,7 +714,9 @@ export default function Analysis() {
                       </ResponsiveContainer>
                     </ChartContainer>
                   ) : (
-                    renderEmptyState("No emotion data available yet.")
+                    <div className="flex items-center justify-center h-full w-full">
+                      <p className="text-muted-foreground text-center">No emotion data available yet.</p>
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -660,14 +733,33 @@ export default function Analysis() {
               <CardContent>
                 <div className="h-[300px]">
                   {analysisData.tradeTypePerformance.length > 0 ? (
-                    <ChartContainer config={chartConfig}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={analysisData.tradeTypePerformance} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <ChartContainer 
+                      title="Trade Type Performance"
+                      icon={<LineChart className="h-5 w-5 text-primary" />}
+                      isEmpty={analysisData.tradeTypePerformance.length === 0}
+                      emptyMessage="No trade type performance data available yet."
+                    >
+                      <ResponsiveContainer width="99%" height="99%">
+                        <BarChart 
+                          data={analysisData.tradeTypePerformance} 
+                          margin={{ top: 20, right: 30, left: 30, bottom: 20 }}
+                        >
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="type" />
-                          <YAxis />
+                          <XAxis 
+                            dataKey="type"
+                            tick={{ fontSize: 10 }}
+                            tickMargin={10}
+                          />
+                          <YAxis 
+                            tick={{ fontSize: 10 }}
+                            tickMargin={8}
+                          />
                           <Tooltip content={<ChartTooltipContent />} />
-                          <Legend />
+                          <Legend 
+                            verticalAlign="top" 
+                            height={36}
+                            wrapperStyle={{ paddingTop: 10 }}
+                          />
                           <Bar
                             dataKey="profitLoss"
                             name="Profit/Loss"
@@ -684,7 +776,9 @@ export default function Analysis() {
                       </ResponsiveContainer>
                     </ChartContainer>
                   ) : (
-                    renderEmptyState("No trade type performance data available yet.")
+                    <div className="flex items-center justify-center h-full w-full">
+                      <p className="text-muted-foreground text-center">No trade type performance data available yet.</p>
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -701,15 +795,41 @@ export default function Analysis() {
               <CardContent>
                 <div className="h-[300px]">
                   {analysisData.tradesByHour.length > 0 ? (
-                    <ChartContainer config={chartConfig}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={analysisData.tradesByHour} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <ChartContainer 
+                      title="Best Trading Hours"
+                      icon={<Clock className="h-5 w-5 text-primary" />}
+                      isEmpty={analysisData.tradesByHour.length === 0}
+                      emptyMessage="No time-based analysis data available yet."
+                    >
+                      <ResponsiveContainer width="99%" height="99%">
+                        <BarChart 
+                          data={analysisData.tradesByHour} 
+                          margin={{ top: 20, right: 40, left: 30, bottom: 20 }}
+                        >
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="hourFormatted" />
-                          <YAxis yAxisId="left" orientation="left" />
-                          <YAxis yAxisId="right" orientation="right" />
+                          <XAxis 
+                            dataKey="hourFormatted"
+                            tick={{ fontSize: 10 }}
+                            tickMargin={10}
+                          />
+                          <YAxis 
+                            yAxisId="left" 
+                            orientation="left"
+                            tick={{ fontSize: 10 }}
+                            tickMargin={8}
+                          />
+                          <YAxis 
+                            yAxisId="right" 
+                            orientation="right"
+                            tick={{ fontSize: 10 }}
+                            tickMargin={8}
+                          />
                           <Tooltip content={<ChartTooltipContent />} />
-                          <Legend />
+                          <Legend 
+                            verticalAlign="top" 
+                            height={36}
+                            wrapperStyle={{ paddingTop: 10 }}
+                          />
                           <Bar
                             yAxisId="left"
                             dataKey="profitLoss"
@@ -728,7 +848,9 @@ export default function Analysis() {
                       </ResponsiveContainer>
                     </ChartContainer>
                   ) : (
-                    renderEmptyState("No time-based analysis data available yet.")
+                    <div className="flex items-center justify-center h-full w-full">
+                      <p className="text-muted-foreground text-center">No time-based analysis data available yet.</p>
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -758,75 +880,4 @@ export default function Analysis() {
                 )}
                 
                 {/* Most winning emotion */}
-                {analysisData.emotionPerformance.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold mb-1">Emotion Impact</h3>
-                    <p className="text-sm">
-                      Trades where you felt <strong>{analysisData.emotionPerformance.sort((a, b) => b.winRate - a.winRate)[0].emotion}</strong> had the highest win rate at 
-                      {analysisData.emotionPerformance.sort((a, b) => b.winRate - a.winRate)[0].winRate.toFixed(1)}%. Consider what conditions lead to this emotional state.
-                    </p>
-                  </div>
-                )}
-                
-                {/* Trade type analysis */}
-                {analysisData.tradeTypePerformance.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold mb-1">Trade Type Analysis</h3>
-                    <p className="text-sm">
-                      <strong>{analysisData.tradeTypePerformance.sort((a, b) => b.winRate - a.winRate)[0].type}</strong> trades are your most successful with a win rate of 
-                      {analysisData.tradeTypePerformance.sort((a, b) => b.winRate - a.winRate)[0].winRate.toFixed(1)}%. You might want to focus more on this strategy.
-                    </p>
-                  </div>
-                )}
-                
-                {/* Time analysis */}
-                {analysisData.tradesByHour.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold mb-1">Best Trading Time</h3>
-                    <p className="text-sm">
-                      Your most profitable trading hour is <strong>{
-                        analysisData.tradesByHour
-                          .sort((a, b) => b.profitLoss - a.profitLoss)[0].hourFormatted
-                      }</strong> with an average profit of $
-                      {(analysisData.tradesByHour
-                        .sort((a, b) => b.profitLoss - a.profitLoss)[0].profitLoss / 
-                        analysisData.tradesByHour
-                        .sort((a, b) => b.profitLoss - a.profitLoss)[0].trades).toFixed(2)} per trade.
-                    </p>
-                  </div>
-                )}
-                
-                {/* Drawdown analysis */}
-                <div>
-                  <h3 className="font-semibold mb-1">Risk Management</h3>
-                  <p className="text-sm">
-                    Your maximum drawdown is {analysisData.metrics.maxDrawdown.toFixed(2)}%. 
-                    {analysisData.metrics.maxDrawdown < 10 
-                      ? " This shows effective risk management." 
-                      : " Consider implementing tighter stop losses to reduce drawdowns."}
-                    {' '}Your risk-reward ratio is 1:{analysisData.metrics.riskRewardRatio.toFixed(2)}. 
-                    {analysisData.metrics.riskRewardRatio >= 1.5 
-                      ? " This is a healthy ratio. Keep maintaining this discipline." 
-                      : " Consider adjusting your strategy to aim for larger wins relative to your losses."}
-                  </p>
-                </div>
-                
-                {/* Overall performance */}
-                <div>
-                  <h3 className="font-semibold mb-1">Account Performance</h3>
-                  <p className="text-sm">
-                    Starting with ${initialBalance.toFixed(2)}, your account is now worth ${analysisData.metrics.currentBalance.toFixed(2)}, 
-                    representing a {analysisData.metrics.percentageReturn.toFixed(2)}% return. 
-                    {analysisData.metrics.percentageReturn > 0 
-                      ? " Keep following your profitable strategies." 
-                      : " Review your trading approach to minimize losses."}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
+                {analysisData.emotionPerformance.
