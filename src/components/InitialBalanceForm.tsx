@@ -29,7 +29,7 @@ export function InitialBalanceForm({ initialBalance, onSave }: InitialBalanceFor
   };
 
   return (
-    <Card className="w-full">
+    <Card className="w-full h-full">
       <CardHeader>
         <CardTitle className="text-lg flex items-center">
           <DollarSign className="h-5 w-5 mr-2 text-primary" />

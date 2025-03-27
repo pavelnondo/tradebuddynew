@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { format } from 'date-fns';
-import { CalendarIcon, Upload, UploadCloud, RefreshCw, CheckSquare } from 'lucide-react';
+import { CalendarIcon, Upload, UploadCloud, RefreshCw, CheckSquare, Settings, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,11 +18,15 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 import { Trade, TradeType, EmotionType, Checklist, ChecklistItem } from '@/types';
 import { useSupabaseTrades } from '@/hooks/useSupabaseTrades';
 import { useChecklists } from '@/hooks/useChecklists';
+import { DateTimeInput } from '@/components/DateTimeInput';
+import { FeatureToggle } from '@/components/FeatureToggle';
+import { VoiceRecorder } from '@/components/VoiceRecorder';
+import { useSpeechToText } from '@/hooks/useSpeechToText';
 
 // Form validation schema using Zod
 const formSchema = z.object({
@@ -57,6 +60,9 @@ export default function AddTrade() {
   const [selectedChecklist, setSelectedChecklist] = useState<Checklist | null>(null);
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
   const [checklists, setChecklists] = useState<Checklist[]>([]);
+  
+  // Advanced features toggle
+  const [showAdvancedFeatures, setShowAdvancedFeatures] = useState(false);
   
   // Initialize hooks
   const { addTrade, uploadScreenshot } = useSupabaseTrades();
@@ -215,8 +221,7 @@ export default function AddTrade() {
       const result = await addTrade(trade);
       
       if (result) {
-        toast({
-          title: "Trade Added",
+        toast.success("Trade Added", {
           description: "Your trade has been successfully added to your journal.",
         });
         
@@ -226,10 +231,8 @@ export default function AddTrade() {
         throw new Error("Failed to add trade");
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error.message || "Failed to add trade",
-        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
@@ -240,6 +243,15 @@ export default function AddTrade() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Add New Trade</h1>
+        <Button 
+          variant="outline" 
+          onClick={() => setShowAdvancedFeatures(!showAdvancedFeatures)}
+          className="flex items-center gap-1"
+        >
+          <Settings className="h-4 w-4" />
+          {showAdvancedFeatures ? "Hide" : "Show"} Advanced
+          {showAdvancedFeatures ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </Button>
       </div>
       
       <Form {...form}>
@@ -252,41 +264,19 @@ export default function AddTrade() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Trade Date */}
+              {/* Trade Date and Time */}
               <FormField
                 control={form.control}
                 name="date"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={`w-full pl-3 text-left font-normal ${!field.value ? "text-muted-foreground" : ""}`}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) =>
-                            date > new Date() || date < new Date("1900-01-01")
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <FormLabel>Date and Time</FormLabel>
+                    <FormControl>
+                      <DateTimeInput 
+                        date={field.value} 
+                        onChange={field.onChange} 
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -442,30 +432,6 @@ export default function AddTrade() {
                 )}
               />
               
-              {/* Duration (optional) */}
-              <FormField
-                control={form.control}
-                name="duration"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Duration (minutes)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="Optional"
-                        {...field}
-                        value={field.value || ''} 
-                        onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      How long did you hold this position?
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
               {/* Emotion */}
               <FormField
                 control={form.control}
@@ -498,126 +464,155 @@ export default function AddTrade() {
                 )}
               />
               
-              {/* Setup */}
-              <FormField
-                control={form.control}
-                name="setup"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Setup</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Breakout, Support/Resistance, etc." {...field} value={field.value || ''} />
-                    </FormControl>
-                    <FormDescription>
-                      What trading setup did you use for this trade?
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Execution Quality */}
-              <FormField
-                control={form.control}
-                name="executionQuality"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex items-center justify-between mb-2">
-                      <FormLabel>Execution Quality</FormLabel>
-                      <span className="text-sm">{field.value}/10</span>
-                    </div>
-                    <FormControl>
-                      <Slider 
-                        min={1} 
-                        max={10} 
-                        step={1} 
-                        defaultValue={[field.value || 5]} 
-                        onValueChange={(vals) => field.onChange(vals[0])}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      How well did you execute this trade according to your plan?
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Notes */}
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Notes</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Add any thoughts or observations about this trade..."
-                        className="min-h-[120px]"
-                        {...field}
-                        value={field.value || ''}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Checklist */}
-              <FormField
-                control={form.control}
-                name="checklist_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Trading Checklist</FormLabel>
-                    <Select 
-                      onValueChange={handleChecklistChange} 
-                      value={field.value || "none"}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a checklist" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {checklists.map((checklist) => (
-                          <SelectItem key={checklist.id} value={checklist.id}>
-                            {checklist.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Select a trading checklist to ensure discipline and consistency.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Checklist Items */}
-              {selectedChecklist && checklistItems.length > 0 && (
-                <div className="border rounded-md p-4 space-y-3">
-                  <h3 className="font-medium">{selectedChecklist.name} Checklist</h3>
-                  <div className="space-y-2">
-                    {checklistItems.map((item) => (
-                      <div key={item.id} className="flex items-start space-x-2">
-                        <Checkbox 
-                          id={item.id} 
-                          checked={item.completed}
-                          onCheckedChange={(checked) => handleChecklistItemToggle(item.id, !!checked)}
-                        />
-                        <label 
-                          htmlFor={item.id}
-                          className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              {/* Advanced features */}
+              {showAdvancedFeatures && (
+                <>
+                  {/* Duration (optional) */}
+                  <FormField
+                    control={form.control}
+                    name="duration"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Duration (minutes)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            placeholder="Optional"
+                            {...field}
+                            value={field.value || ''} 
+                            onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          How long did you hold this position?
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {/* Setup */}
+                  <FormField
+                    control={form.control}
+                    name="setup"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Setup</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Breakout, Support/Resistance, etc." {...field} value={field.value || ''} />
+                        </FormControl>
+                        <FormDescription>
+                          What trading setup did you use for this trade?
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {/* Execution Quality */}
+                  <FormField
+                    control={form.control}
+                    name="executionQuality"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center justify-between mb-2">
+                          <FormLabel>Execution Quality</FormLabel>
+                          <span className="text-sm">{field.value}/10</span>
+                        </div>
+                        <FormControl>
+                          <Slider 
+                            min={1} 
+                            max={10} 
+                            step={1} 
+                            defaultValue={[field.value || 5]} 
+                            onValueChange={(vals) => field.onChange(vals[0])}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          How well did you execute this trade according to your plan?
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {/* Notes */}
+                  <FormField
+                    control={form.control}
+                    name="notes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Notes</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Add any thoughts or observations about this trade..."
+                            className="min-h-[120px]"
+                            {...field}
+                            value={field.value || ''}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {/* Checklist */}
+                  <FormField
+                    control={form.control}
+                    name="checklist_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Trading Checklist</FormLabel>
+                        <Select 
+                          onValueChange={handleChecklistChange} 
+                          value={field.value || "none"}
                         >
-                          {item.text}
-                        </label>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a checklist" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            {checklists.map((checklist) => (
+                              <SelectItem key={checklist.id} value={checklist.id}>
+                                {checklist.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Select a trading checklist to ensure discipline and consistency.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {/* Checklist Items */}
+                  {selectedChecklist && checklistItems.length > 0 && (
+                    <div className="border rounded-md p-4 space-y-3">
+                      <h3 className="font-medium">{selectedChecklist.name} Checklist</h3>
+                      <div className="space-y-2">
+                        {checklistItems.map((item) => (
+                          <div key={item.id} className="flex items-start space-x-2">
+                            <Checkbox 
+                              id={item.id} 
+                              checked={item.completed}
+                              onCheckedChange={(checked) => handleChecklistItemToggle(item.id, !!checked)}
+                            />
+                            <label 
+                              htmlFor={item.id}
+                              className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
+                              {item.text}
+                            </label>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    </div>
+                  )}
+                </>
               )}
               
               {/* Screenshot Upload */}
