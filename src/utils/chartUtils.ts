@@ -5,6 +5,7 @@ export interface ChartConfig {
   [key: string]: {
     label?: ReactNode;
     color?: string;
+    theme?: Record<string, string>;
   };
 }
 
