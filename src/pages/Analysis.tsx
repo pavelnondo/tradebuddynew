@@ -1,9 +1,23 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trade } from "@/types";
-import { Activity, Coins, DollarSign, LineChart, ListFilter, PieChart, TrendingDown, TrendingUp } from "lucide-react";
+import { Activity, Coins, DollarSign, LineChart, ListFilter, PieChart, TrendingDown, TrendingUp, Clock } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
-import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart as RechartPieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { 
+  Bar, 
+  BarChart, 
+  CartesianGrid, 
+  Cell, 
+  Legend, 
+  Pie, 
+  PieChart as RechartPieChart, 
+  ResponsiveContainer, 
+  Tooltip, 
+  XAxis, 
+  YAxis,
+  Area,
+  AreaChart
+} from "recharts";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { useSupabaseTrades } from "@/hooks/useSupabaseTrades";
 import { Input } from "@/components/ui/input";
