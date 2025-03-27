@@ -397,7 +397,7 @@ export default function Analysis() {
                     <ResponsiveContainer width="99%" height="99%">
                       <AreaChart 
                         data={analysisData.balanceOverTime}
-                        margin={{ top: 20, right: 60, left: 30, bottom: 20 }} {/* Increased margins */}
+                        margin={{ top: 20, right: 60, left: 30, bottom: 20 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis 
@@ -880,4 +880,4 @@ export default function Analysis() {
                 )}
                 
                 {/* Most winning emotion */}
-                {analysisData.emotionPerformance.
+                {analysisData.emotionPerformance.length
