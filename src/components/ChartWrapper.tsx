@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { ReactElement } from 'react';
 import {
   ChartContainer as UIChartContainer,
   ChartTooltip,
@@ -16,7 +16,7 @@ interface ChartWrapperProps {
   isLoading?: boolean;
   isEmpty?: boolean;
   emptyMessage?: string;
-  children: React.ReactNode;
+  children: ReactElement;
 }
 
 export function ChartWrapper({
