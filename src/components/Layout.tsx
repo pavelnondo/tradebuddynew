@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import ErrorBoundary from "./ErrorBoundary";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -41,12 +42,21 @@ export function Layout({ children }: LayoutProps) {
   }, [user, navigate]);
 
   const handleLogout = async () => {
-    await logout();
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out",
-    });
-    navigate("/login");
+    try {
+      await logout();
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out",
+      });
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Logout failed",
+        description: "There was an issue logging you out. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const navItems = [
@@ -119,7 +129,9 @@ export function Layout({ children }: LayoutProps) {
       </nav>
 
       <main className="flex-1 container mx-auto px-4 py-6">
-        {children}
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
       </main>
 
       <footer className="border-t py-4">

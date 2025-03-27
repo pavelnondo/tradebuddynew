@@ -19,8 +19,16 @@ import ResetPassword from "./pages/ResetPassword";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Checklists from "./pages/Checklists";
 import Strategy from "./pages/Strategy";
+import ErrorBoundary from "./components/ErrorBoundary";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -44,14 +52,62 @@ const AppRoutes = () => {
       <Route path="/signup" element={<Signup />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
-      <Route path="/trades" element={<ProtectedRoute><Layout><TradeHistory /></Layout></ProtectedRoute>} />
-      <Route path="/add-trade" element={<ProtectedRoute><Layout><AddTrade /></Layout></ProtectedRoute>} />
-      <Route path="/analysis" element={<ProtectedRoute><Layout><Analysis /></Layout></ProtectedRoute>} />
-      <Route path="/screenshots" element={<ProtectedRoute><Layout><Screenshots /></Layout></ProtectedRoute>} />
-      <Route path="/checklists" element={<ProtectedRoute><Layout><Checklists /></Layout></ProtectedRoute>} />
-      <Route path="/strategy" element={<ProtectedRoute><Layout><Strategy /></Layout></ProtectedRoute>} />
-      <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
+      <Route path="/" element={
+        <ProtectedRoute>
+          <ErrorBoundary>
+            <Layout><Dashboard /></Layout>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      <Route path="/trades" element={
+        <ProtectedRoute>
+          <ErrorBoundary>
+            <Layout><TradeHistory /></Layout>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      <Route path="/add-trade" element={
+        <ProtectedRoute>
+          <ErrorBoundary>
+            <Layout><AddTrade /></Layout>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      <Route path="/analysis" element={
+        <ProtectedRoute>
+          <ErrorBoundary>
+            <Layout><Analysis /></Layout>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      <Route path="/screenshots" element={
+        <ProtectedRoute>
+          <ErrorBoundary>
+            <Layout><Screenshots /></Layout>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      <Route path="/checklists" element={
+        <ProtectedRoute>
+          <ErrorBoundary>
+            <Layout><Checklists /></Layout>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      <Route path="/strategy" element={
+        <ProtectedRoute>
+          <ErrorBoundary>
+            <Layout><Strategy /></Layout>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      <Route path="/settings" element={
+        <ProtectedRoute>
+          <ErrorBoundary>
+            <Layout><Settings /></Layout>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      } />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -62,9 +118,11 @@ const App = () => (
     <BrowserRouter>
       <AuthProvider>
         <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <AppRoutes />
+          <ErrorBoundary>
+            <Toaster />
+            <Sonner />
+            <AppRoutes />
+          </ErrorBoundary>
         </TooltipProvider>
       </AuthProvider>
     </BrowserRouter>
