@@ -15,10 +15,12 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ChartTooltipContent } from "@/components/ui/chart";
 import { ChartContainer } from "@/components/ChartContainer";
+import { ChartWrapper } from "@/components/ChartWrapper";
 import { useSupabaseTrades } from "@/hooks/useSupabaseTrades";
 import { InitialBalanceForm } from "@/components/InitialBalanceForm";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import { defaultChartConfig } from "@/utils/chartUtils";
 
 export default function Dashboard() {
   const [trades, setTrades] = useState<Trade[]>([]);
@@ -235,116 +237,125 @@ export default function Dashboard() {
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="shadow-md hover:shadow-lg transition-shadow h-full">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <LineChart className="h-5 w-5 text-primary mr-2" />
-              Account Balance Trend
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[350px] w-full">
-              {isLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : metrics.plOverTime.length === 0 ? (
-                <div className="flex items-center justify-center h-full w-full">
-                  <p className="text-muted-foreground text-center">No trade data available. Add trades to see your account balance trend.</p>
-                </div>
-              ) : (
-                <ResponsiveContainer width="99%" height="99%">
-                  <AreaChart 
-                    data={metrics.plOverTime} 
-                    margin={{ top: 20, right: 30, left: 30, bottom: 20 }}
+        <ErrorBoundary>
+          <Card className="shadow-md hover:shadow-lg transition-shadow h-full">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <LineChart className="h-5 w-5 text-primary mr-2" />
+                Account Balance Trend
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[350px] w-full">
+                {isLoading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : metrics.plOverTime.length === 0 ? (
+                  <div className="flex items-center justify-center h-full w-full">
+                    <p className="text-muted-foreground text-center">No trade data available. Add trades to see your account balance trend.</p>
+                  </div>
+                ) : (
+                  <ChartWrapper
+                    title="Account Balance"
+                    config={defaultChartConfig}
+                    isEmpty={metrics.plOverTime.length === 0}
+                    emptyMessage="No trade data available"
                   >
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                    <XAxis 
-                      dataKey="date" 
-                      tick={{ fontSize: 11 }}
-                      tickMargin={10}
-                    />
-                    <YAxis 
-                      tick={{ fontSize: 11 }}
-                      tickMargin={10}
-                    />
-                    <Tooltip content={<ChartTooltipContent />} />
-                    <Legend 
-                      verticalAlign="top" 
-                      height={36}
-                      wrapperStyle={{ paddingTop: 10 }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="balance"
-                      name="Account Balance"
-                      stroke={metrics.totalProfitLoss >= 0 ? chartConfig.profit.color : chartConfig.loss.color}
-                      fill={metrics.totalProfitLoss >= 0 ? chartConfig.profit.color : chartConfig.loss.color}
-                      fillOpacity={0.2}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="shadow-md hover:shadow-lg transition-shadow h-full">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Bolt className="h-5 w-5 text-primary mr-2" />
-              Trading Mindset Analysis
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[350px] w-full">
-              {isLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : metrics.emotionChartData.length === 0 ? (
-                <div className="flex items-center justify-center h-full w-full">
-                  <p className="text-muted-foreground text-center">No emotion data available. Add trades with emotions to see your mindset analysis.</p>
-                </div>
-              ) : (
-                <ResponsiveContainer width="99%" height="99%">
-                  <RechartPieChart margin={{ top: 20, right: 20, left: 20, bottom: 20 }}>
-                    <Pie
-                      data={metrics.emotionChartData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={95}
-                      innerRadius={5}
-                      fill="#8884d8"
-                      dataKey="value"
-                      nameKey="name"
-                      paddingAngle={4}
-                      strokeWidth={1}
-                      stroke="#fff"
-                    >
-                      {metrics.emotionChartData.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={EMOTION_COLORS[entry.name as keyof typeof EMOTION_COLORS] || "#9ca3af"} 
+                    <ResponsiveContainer width="99%" height="99%">
+                      <AreaChart 
+                        data={metrics.plOverTime} 
+                        margin={{ top: 20, right: 30, left: 30, bottom: 20 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                        <XAxis 
+                          dataKey="date" 
+                          tick={{ fontSize: 11 }}
+                          tickMargin={10}
                         />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<ChartTooltipContent />} />
-                    <Legend 
-                      layout="horizontal" 
-                      verticalAlign="bottom" 
-                      align="center"
-                      wrapperStyle={{ paddingTop: 30 }}
-                      iconSize={10}
-                      iconType="circle"
-                    />
-                  </RechartPieChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                        <YAxis 
+                          tick={{ fontSize: 11 }}
+                          tickMargin={10}
+                        />
+                        <Tooltip />
+                        <Legend 
+                          verticalAlign="top" 
+                          height={36}
+                          wrapperStyle={{ paddingTop: 10 }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="balance"
+                          name="Account Balance"
+                          stroke={metrics.totalProfitLoss >= 0 ? chartConfig.profit.color : chartConfig.loss.color}
+                          fill={metrics.totalProfitLoss >= 0 ? chartConfig.profit.color : chartConfig.loss.color}
+                          fillOpacity={0.2}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </ChartWrapper>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </ErrorBoundary>
+        
+        <ErrorBoundary>
+          <Card className="shadow-md hover:shadow-lg transition-shadow h-full">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Bolt className="h-5 w-5 text-primary mr-2" />
+                Trading Mindset Analysis
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[350px] w-full">
+                {isLoading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : metrics.emotionChartData.length === 0 ? (
+                  <div className="flex items-center justify-center h-full w-full">
+                    <p className="text-muted-foreground text-center">No emotion data available. Add trades with emotions to see your mindset analysis.</p>
+                  </div>
+                ) : (
+                  <ChartWrapper
+                    title="Emotions Distribution"
+                    config={chartConfig}
+                    isEmpty={metrics.emotionChartData.length === 0}
+                    emptyMessage="No emotion data available"
+                  >
+                    <ResponsiveContainer width="99%" height="99%">
+                      <RechartPieChart margin={{ top: 20, right: 20, left: 20, bottom: 20 }}>
+                        <Pie
+                          data={metrics.emotionChartData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={95}
+                          innerRadius={5}
+                          fill="#8884d8"
+                          dataKey="value"
+                          nameKey="name"
+                          paddingAngle={4}
+                          strokeWidth={1}
+                          stroke="#fff"
+                        >
+                          {metrics.emotionChartData.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={EMOTION_COLORS[entry.name as keyof typeof EMOTION_COLORS] || "#9ca3af"} 
+                            />
+                          ))}
+                        </Pie>
+                      </RechartPieChart>
+                    </ResponsiveContainer>
+                  </ChartWrapper>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </ErrorBoundary>
       </div>
       
       <Card className="shadow-md hover:shadow-lg transition-shadow bg-gradient-to-r from-secondary/5 to-transparent mt-8 mb-10">
