@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from "@/hooks/use-toast";
 import { TrendingUp } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Turnstile } from "@/components/Turnstile";
 
 export default function Login() {
   const { user, login, resetLoginRedirectHandled } = useAuth();
@@ -16,6 +17,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const location = useLocation();
 
   useEffect(() => {
@@ -25,10 +27,20 @@ export default function Login() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    
+    if (!turnstileToken) {
+      toast({
+        title: "Verification required",
+        description: "Please complete the security verification",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
-      await login(email, password);
+      await login(email, password, turnstileToken);
       toast({
         title: "Login successful",
         description: "Welcome back!",
@@ -102,6 +114,12 @@ export default function Login() {
                 required
               />
             </div>
+            
+            {/* Cloudflare Turnstile */}
+            <Turnstile 
+              siteKey="1x00000000000000000000AA" 
+              onVerify={setTurnstileToken} 
+            />
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button type="submit" className="w-full" disabled={isLoading}>

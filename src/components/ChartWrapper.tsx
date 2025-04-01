@@ -8,15 +8,16 @@ import {
   ChartLegendContent,
 } from '@/components/ui/chart';
 import { Loader2 } from 'lucide-react';
+import { ChartConfig } from '@/utils/chartUtils';
 
 interface ChartWrapperProps {
   title: string;
   icon?: React.ReactNode;
-  config: Record<string, any>;
+  config: ChartConfig;
   isLoading?: boolean;
   isEmpty?: boolean;
   emptyMessage?: string;
-  children: ReactNode; // Changed back to ReactNode for flexibility
+  children: ReactNode;
 }
 
 export function ChartWrapper({
@@ -45,10 +46,12 @@ export function ChartWrapper({
   }
 
   return (
-    <UIChartContainer title={title} config={config}>
-      {children}
-      <ChartTooltip content={<ChartTooltipContent />} />
-      <ChartLegend content={<ChartLegendContent />} />
-    </UIChartContainer>
+    <div className="h-full w-full">
+      <UIChartContainer title={title} config={config}>
+        {children}
+        <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartLegend content={<ChartLegendContent />} />
+      </UIChartContainer>
+    </div>
   );
 }
