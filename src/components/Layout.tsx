@@ -1,4 +1,3 @@
-
 import { Moon, Sun, LogOut, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -6,6 +5,7 @@ import { Button } from "./ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import ErrorBoundary from "./ErrorBoundary";
+import { DonateButton } from "./DonateButton";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -91,6 +91,7 @@ export function Layout({ children }: LayoutProps) {
           <div className="flex items-center gap-2">
             {user ? (
               <>
+                <DonateButton className="mr-2" />
                 <Button variant="ghost" size="sm" className="gap-2">
                   <User size={16} />
                   {getUserDisplayName()}
@@ -100,9 +101,12 @@ export function Layout({ children }: LayoutProps) {
                 </Button>
               </>
             ) : (
-              <Button variant="outline" size="sm" onClick={() => navigate("/login")}>
-                Login
-              </Button>
+              <>
+                <DonateButton className="mr-2" />
+                <Button variant="outline" size="sm" onClick={() => navigate("/login")}>
+                  Login
+                </Button>
+              </>
             )}
             <Button variant="ghost" size="icon" onClick={toggleTheme}>
               {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
