@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trade } from "@/types";
 import { Activity, Coins, DollarSign, LineChart, ListFilter, PieChart, TrendingDown, TrendingUp, Clock } from "lucide-react";
@@ -880,3 +881,11 @@ export default function Analysis() {
                   </div>
                 )}
               </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
