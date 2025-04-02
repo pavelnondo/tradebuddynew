@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trade } from "@/types";
 import { Activity, Coins, DollarSign, LineChart, ListFilter, PieChart, TrendingDown, TrendingUp, Clock } from "lucide-react";
@@ -378,7 +377,7 @@ export default function Analysis() {
         </Card>
       ) : (
         <>
-          {/* Account Balance and Drawdown */}
+          {/* Account Balance and Drawdown - Updated margins and dimensions */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -386,8 +385,8 @@ export default function Analysis() {
                 Account Balance & Drawdown
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="h-[350px]">
+            <CardContent className="p-2 md:p-3 lg:p-4">
+              <div className="h-[300px]">
                 {analysisData.balanceOverTime.length > 0 ? (
                   <ChartContainer 
                     title="Account Balance & Drawdown"
@@ -398,13 +397,14 @@ export default function Analysis() {
                     <ResponsiveContainer width="99%" height="99%">
                       <AreaChart 
                         data={analysisData.balanceOverTime}
-                        margin={{ top: 20, right: 70, left: 40, bottom: 20 }}
+                        margin={{ top: 5, right: 40, left: 20, bottom: 5 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" opacity={0.6} />
                         <XAxis 
                           dataKey="date" 
                           tick={{ fontSize: 10 }}
-                          tickMargin={10}
+                          tickMargin={5}
+                          height={25}
                         />
                         <YAxis 
                           yAxisId="left" 
@@ -414,13 +414,12 @@ export default function Analysis() {
                             value: 'Balance ($)', 
                             angle: -90, 
                             position: 'insideLeft', 
-                            offset: -20,
-                            style: { textAnchor: 'middle', fontSize: 12 }
+                            offset: -10,
+                            style: { textAnchor: 'middle', fontSize: 11 }
                           }}
                           tick={{ fontSize: 10 }}
-                          tickMargin={8}
-                          width={50}
-                          domain={['dataMin - 1000', 'dataMax + 1000']}
+                          tickMargin={5}
+                          width={40}
                         />
                         <YAxis 
                           yAxisId="right" 
@@ -430,20 +429,14 @@ export default function Analysis() {
                             value: 'Drawdown (%)', 
                             angle: 90, 
                             position: 'insideRight', 
-                            offset: -15,
-                            style: { textAnchor: 'middle', fontSize: 12 }
+                            offset: -10,
+                            style: { textAnchor: 'middle', fontSize: 11 }
                           }}
                           tick={{ fontSize: 10 }}
-                          tickMargin={8}
-                          width={50}
-                          domain={[0, 'dataMax + 5']}
+                          tickMargin={5}
+                          width={40}
                         />
                         <Tooltip content={<ChartTooltipContent />} />
-                        <Legend 
-                          verticalAlign="top" 
-                          height={36}
-                          wrapperStyle={{ paddingTop: 10 }}
-                        />
                         <Area 
                           yAxisId="left"
                           type="monotone" 
@@ -570,7 +563,7 @@ export default function Analysis() {
             </Card>
           </div>
           
-          {/* Win/Loss Ratio and Asset Performance */}
+          {/* Win/Loss Ratio and Asset Performance - Updated chart dimensions and spacing */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Win/Loss Ratio */}
             <Card>
@@ -580,8 +573,8 @@ export default function Analysis() {
                   Win/Loss Ratio
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="h-[300px]">
+              <CardContent className="p-2 md:p-3 lg:p-4">
+                <div className="h-[250px]">
                   {analysisData.winLossRatio[0].value > 0 || analysisData.winLossRatio[1].value > 0 ? (
                     <ChartContainer 
                       title="Win/Loss Ratio"
@@ -590,13 +583,13 @@ export default function Analysis() {
                       emptyMessage="No win/loss data available yet."
                     >
                       <ResponsiveContainer width="99%" height="99%">
-                        <RechartPieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+                        <RechartPieChart>
                           <Pie
                             data={analysisData.winLossRatio}
                             cx="50%"
                             cy="50%"
                             labelLine={false}
-                            outerRadius={80}
+                            outerRadius={70}
                             fill="#8884d8"
                             dataKey="value"
                             label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
@@ -605,11 +598,6 @@ export default function Analysis() {
                             <Cell key="loss-cell" fill={chartConfig.losses.color} />
                           </Pie>
                           <Tooltip content={<ChartTooltipContent />} />
-                          <Legend 
-                            verticalAlign="bottom" 
-                            height={36}
-                            wrapperStyle={{ paddingTop: 20 }}
-                          />
                         </RechartPieChart>
                       </ResponsiveContainer>
                     </ChartContainer>
@@ -630,8 +618,8 @@ export default function Analysis() {
                   Asset Performance
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="h-[300px]">
+              <CardContent className="p-2 md:p-3 lg:p-4">
+                <div className="h-[250px]">
                   {analysisData.assetPerformance.length > 0 ? (
                     <ChartContainer 
                       title="Asset Performance"
@@ -642,24 +630,21 @@ export default function Analysis() {
                       <ResponsiveContainer width="99%" height="99%">
                         <BarChart 
                           data={analysisData.assetPerformance} 
-                          margin={{ top: 20, right: 30, left: 30, bottom: 20 }}
+                          margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
                         >
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis 
                             dataKey="asset"
                             tick={{ fontSize: 10 }}
-                            tickMargin={10}
+                            tickMargin={5}
+                            height={25}
                           />
                           <YAxis 
                             tick={{ fontSize: 10 }}
-                            tickMargin={8}
+                            tickMargin={5}
+                            width={40}
                           />
                           <Tooltip content={<ChartTooltipContent />} />
-                          <Legend 
-                            verticalAlign="top" 
-                            height={36}
-                            wrapperStyle={{ paddingTop: 10 }}
-                          />
                           <Bar
                             dataKey="profitLoss"
                             name="Profit/Loss"
@@ -684,7 +669,7 @@ export default function Analysis() {
               </CardContent>
             </Card>
             
-            {/* Emotions vs Win Rate */}
+            {/* More charts - improve layout and dimensions */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -692,8 +677,8 @@ export default function Analysis() {
                   Emotions vs Win Rate
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="h-[300px]">
+              <CardContent className="p-2 md:p-3 lg:p-4">
+                <div className="h-[250px]">
                   {analysisData.emotionPerformance.length > 0 ? (
                     <ChartContainer 
                       title="Emotions vs Win Rate"
@@ -704,24 +689,21 @@ export default function Analysis() {
                       <ResponsiveContainer width="99%" height="99%">
                         <BarChart 
                           data={analysisData.emotionPerformance} 
-                          margin={{ top: 20, right: 30, left: 30, bottom: 20 }}
+                          margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
                         >
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis 
                             dataKey="emotion"
                             tick={{ fontSize: 10 }}
-                            tickMargin={10}
+                            tickMargin={5}
+                            height={25}
                           />
                           <YAxis 
                             tick={{ fontSize: 10 }}
-                            tickMargin={8}
+                            tickMargin={5}
+                            width={40}
                           />
                           <Tooltip content={<ChartTooltipContent />} />
-                          <Legend 
-                            verticalAlign="top" 
-                            height={36}
-                            wrapperStyle={{ paddingTop: 10 }}
-                          />
                           <Bar
                             dataKey="winRate"
                             name="Win Rate (%)"
@@ -748,8 +730,8 @@ export default function Analysis() {
                   Trade Type Performance
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="h-[300px]">
+              <CardContent className="p-2 md:p-3 lg:p-4">
+                <div className="h-[250px]">
                   {analysisData.tradeTypePerformance.length > 0 ? (
                     <ChartContainer 
                       title="Trade Type Performance"
@@ -760,24 +742,21 @@ export default function Analysis() {
                       <ResponsiveContainer width="99%" height="99%">
                         <BarChart 
                           data={analysisData.tradeTypePerformance} 
-                          margin={{ top: 20, right: 30, left: 30, bottom: 20 }}
+                          margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
                         >
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis 
                             dataKey="type"
                             tick={{ fontSize: 10 }}
-                            tickMargin={10}
+                            tickMargin={5}
+                            height={25}
                           />
                           <YAxis 
                             tick={{ fontSize: 10 }}
-                            tickMargin={8}
+                            tickMargin={5}
+                            width={40}
                           />
                           <Tooltip content={<ChartTooltipContent />} />
-                          <Legend 
-                            verticalAlign="top" 
-                            height={36}
-                            wrapperStyle={{ paddingTop: 10 }}
-                          />
                           <Bar
                             dataKey="profitLoss"
                             name="Profit/Loss"
@@ -810,8 +789,8 @@ export default function Analysis() {
                   Best Trading Hours
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="h-[300px]">
+              <CardContent className="p-2 md:p-3 lg:p-4">
+                <div className="h-[250px]">
                   {analysisData.tradesByHour.length > 0 ? (
                     <ChartContainer 
                       title="Best Trading Hours"
@@ -822,32 +801,30 @@ export default function Analysis() {
                       <ResponsiveContainer width="99%" height="99%">
                         <BarChart 
                           data={analysisData.tradesByHour} 
-                          margin={{ top: 20, right: 40, left: 30, bottom: 20 }}
+                          margin={{ top: 5, right: 20, left: 5, bottom: 5 }}
                         >
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis 
                             dataKey="hourFormatted"
                             tick={{ fontSize: 10 }}
-                            tickMargin={10}
+                            tickMargin={5}
+                            height={25}
                           />
                           <YAxis 
                             yAxisId="left" 
                             orientation="left"
                             tick={{ fontSize: 10 }}
-                            tickMargin={8}
+                            tickMargin={5}
+                            width={30}
                           />
                           <YAxis 
                             yAxisId="right" 
                             orientation="right"
                             tick={{ fontSize: 10 }}
-                            tickMargin={8}
+                            tickMargin={5}
+                            width={30}
                           />
                           <Tooltip content={<ChartTooltipContent />} />
-                          <Legend 
-                            verticalAlign="top" 
-                            height={36}
-                            wrapperStyle={{ paddingTop: 10 }}
-                          />
                           <Bar
                             yAxisId="left"
                             dataKey="profitLoss"
@@ -875,7 +852,7 @@ export default function Analysis() {
             </Card>
           </div>
           
-          {/* Insights */}
+          {/* Insights Section - Fix the Best Performing Asset display */}
           {trades.length > 0 && (
             <Card>
               <CardHeader>
@@ -903,10 +880,4 @@ export default function Analysis() {
                   </div>
                 )}
               </CardContent>
-            </Card>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
+            </Card
