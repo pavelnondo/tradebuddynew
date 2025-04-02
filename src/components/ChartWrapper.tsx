@@ -45,14 +45,9 @@ export function ChartWrapper({
     );
   }
 
-  // Convert from our app's ChartConfig to the UI component's ChartConfig
-  const uiConfig = {
-    ...config
-  };
-
   return (
     <div className="h-full w-full">
-      <UIChartContainer title={title} config={uiConfig}>
+      <UIChartContainer title={title} config={config}>
         {children}
         <ChartTooltip content={<ChartTooltipContent />} />
         <ChartLegend content={<ChartLegendContent />} />

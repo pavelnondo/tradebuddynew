@@ -1,50 +1,37 @@
 
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import React, { ReactNode } from 'react';
+import { ChartConfig } from '@/utils/chartUtils';
+import { ChartWrapper } from './ChartWrapper';
 
 interface ChartContainerProps {
   title: string;
   icon?: React.ReactNode;
-  children: React.ReactNode;
+  config?: ChartConfig;
+  isEmpty?: boolean;
   isLoading?: boolean;
   emptyMessage?: string;
-  isEmpty?: boolean;
+  children: ReactNode;
 }
 
-export function ChartContainer({ 
-  title, 
-  icon, 
-  children, 
+export function ChartContainer({
+  title,
+  icon,
+  config = {},
+  isEmpty = false,
   isLoading = false,
-  emptyMessage = "No data available", 
-  isEmpty = false
+  emptyMessage = "No data available",
+  children
 }: ChartContainerProps) {
   return (
-    <div className="h-full w-full">
-      {isLoading ? (
-        <div className="flex items-center justify-center h-full">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : isEmpty ? (
-        <div className="flex items-center justify-center h-full w-full">
-          <p className="text-muted-foreground text-center">{emptyMessage}</p>
-        </div>
-      ) : (
-        <Card className="h-full">
-          {(title || icon) && (
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center text-sm font-medium">
-                {icon && <span className="mr-2">{icon}</span>}
-                {title}
-              </CardTitle>
-            </CardHeader>
-          )}
-          <CardContent className="p-0">
-            <div className="h-full w-full">{children}</div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+    <ChartWrapper
+      title={title}
+      icon={icon}
+      config={config}
+      isEmpty={isEmpty}
+      isLoading={isLoading}
+      emptyMessage={emptyMessage}
+    >
+      {children}
+    </ChartWrapper>
   );
 }
