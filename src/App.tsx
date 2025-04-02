@@ -20,6 +20,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import Checklists from "./pages/Checklists";
 import Strategy from "./pages/Strategy";
 import ErrorBoundary from "./components/ErrorBoundary";
+import Donate from "./pages/Donate";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,6 +53,7 @@ const AppRoutes = () => {
       <Route path="/signup" element={<Signup />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/donate" element={<Donate />} />
       <Route path="/" element={
         <ProtectedRoute>
           <ErrorBoundary>

@@ -6,6 +6,7 @@ import {
   ChartTooltipContent,
   ChartLegend,
   ChartLegendContent,
+  ChartConfig as UIChartConfig
 } from '@/components/ui/chart';
 import { Loader2 } from 'lucide-react';
 import { ChartConfig } from '@/utils/chartUtils';
@@ -45,9 +46,18 @@ export function ChartWrapper({
     );
   }
 
+  // Convert from our app's ChartConfig to the UI component's ChartConfig
+  const uiConfig: UIChartConfig = {
+    ...config,
+    series: config.series?.map(series => ({
+      ...series,
+      theme: series.theme ? { light: series.theme.light, dark: series.theme.dark } : undefined
+    }))
+  };
+
   return (
     <div className="h-full w-full">
-      <UIChartContainer title={title} config={config}>
+      <UIChartContainer title={title} config={uiConfig}>
         {children}
         <ChartTooltip content={<ChartTooltipContent />} />
         <ChartLegend content={<ChartLegendContent />} />
