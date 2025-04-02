@@ -417,7 +417,7 @@ export default function Analysis() {
                             style: { textAnchor: 'middle', fontSize: 12 }
                           }}
                           tick={{ fontSize: 10 }}
-                          tickMargin={8}
+                          tickMargin={8}\
                           width={50}
                           domain={['dataMin - 1000', 'dataMax + 1000']}
                         />
