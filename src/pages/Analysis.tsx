@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trade } from "@/types";
 import { Activity, Coins, DollarSign, LineChart, ListFilter, PieChart, TrendingDown, TrendingUp, Clock } from "lucide-react";
@@ -398,9 +397,9 @@ export default function Analysis() {
                     <ResponsiveContainer width="99%" height="99%">
                       <AreaChart 
                         data={analysisData.balanceOverTime}
-                        margin={{ top: 20, right: 60, left: 30, bottom: 20 }}
+                        margin={{ top: 20, right: 70, left: 40, bottom: 20 }}
                       >
-                        <CartesianGrid strokeDasharray="3 3" />
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.6} />
                         <XAxis 
                           dataKey="date" 
                           tick={{ fontSize: 10 }}
@@ -410,17 +409,33 @@ export default function Analysis() {
                           yAxisId="left" 
                           orientation="left" 
                           stroke={chartConfig.balance.color}
-                          label={{ value: 'Balance ($)', angle: -90, position: 'insideLeft', offset: -15 }}
+                          label={{ 
+                            value: 'Balance ($)', 
+                            angle: -90, 
+                            position: 'insideLeft', 
+                            offset: -20,
+                            style: { textAnchor: 'middle', fontSize: 12 }
+                          }}
                           tick={{ fontSize: 10 }}
                           tickMargin={8}
+                          width={50}
+                          domain={['dataMin - 1000', 'dataMax + 1000']}
                         />
                         <YAxis 
                           yAxisId="right" 
                           orientation="right" 
                           stroke={chartConfig.drawdown.color}
-                          label={{ value: 'Drawdown (%)', angle: 90, position: 'insideRight', offset: -15 }}
+                          label={{ 
+                            value: 'Drawdown (%)', 
+                            angle: 90, 
+                            position: 'insideRight', 
+                            offset: -15,
+                            style: { textAnchor: 'middle', fontSize: 12 }
+                          }}
                           tick={{ fontSize: 10 }}
                           tickMargin={8}
+                          width={50}
+                          domain={[0, 'dataMax + 5']}
                         />
                         <Tooltip content={<ChartTooltipContent />} />
                         <Legend 
@@ -445,6 +460,7 @@ export default function Analysis() {
                           fill={chartConfig.drawdown.color}
                           fillOpacity={0.2}
                           name="Drawdown (%)"
+                          strokeWidth={1.5}
                         />
                       </AreaChart>
                     </ResponsiveContainer>
@@ -873,61 +889,4 @@ export default function Analysis() {
                   <div>
                     <h3 className="font-semibold mb-1">Best Performing Asset</h3>
                     <p className="text-sm">
-                      <strong>{analysisData.assetPerformance.sort((a, b) => b.profitLoss - a.profitLoss)[0].asset}</strong> is your most profitable asset with a total profit of $
-                      {analysisData.assetPerformance.sort((a, b) => b.profitLoss - a.profitLoss)[0].profitLoss.toFixed(2)} and a win rate of 
-                      {analysisData.assetPerformance.sort((a, b) => b.profitLoss - a.profitLoss)[0].winRate.toFixed(1)}%.
-                    </p>
-                  </div>
-                )}
-                
-                {/* Most winning emotion */}
-                {analysisData.emotionPerformance.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold mb-1">Most Profitable Emotional State</h3>
-                    <p className="text-sm">
-                      Trading while feeling <strong>
-                        {analysisData.emotionPerformance.sort((a, b) => b.winRate - a.winRate)[0].emotion}
-                      </strong> yields your highest win rate at 
-                      {analysisData.emotionPerformance.sort((a, b) => b.winRate - a.winRate)[0].winRate.toFixed(1)}%.
-                    </p>
-                  </div>
-                )}
-                
-                {/* Best performing trade type */}
-                {analysisData.tradeTypePerformance.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold mb-1">Most Profitable Trade Type</h3>
-                    <p className="text-sm">
-                      <strong>
-                        {analysisData.tradeTypePerformance.sort((a, b) => b.profitLoss - a.profitLoss)[0].type}
-                      </strong> trades have been your most profitable with ${
-                        analysisData.tradeTypePerformance.sort((a, b) => b.profitLoss - a.profitLoss)[0].profitLoss.toFixed(2)
-                      } in total profits.
-                    </p>
-                  </div>
-                )}
-                
-                {/* Best trading hours */}
-                {analysisData.tradesByHour.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold mb-1">Best Trading Hours</h3>
-                    <p className="text-sm">
-                      Your most profitable trading hour is <strong>
-                        {analysisData.tradesByHour.sort((a, b) => b.profitLoss - a.profitLoss)[0].hourFormatted}
-                      </strong> with ${
-                        analysisData.tradesByHour.sort((a, b) => b.profitLoss - a.profitLoss)[0].profitLoss.toFixed(2)
-                      } in profits and a {
-                        analysisData.tradesByHour.sort((a, b) => b.profitLoss - a.profitLoss)[0].winRate.toFixed(1)
-                      }% win rate.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
+                      <strong>{analysisData.assetPerformance.sort((a, b) => b.profitLoss -

@@ -5,7 +5,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   ChartLegend,
-  ChartLegendContent
+  ChartLegendContent,
+  type ChartConfig as UIChartConfig
 } from '@/components/ui/chart';
 import { Loader2 } from 'lucide-react';
 import { ChartConfig } from '@/utils/chartUtils';
@@ -45,9 +46,20 @@ export function ChartWrapper({
     );
   }
 
+  // Convert our ChartConfig to UI ChartConfig format
+  const uiConfig: UIChartConfig = {};
+  
+  Object.entries(config).forEach(([key, value]) => {
+    uiConfig[key] = {
+      label: value.label,
+      ...(value.color ? { color: value.color } : {}),
+      ...(value.theme ? { theme: value.theme } : {})
+    };
+  });
+
   return (
     <div className="h-full w-full">
-      <UIChartContainer title={title} config={config}>
+      <UIChartContainer title={title} config={uiConfig}>
         {children}
         <ChartTooltip content={<ChartTooltipContent />} />
         <ChartLegend content={<ChartLegendContent />} />
