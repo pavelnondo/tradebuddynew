@@ -7,6 +7,11 @@ export interface ChartConfig {
     color?: string;
     theme?: Record<string, string>;
   };
+  series?: Array<{
+    label?: ReactNode;
+    color?: string;
+    theme?: Record<string, string>;
+  }>;
 }
 
 export const defaultChartConfig: ChartConfig = {

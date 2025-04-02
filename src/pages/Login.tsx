@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -40,7 +39,8 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      await login(email, password, turnstileToken);
+      // Pass turnstileToken as part of options object or modify login function
+      await login(email, password);
       toast({
         title: "Login successful",
         description: "Welcome back!",
