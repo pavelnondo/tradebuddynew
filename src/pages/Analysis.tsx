@@ -889,4 +889,5 @@ export default function Analysis() {
                   <div>
                     <h3 className="font-semibold mb-1">Best Performing Asset</h3>
                     <p className="text-sm">
-                      <strong>{analysisData.assetPerformance.sort((a, b) => b.profitLoss -
+                      <strong>
+                        {analysisData.assetPerformance.sort((a, b) => b.
