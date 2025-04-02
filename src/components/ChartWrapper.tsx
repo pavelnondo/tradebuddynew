@@ -50,19 +50,17 @@ export function ChartWrapper({
   const uiConfig: UIChartConfig = {};
   
   Object.entries(config).forEach(([key, value]) => {
-    // Handle theme property correctly - must have "light" and "dark" keys
-    if (value.theme) {
+    if (value.theme && value.theme.light && value.theme.dark) {
+      // When using theme, don't include color property at all
       uiConfig[key] = {
         label: value.label,
-        ...(value.theme.light && value.theme.dark ? { 
-          theme: {
-            light: value.theme.light,
-            dark: value.theme.dark
-          } 
-        } : {})
+        theme: {
+          light: value.theme.light,
+          dark: value.theme.dark
+        }
       };
     } else if (value.color) {
-      // If using color, ensure theme is not present
+      // When using color, don't include theme property at all
       uiConfig[key] = {
         label: value.label,
         color: value.color
