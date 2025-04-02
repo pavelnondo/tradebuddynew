@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trade } from "@/types";
 import { Activity, Coins, DollarSign, LineChart, ListFilter, PieChart, TrendingDown, TrendingUp, Clock } from "lucide-react";
@@ -417,7 +418,7 @@ export default function Analysis() {
                             style: { textAnchor: 'middle', fontSize: 12 }
                           }}
                           tick={{ fontSize: 10 }}
-                          tickMargin={8}\
+                          tickMargin={8}
                           width={50}
                           domain={['dataMin - 1000', 'dataMax + 1000']}
                         />
@@ -890,4 +891,22 @@ export default function Analysis() {
                     <h3 className="font-semibold mb-1">Best Performing Asset</h3>
                     <p className="text-sm">
                       <strong>
-                        {analysisData.assetPerformance.sort((a, b) => b.
+                        {analysisData.assetPerformance
+                          .sort((a, b) => b.profitLoss - a.profitLoss)[0]?.asset || "None"}
+                      </strong> 
+                      {" "}has been your most profitable asset, with a total profit of{" "}
+                      <strong>
+                        ${analysisData.assetPerformance
+                          .sort((a, b) => b.profitLoss - a.profitLoss)[0]?.profitLoss.toFixed(2) || "0.00"}
+                      </strong>.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
