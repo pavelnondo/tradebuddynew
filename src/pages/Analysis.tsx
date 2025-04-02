@@ -880,4 +880,3 @@ export default function Analysis() {
                   </div>
                 )}
               </CardContent>
-            </Card
