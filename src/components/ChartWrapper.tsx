@@ -73,11 +73,11 @@ export function ChartWrapper({
     }
   });
 
-  // Fix for children type issue in UIChartContainer
+  // Fix for children type issue in UIChartContainer by explicitly casting
   return (
     <div className="h-full w-full">
       <UIChartContainer title={title} config={uiConfig}>
-        {children}
+        {React.Children.only(children)}
         <ChartTooltip content={<ChartTooltipContent />} />
         <ChartLegend content={<ChartLegendContent />} />
       </UIChartContainer>
