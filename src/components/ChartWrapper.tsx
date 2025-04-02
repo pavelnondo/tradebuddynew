@@ -73,6 +73,7 @@ export function ChartWrapper({
     }
   });
 
+  // Fix for children type issue in UIChartContainer
   return (
     <div className="h-full w-full">
       <UIChartContainer title={title} config={uiConfig}>

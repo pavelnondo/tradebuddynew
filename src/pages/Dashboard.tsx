@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trade } from "@/types";
 import { ArrowDown, ArrowUp, BarChart3, Clock, DollarSign, LineChart, PieChart, Timer, CandlestickChart, Bolt, Loader2 } from "lucide-react";
@@ -236,17 +237,18 @@ export default function Dashboard() {
         </Card>
       </div>
       
+      {/* Chart Section - Updated to fix overflow and spacing issues */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ErrorBoundary>
-          <Card className="shadow-md hover:shadow-lg transition-shadow h-full">
+          <Card className="shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center">
                 <LineChart className="h-5 w-5 text-primary mr-2" />
                 Account Balance Trend
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="h-[350px] w-full">
+            <CardContent className="p-2 md:p-3 lg:p-4">
+              <div className="h-[300px] w-full">
                 {isLoading ? (
                   <div className="flex items-center justify-center h-full">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -265,24 +267,21 @@ export default function Dashboard() {
                     <ResponsiveContainer width="99%" height="99%">
                       <AreaChart 
                         data={metrics.plOverTime} 
-                        margin={{ top: 20, right: 30, left: 30, bottom: 20 }}
+                        margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
                         <XAxis 
                           dataKey="date" 
-                          tick={{ fontSize: 11 }}
-                          tickMargin={10}
+                          tick={{ fontSize: 10 }}
+                          tickMargin={5}
+                          height={25}
                         />
                         <YAxis 
-                          tick={{ fontSize: 11 }}
-                          tickMargin={10}
+                          tick={{ fontSize: 10 }}
+                          tickMargin={5}
+                          width={40}
                         />
                         <Tooltip />
-                        <Legend 
-                          verticalAlign="top" 
-                          height={36}
-                          wrapperStyle={{ paddingTop: 10 }}
-                        />
                         <Area
                           type="monotone"
                           dataKey="balance"
@@ -301,15 +300,15 @@ export default function Dashboard() {
         </ErrorBoundary>
         
         <ErrorBoundary>
-          <Card className="shadow-md hover:shadow-lg transition-shadow h-full">
+          <Card className="shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Bolt className="h-5 w-5 text-primary mr-2" />
                 Trading Mindset Analysis
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="h-[350px] w-full">
+            <CardContent className="p-2 md:p-3 lg:p-4">
+              <div className="h-[300px] w-full">
                 {isLoading ? (
                   <div className="flex items-center justify-center h-full">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -326,13 +325,13 @@ export default function Dashboard() {
                     emptyMessage="No emotion data available"
                   >
                     <ResponsiveContainer width="99%" height="99%">
-                      <RechartPieChart margin={{ top: 20, right: 20, left: 20, bottom: 20 }}>
+                      <RechartPieChart>
                         <Pie
                           data={metrics.emotionChartData}
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          outerRadius={95}
+                          outerRadius={80}
                           innerRadius={5}
                           fill="#8884d8"
                           dataKey="value"
@@ -358,6 +357,7 @@ export default function Dashboard() {
         </ErrorBoundary>
       </div>
       
+      {/* Trading Insights Card */}
       <Card className="shadow-md hover:shadow-lg transition-shadow bg-gradient-to-r from-secondary/5 to-transparent mt-8 mb-10">
         <CardHeader>
           <CardTitle className="flex items-center">
