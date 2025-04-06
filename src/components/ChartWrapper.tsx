@@ -75,9 +75,15 @@ export function ChartWrapper({
 
   return (
     <div className="h-full w-full">
+      {/* Wrap children in a Fragment so it's always a single ReactElement */}
       <UIChartContainer title={title} config={uiConfig}>
-        {children}
+        {React.isValidElement(children) ? (
+          children
+        ) : (
+          <React.Fragment>{children}</React.Fragment>
+        )}
       </UIChartContainer>
     </div>
   );
 }
+
