@@ -42,8 +42,8 @@ export function WinLossChart({ data, isEmpty = false, isLoading = false }: WinLo
       isLoading={isLoading}
       emptyMessage="No win/loss data available yet."
     >
-      <ResponsiveContainer width="99%" height="99%">
-        <RechartPieChart>
+      <ResponsiveContainer width="100%" height={200}>
+        <RechartPieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
           <Pie
             data={chartData}
             cx="50%"

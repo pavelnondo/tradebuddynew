@@ -12,7 +12,7 @@ import { useTradeAnalysis } from "@/hooks/useTradeAnalysis";
 import { Loader2 } from "lucide-react";
 
 export default function Analysis() {
-  const [initialBalance, setInitialBalance] = useState<number>(() => {
+  const [initialBalance] = useState<number>(() => {
     const savedBalance = localStorage.getItem('initialTradingBalance');
     return savedBalance ? parseFloat(savedBalance) : 10000; // Default to 10,000 if not set
   });
@@ -81,7 +81,7 @@ export default function Analysis() {
       ) : (
         <>
           {/* Account Balance and Drawdown Chart */}
-          <div className="h-[300px] border rounded-lg p-4">
+          <div className="border rounded-lg p-4" style={{ height: "280px" }}>
             <BalanceChart data={analysisData.balanceOverTime} />
           </div>
           
@@ -151,12 +151,12 @@ export default function Analysis() {
           {/* Charts Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Win/Loss Ratio */}
-            <div className="h-[280px] border rounded-lg p-4">
+            <div className="border rounded-lg p-4" style={{ height: "280px" }}>
               <WinLossChart data={analysisData.winLossData} />
             </div>
             
             {/* Asset Performance */}
-            <div className="h-[280px] border rounded-lg p-4">
+            <div className="border rounded-lg p-4" style={{ height: "280px" }}>
               <BarPerformanceChart 
                 data={analysisData.assetPerformance}
                 title="Asset Performance"
@@ -168,7 +168,7 @@ export default function Analysis() {
             </div>
             
             {/* Emotions vs Win Rate */}
-            <div className="h-[280px] border rounded-lg p-4">
+            <div className="border rounded-lg p-4" style={{ height: "280px" }}>
               <BarPerformanceChart 
                 data={analysisData.emotionPerformance}
                 title="Emotions vs Win Rate"
@@ -180,7 +180,7 @@ export default function Analysis() {
             </div>
             
             {/* Trade Type Performance */}
-            <div className="h-[280px] border rounded-lg p-4">
+            <div className="border rounded-lg p-4" style={{ height: "280px" }}>
               <BarPerformanceChart 
                 data={analysisData.tradeTypePerformance}
                 title="Trade Type Performance"
@@ -192,7 +192,7 @@ export default function Analysis() {
             </div>
             
             {/* Trading Hours Analysis */}
-            <div className="h-[280px] border rounded-lg p-4">
+            <div className="border rounded-lg p-4" style={{ height: "280px" }}>
               <HourlyPerformanceChart data={analysisData.tradesByHour} />
             </div>
           </div>
