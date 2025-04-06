@@ -42,14 +42,14 @@ export function WinLossChart({ data, isEmpty = false, isLoading = false }: WinLo
       isLoading={isLoading}
       emptyMessage="No win/loss data available yet."
     >
-      <ResponsiveContainer width="100%" height={200}>
-        <RechartPieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+      <ResponsiveContainer width="99%" height={180}>
+        <RechartPieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
           <Pie
             data={chartData}
             cx="50%"
             cy="50%"
             labelLine={false}
-            outerRadius={70}
+            outerRadius={65}
             fill="#8884d8"
             dataKey="value"
             label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}

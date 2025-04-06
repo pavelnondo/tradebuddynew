@@ -32,7 +32,7 @@ export function ChartWrapper({
 }: ChartWrapperProps) {
   if (isLoading) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex h-full w-full items-center justify-center border border-border rounded-md bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -40,7 +40,7 @@ export function ChartWrapper({
 
   if (isEmpty) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex h-full w-full items-center justify-center border border-border rounded-md bg-background">
         <p className="text-center text-muted-foreground">{emptyMessage}</p>
       </div>
     );
@@ -74,7 +74,7 @@ export function ChartWrapper({
   });
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full border border-border rounded-md bg-background p-2">
       {/* Wrap children in a Fragment so it's always a single ReactElement */}
       <UIChartContainer title={title} config={uiConfig}>
         {React.isValidElement(children) ? (
@@ -86,4 +86,3 @@ export function ChartWrapper({
     </div>
   );
 }
-

@@ -38,10 +38,10 @@ export function BalanceChart({ data, isEmpty = false, isLoading = false }: Balan
       isLoading={isLoading}
       emptyMessage="No balance data available yet."
     >
-      <ResponsiveContainer width="99%" height={200}>
+      <ResponsiveContainer width="99%" height={180}>
         <AreaChart 
           data={data}
-          margin={{ top: 10, right: 30, left: 10, bottom: 5 }}
+          margin={{ top: 20, right: 30, left: 10, bottom: 10 }}
         >
           <CartesianGrid strokeDasharray="3 3" opacity={0.6} />
           <XAxis 

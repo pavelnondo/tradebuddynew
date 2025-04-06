@@ -49,17 +49,17 @@ export function BarPerformanceChart({
       emptyMessage={emptyMessage}
       config={chartConfig}
     >
-      <ResponsiveContainer width="99%" height={200}>
+      <ResponsiveContainer width="99%" height={180}>
         <BarChart 
           data={data} 
-          margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
+          margin={{ top: 15, right: 15, left: 10, bottom: 15 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis 
             dataKey={categoryKey}
             tick={{ fontSize: 10 }}
             tickMargin={5}
-            height={25}
+            height={40}
           />
           <YAxis 
             tick={{ fontSize: 10 }}

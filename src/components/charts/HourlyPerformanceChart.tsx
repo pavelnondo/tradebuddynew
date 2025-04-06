@@ -42,31 +42,31 @@ export function HourlyPerformanceChart({
       isLoading={isLoading}
       emptyMessage="No time-based analysis data available yet."
     >
-      <ResponsiveContainer width="99%" height={200}>
+      <ResponsiveContainer width="99%" height={180}>
         <BarChart 
           data={data} 
-          margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
+          margin={{ top: 15, right: 30, left: 10, bottom: 15 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis 
             dataKey="hourFormatted"
             tick={{ fontSize: 10 }}
             tickMargin={5}
-            height={25}
+            height={40}
           />
           <YAxis 
             yAxisId="left" 
             orientation="left"
             tick={{ fontSize: 10 }}
             tickMargin={5}
-            width={30}
+            width={35}
           />
           <YAxis 
             yAxisId="right" 
             orientation="right"
             tick={{ fontSize: 10 }}
             tickMargin={5}
-            width={30}
+            width={35}
           />
           <Tooltip content={<ChartTooltipContent />} />
           <Bar

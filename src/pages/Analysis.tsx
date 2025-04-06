@@ -81,7 +81,7 @@ export default function Analysis() {
       ) : (
         <>
           {/* Account Balance and Drawdown Chart */}
-          <div className="border rounded-lg p-4" style={{ height: "280px" }}>
+          <div className="border rounded-lg shadow-sm bg-card" style={{ height: "250px" }}>
             <BalanceChart data={analysisData.balanceOverTime} />
           </div>
           
@@ -151,12 +151,12 @@ export default function Analysis() {
           {/* Charts Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Win/Loss Ratio */}
-            <div className="border rounded-lg p-4" style={{ height: "280px" }}>
+            <div className="border rounded-lg shadow-sm bg-card" style={{ height: "250px" }}>
               <WinLossChart data={analysisData.winLossData} />
             </div>
             
             {/* Asset Performance */}
-            <div className="border rounded-lg p-4" style={{ height: "280px" }}>
+            <div className="border rounded-lg shadow-sm bg-card" style={{ height: "250px" }}>
               <BarPerformanceChart 
                 data={analysisData.assetPerformance}
                 title="Asset Performance"
@@ -168,7 +168,7 @@ export default function Analysis() {
             </div>
             
             {/* Emotions vs Win Rate */}
-            <div className="border rounded-lg p-4" style={{ height: "280px" }}>
+            <div className="border rounded-lg shadow-sm bg-card" style={{ height: "250px" }}>
               <BarPerformanceChart 
                 data={analysisData.emotionPerformance}
                 title="Emotions vs Win Rate"
@@ -180,7 +180,7 @@ export default function Analysis() {
             </div>
             
             {/* Trade Type Performance */}
-            <div className="border rounded-lg p-4" style={{ height: "280px" }}>
+            <div className="border rounded-lg shadow-sm bg-card" style={{ height: "250px" }}>
               <BarPerformanceChart 
                 data={analysisData.tradeTypePerformance}
                 title="Trade Type Performance"
@@ -192,7 +192,7 @@ export default function Analysis() {
             </div>
             
             {/* Trading Hours Analysis */}
-            <div className="border rounded-lg p-4" style={{ height: "280px" }}>
+            <div className="border rounded-lg shadow-sm bg-card" style={{ height: "250px" }}>
               <HourlyPerformanceChart data={analysisData.tradesByHour} />
             </div>
           </div>
