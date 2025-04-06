@@ -87,7 +87,7 @@ export default function Donate() {
             <div className="bg-background border rounded-lg p-6 flex flex-col items-center">
               <div className="bg-white p-3 rounded-lg mb-6">
                 <img 
-                  src="/lovable-uploads/bd4c6cab-cf67-40a9-9ea1-bbccce583e4e.png" 
+                  src="/lovable-uploads/0191d5b3-7d20-456f-9094-2242b647ab7c.png" 
                   alt="Bitcoin QR Code" 
                   className="w-60 h-60"
                 />
@@ -118,7 +118,7 @@ export default function Donate() {
             <div className="bg-background border rounded-lg p-6 flex flex-col items-center">
               <div className="bg-white p-3 rounded-lg mb-6">
                 <img 
-                  src="/lovable-uploads/997d3e14-282f-489b-b886-10dee1cb22ab.png" 
+                  src="/lovable-uploads/4ee4de43-6b60-45cc-98b6-8357c3920766.png" 
                   alt="Ethereum QR Code" 
                   className="w-60 h-60"
                 />

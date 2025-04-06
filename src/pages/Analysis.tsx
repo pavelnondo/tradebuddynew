@@ -1,9 +1,7 @@
 
 import { useState, useEffect } from "react";
-import { Activity, Coins, DollarSign, LineChart, ListFilter, PieChart, TrendingDown, TrendingUp, Clock } from "lucide-react";
+import { Activity, Coins, DollarSign, LineChart, ListFilter, TrendingDown, TrendingUp } from "lucide-react";
 import { useSupabaseTrades } from "@/hooks/useSupabaseTrades";
-import { Card } from "@/components/ui/card";
-import { InitialBalanceControl } from "@/components/forms/InitialBalanceControl";
 import { MetricsCard } from "@/components/metrics/MetricsCard";
 import { BalanceChart } from "@/components/charts/BalanceChart";
 import { WinLossChart } from "@/components/charts/WinLossChart";
@@ -35,12 +33,6 @@ export default function Analysis() {
   // Calculate analysis data using our new hook
   const analysisData = useTradeAnalysis(trades, initialBalance);
   
-  // Function to update initial balance
-  const handleInitialBalanceChange = (newBalance: number) => {
-    setInitialBalance(newBalance);
-    localStorage.setItem('initialTradingBalance', newBalance.toString());
-  };
-
   // Loading state
   if (isLoading) {
     return (
@@ -76,27 +68,20 @@ export default function Analysis() {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Performance Analysis</h1>
       
-      <InitialBalanceControl 
-        initialBalance={initialBalance} 
-        onBalanceChange={handleInitialBalanceChange}
-        currentBalance={analysisData.metrics.currentBalance}
-        percentageReturn={analysisData.metrics.percentageReturn}
-      />
-      
       {/* Empty state when no trades exist */}
       {trades.length === 0 ? (
-        <Card className="p-8">
+        <div className="p-8 border rounded-lg">
           <div className="text-center space-y-4">
             <h2 className="text-xl font-semibold">No Trading Data Available</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
               Add your trading history to see detailed performance analysis, metrics, and insights to improve your trading strategy.
             </p>
           </div>
-        </Card>
+        </div>
       ) : (
         <>
           {/* Account Balance and Drawdown Chart */}
-          <div className="h-[350px]">
+          <div className="h-[300px] border rounded-lg p-4">
             <BalanceChart data={analysisData.balanceOverTime} />
           </div>
           
@@ -166,12 +151,12 @@ export default function Analysis() {
           {/* Charts Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Win/Loss Ratio */}
-            <div className="h-[300px]">
+            <div className="h-[280px] border rounded-lg p-4">
               <WinLossChart data={analysisData.winLossData} />
             </div>
             
             {/* Asset Performance */}
-            <div className="h-[300px]">
+            <div className="h-[280px] border rounded-lg p-4">
               <BarPerformanceChart 
                 data={analysisData.assetPerformance}
                 title="Asset Performance"
@@ -183,7 +168,7 @@ export default function Analysis() {
             </div>
             
             {/* Emotions vs Win Rate */}
-            <div className="h-[300px]">
+            <div className="h-[280px] border rounded-lg p-4">
               <BarPerformanceChart 
                 data={analysisData.emotionPerformance}
                 title="Emotions vs Win Rate"
@@ -195,7 +180,7 @@ export default function Analysis() {
             </div>
             
             {/* Trade Type Performance */}
-            <div className="h-[300px]">
+            <div className="h-[280px] border rounded-lg p-4">
               <BarPerformanceChart 
                 data={analysisData.tradeTypePerformance}
                 title="Trade Type Performance"
@@ -207,7 +192,7 @@ export default function Analysis() {
             </div>
             
             {/* Trading Hours Analysis */}
-            <div className="h-[300px]">
+            <div className="h-[280px] border rounded-lg p-4">
               <HourlyPerformanceChart data={analysisData.tradesByHour} />
             </div>
           </div>

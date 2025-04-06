@@ -244,13 +244,13 @@ export default function Checklists() {
                       <div className="h-5 w-5 mr-2 flex items-center justify-center">
                         {index + 1}.
                       </div>
-                      <div>{item.text}</div>
+                      <div className="text-sm">{item.text}</div>
                     </div>
                   ))}
                 </div>
               </CardContent>
-              <CardFooter className="flex justify-between">
-                <div className="flex space-x-2">
+              <CardFooter className="flex flex-wrap gap-2 justify-between">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     variant="outline"
                     size="sm"
@@ -331,6 +331,7 @@ export default function Checklists() {
                       placeholder="Check support/resistance levels"
                       value={item.text}
                       onChange={(e) => updateChecklistItemText(item.id, e.target.value)}
+                      className="flex-1"
                     />
                     <Button
                       type="button"
@@ -346,7 +347,7 @@ export default function Checklists() {
             </div>
           </div>
           
-          <DialogFooter>
+          <DialogFooter className="gap-2 flex-wrap">
             <Button 
               variant="outline" 
               onClick={() => {
@@ -413,12 +414,14 @@ export default function Checklists() {
                       placeholder="Check support/resistance levels"
                       value={item.text}
                       onChange={(e) => updateChecklistItemText(item.id, e.target.value)}
+                      className="flex-1"
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
                       onClick={() => removeChecklistItem(item.id)}
+                      className="flex-shrink-0"
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
@@ -428,7 +431,7 @@ export default function Checklists() {
             </div>
           </div>
           
-          <DialogFooter>
+          <DialogFooter className="gap-2 flex-wrap">
             <Button 
               variant="outline" 
               onClick={() => {
