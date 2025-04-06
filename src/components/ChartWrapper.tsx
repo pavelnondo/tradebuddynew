@@ -73,7 +73,7 @@ export function ChartWrapper({
     }
   });
 
-  // Support for multiple children or single child
+  // Fix: Wrap the children in a Fragment to ensure it's a single element
   return (
     <div className="h-full w-full">
       <UIChartContainer title={title} config={uiConfig}>
