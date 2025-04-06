@@ -1,34 +1,26 @@
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trade } from "@/types";
-import { ArrowDown, ArrowUp, BarChart3, Clock, DollarSign, LineChart, PieChart, Timer, CandlestickChart, Bolt, Loader2 } from "lucide-react";
-import { useMemo, useState, useEffect } from "react";
+import { ArrowDown, ArrowUp, BarChart3, CandlestickChart, DollarSign, Bolt, Loader2, Timer } from "lucide-react";
+import { useSupabaseTrades } from "@/hooks/useSupabaseTrades";
+import { InitialBalanceControl } from "@/components/forms/InitialBalanceControl";
+import { MetricsCard } from "@/components/metrics/MetricsCard";
+import { BalanceChart } from "@/components/charts/BalanceChart";
+import { useTradeAnalysis } from "@/hooks/useTradeAnalysis";
 import {
-  Area,
-  AreaChart,
-  CartesianGrid,
   Cell,
-  Legend,
   Pie,
   PieChart as RechartPieChart,
   ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
 } from "recharts";
-import { ChartContainer } from "@/components/ChartContainer";
-import { ChartWrapper } from "@/components/ChartWrapper";
-import { useSupabaseTrades } from "@/hooks/useSupabaseTrades";
-import { InitialBalanceForm } from "@/components/InitialBalanceForm";
-import ErrorBoundary from "@/components/ErrorBoundary";
-import { defaultChartConfig } from "@/utils/chartUtils";
 
 export default function Dashboard() {
-  const [trades, setTrades] = useState<Trade[]>([]);
   const [initialBalance, setInitialBalance] = useState<number>(() => {
     const savedBalance = localStorage.getItem('initialTradingBalance');
     return savedBalance ? parseFloat(savedBalance) : 10000; // Default to 10,000 if not set
   });
+  
+  const [trades, setTrades] = useState([]);
   const { fetchTrades, isLoading, error } = useSupabaseTrades();
   
   // Fetch trades from Supabase on component mount
@@ -41,71 +33,16 @@ export default function Dashboard() {
     loadTrades();
   }, [fetchTrades]);
   
-  // Save initial balance to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('initialTradingBalance', initialBalance.toString());
-  }, [initialBalance]);
+  // Calculate analysis data using our hook
+  const analysisData = useTradeAnalysis(trades, initialBalance);
   
-  const metrics = useMemo(() => {
-    const totalTrades = trades.length;
-    const profitableTrades = trades.filter((trade) => trade.profitLoss > 0).length;
-    const winRate = totalTrades > 0 ? (profitableTrades / totalTrades) * 100 : 0;
-    const totalProfitLoss = trades.reduce((sum, trade) => sum + trade.profitLoss, 0);
-    const avgProfitLoss = totalTrades > 0 ? totalProfitLoss / totalTrades : 0;
-    const currentBalance = initialBalance + totalProfitLoss;
-    const percentageReturn = initialBalance > 0 ? (totalProfitLoss / initialBalance) * 100 : 0;
-    
-    const emotionData = trades.reduce((acc, trade) => {
-      acc[trade.emotion] = (acc[trade.emotion] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
-    const emotionChartData = Object.entries(emotionData).map(([name, value]) => ({ name, value }));
-    
-    const plOverTime = trades
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .reduce((acc, trade, index) => {
-        const date = new Date(trade.date).toLocaleDateString();
-        const prevBalance = index > 0 ? acc[index - 1].balance : initialBalance;
-        acc.push({
-          date,
-          value: trade.profitLoss,
-          cumulative: index > 0 ? acc[index - 1].cumulative + trade.profitLoss : trade.profitLoss,
-          balance: prevBalance + trade.profitLoss
-        });
-        return acc;
-      }, [] as { date: string; value: number; cumulative: number; balance: number }[]);
-    
-    return {
-      totalTrades,
-      profitableTrades,
-      winRate,
-      totalProfitLoss,
-      avgProfitLoss,
-      emotionChartData,
-      plOverTime,
-      currentBalance,
-      percentageReturn
-    };
-  }, [trades, initialBalance]);
-
-  // Updated chart config with correct emotion color mapping
-  const chartConfig = {
-    profit: { color: "hsl(143, 85%, 46%)" },
-    loss: { color: "hsl(0, 84%, 60%)" },
-    // Positive emotions with calming, positive colors
-    Confident: { color: "#4ade80" }, // Green - positive
-    Calm: { color: "#a78bfa" }, // Purple - positive
-    Satisfied: { color: "#22d3ee" }, // Cyan - positive
-    Excited: { color: "#facc15" }, // Yellow - positive
-    // Negative emotions with warning and alarming colors
-    Nervous: { color: "#fb923c" }, // Orange - caution
-    Greedy: { color: "#f87171" }, // Light red - negative 
-    Fearful: { color: "#3b82f6" }, // Blue - mixed/cautious
-    Frustrated: { color: "#ea384c" }, // Bright red - negative
+  // Function to update initial balance
+  const handleInitialBalanceChange = (newBalance: number) => {
+    setInitialBalance(newBalance);
+    localStorage.setItem('initialTradingBalance', newBalance.toString());
   };
 
-  // Updated colors array for the pie chart cells with correct emotion colors
+  // Updated emotion colors with correct mapping
   const EMOTION_COLORS = {
     Confident: "#4ade80", // Green - positive
     Calm: "#a78bfa", // Purple - positive
@@ -117,13 +54,6 @@ export default function Dashboard() {
     Frustrated: "#ea384c", // Bright red - negative
   };
 
-  // Function to render empty state for charts
-  const renderEmptyState = (message: string) => (
-    <div className="flex items-center justify-center h-full w-full">
-      <p className="text-muted-foreground text-center">{message}</p>
-    </div>
-  );
-  
   // Loading state
   if (isLoading) {
     return (
@@ -146,6 +76,15 @@ export default function Dashboard() {
     );
   }
 
+  // Find best performing assets and emotions for insights
+  const bestAsset = analysisData.assetPerformance.length > 0
+    ? [...analysisData.assetPerformance].sort((a, b) => b.profitLoss - a.profitLoss)[0]
+    : null;
+
+  const primaryEmotion = analysisData.emotionPerformance.length > 0
+    ? [...analysisData.emotionPerformance].sort((a, b) => b.trades - a.trades)[0]
+    : null;
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
@@ -156,45 +95,21 @@ export default function Dashboard() {
       </div>
       
       {/* Balance Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <InitialBalanceForm 
-          initialBalance={initialBalance} 
-          onSave={setInitialBalance} 
-        />
-        
-        <Card className="border-l-4 border-l-primary h-full">
-          <CardHeader className="pb-2">
-            <CardDescription>Current Balance</CardDescription>
-            <CardTitle className={`text-2xl flex items-center ${metrics.currentBalance >= initialBalance ? 'text-green-500' : 'text-red-500'}`}>
-              <DollarSign className="mr-2 h-5 w-5" />
-              ${metrics.currentBalance.toFixed(2)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        
-        <Card className="border-l-4 border-l-primary h-full">
-          <CardHeader className="pb-2">
-            <CardDescription>Return</CardDescription>
-            <CardTitle className={`text-2xl flex items-center ${metrics.percentageReturn >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {metrics.percentageReturn >= 0 ? (
-                <ArrowUp className="mr-2 h-5 w-5" />
-              ) : (
-                <ArrowDown className="mr-2 h-5 w-5" />
-              )}
-              {metrics.percentageReturn.toFixed(2)}%
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+      <InitialBalanceControl 
+        initialBalance={initialBalance}
+        onBalanceChange={handleInitialBalanceChange}
+        currentBalance={analysisData.metrics.currentBalance}
+        percentageReturn={analysisData.metrics.percentageReturn}
+      />
       
-      {/* Original metrics cards */}
+      {/* Quick Metrics cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border-l-4 border-l-primary">
           <CardHeader className="pb-2">
             <CardDescription>Today's Trades</CardDescription>
             <CardTitle className="text-2xl flex items-center">
               <Timer className="mr-2 h-5 w-5 text-primary" />
-              {metrics.totalTrades}
+              {analysisData.metrics.totalTrades}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -204,7 +119,7 @@ export default function Dashboard() {
             <CardDescription>Win Rate</CardDescription>
             <CardTitle className="text-2xl flex items-center">
               <CandlestickChart className="mr-2 h-5 w-5 text-primary" />
-              {metrics.totalTrades ? metrics.winRate.toFixed(1) : 0}%
+              {analysisData.metrics.totalTrades ? analysisData.metrics.winRate.toFixed(1) : 0}%
             </CardTitle>
           </CardHeader>
         </Card>
@@ -212,10 +127,10 @@ export default function Dashboard() {
         <Card className="border-l-4 border-l-primary">
           <CardHeader className="pb-2">
             <CardDescription>Daily P&L</CardDescription>
-            <CardTitle className={`text-2xl flex items-center ${metrics.totalProfitLoss > 0 ? 'text-green-500' : metrics.totalProfitLoss < 0 ? 'text-red-500' : ''}`}>
+            <CardTitle className={`text-2xl flex items-center ${analysisData.metrics.totalProfitLoss > 0 ? 'text-green-500' : analysisData.metrics.totalProfitLoss < 0 ? 'text-red-500' : ''}`}>
               <DollarSign className="mr-2 h-5 w-5" />
-              {metrics.totalProfitLoss > 0 ? '+' : ''}
-              ${metrics.totalProfitLoss.toFixed(2)}
+              {analysisData.metrics.totalProfitLoss > 0 ? '+' : ''}
+              ${analysisData.metrics.totalProfitLoss.toFixed(2)}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -223,138 +138,78 @@ export default function Dashboard() {
         <Card className="border-l-4 border-l-primary">
           <CardHeader className="pb-2">
             <CardDescription>Avg. Trade P&L</CardDescription>
-            <CardTitle className={`text-2xl flex items-center ${metrics.avgProfitLoss > 0 ? 'text-green-500' : metrics.avgProfitLoss < 0 ? 'text-red-500' : ''}`}>
-              {metrics.avgProfitLoss > 0 ? (
+            <CardTitle className={`text-2xl flex items-center ${analysisData.metrics.avgWin > 0 ? 'text-green-500' : analysisData.metrics.avgWin < 0 ? 'text-red-500' : ''}`}>
+              {analysisData.metrics.avgWin > 0 ? (
                 <ArrowUp className="mr-2 h-5 w-5" />
-              ) : metrics.avgProfitLoss < 0 ? (
+              ) : analysisData.metrics.avgWin < 0 ? (
                 <ArrowDown className="mr-2 h-5 w-5" />
               ) : (
                 <DollarSign className="mr-2 h-5 w-5" />
               )}
-              ${Math.abs(metrics.avgProfitLoss).toFixed(2)}
+              ${Math.abs(analysisData.metrics.avgWin).toFixed(2)}
             </CardTitle>
           </CardHeader>
         </Card>
       </div>
       
-      {/* Chart Section - Updated to fix overflow and spacing issues */}
+      {/* Chart Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ErrorBoundary>
-          <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <LineChart className="h-5 w-5 text-primary mr-2" />
-                Account Balance Trend
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-2 md:p-3 lg:p-4">
-              <div className="h-[300px] w-full">
-                {isLoading ? (
-                  <div className="flex items-center justify-center h-full">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  </div>
-                ) : metrics.plOverTime.length === 0 ? (
-                  <div className="flex items-center justify-center h-full w-full">
-                    <p className="text-muted-foreground text-center">No trade data available. Add trades to see your account balance trend.</p>
-                  </div>
-                ) : (
-                  <ChartWrapper
-                    title="Account Balance"
-                    config={defaultChartConfig}
-                    isEmpty={metrics.plOverTime.length === 0}
-                    emptyMessage="No trade data available"
-                  >
-                    <ResponsiveContainer width="99%" height="99%">
-                      <AreaChart 
-                        data={metrics.plOverTime} 
-                        margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                        <XAxis 
-                          dataKey="date" 
-                          tick={{ fontSize: 10 }}
-                          tickMargin={5}
-                          height={25}
-                        />
-                        <YAxis 
-                          tick={{ fontSize: 10 }}
-                          tickMargin={5}
-                          width={40}
-                        />
-                        <Tooltip />
-                        <Area
-                          type="monotone"
-                          dataKey="balance"
-                          name="Account Balance"
-                          stroke={metrics.totalProfitLoss >= 0 ? chartConfig.profit.color : chartConfig.loss.color}
-                          fill={metrics.totalProfitLoss >= 0 ? chartConfig.profit.color : chartConfig.loss.color}
-                          fillOpacity={0.2}
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </ChartWrapper>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </ErrorBoundary>
+        {/* Balance Chart */}
+        <Card className="shadow-md hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <BarChart3 className="h-5 w-5 text-primary mr-2" />
+              Account Balance Trend
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-2 md:p-3 lg:p-4 h-[300px]">
+            <BalanceChart data={analysisData.balanceOverTime} isEmpty={analysisData.balanceOverTime.length === 0} />
+          </CardContent>
+        </Card>
         
-        <ErrorBoundary>
-          <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Bolt className="h-5 w-5 text-primary mr-2" />
-                Trading Mindset Analysis
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-2 md:p-3 lg:p-4">
-              <div className="h-[300px] w-full">
-                {isLoading ? (
-                  <div className="flex items-center justify-center h-full">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  </div>
-                ) : metrics.emotionChartData.length === 0 ? (
-                  <div className="flex items-center justify-center h-full w-full">
-                    <p className="text-muted-foreground text-center">No emotion data available. Add trades with emotions to see your mindset analysis.</p>
-                  </div>
-                ) : (
-                  <ChartWrapper
-                    title="Emotions Distribution"
-                    config={chartConfig}
-                    isEmpty={metrics.emotionChartData.length === 0}
-                    emptyMessage="No emotion data available"
-                  >
-                    <ResponsiveContainer width="99%" height="99%">
-                      <RechartPieChart>
-                        <Pie
-                          data={metrics.emotionChartData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          outerRadius={80}
-                          innerRadius={5}
-                          fill="#8884d8"
-                          dataKey="value"
-                          nameKey="name"
-                          paddingAngle={4}
-                          strokeWidth={1}
-                          stroke="#fff"
-                        >
-                          {metrics.emotionChartData.map((entry, index) => (
-                            <Cell 
-                              key={`cell-${index}`} 
-                              fill={EMOTION_COLORS[entry.name as keyof typeof EMOTION_COLORS] || "#9ca3af"} 
-                            />
-                          ))}
-                        </Pie>
-                      </RechartPieChart>
-                    </ResponsiveContainer>
-                  </ChartWrapper>
-                )}
+        {/* Emotions Chart */}
+        <Card className="shadow-md hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Bolt className="h-5 w-5 text-primary mr-2" />
+              Trading Mindset Analysis
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-2 md:p-3 lg:p-4 h-[300px]">
+            {analysisData.emotionPerformance.length === 0 ? (
+              <div className="flex items-center justify-center h-full w-full">
+                <p className="text-muted-foreground text-center">No emotion data available. Add trades with emotions to see your mindset analysis.</p>
               </div>
-            </CardContent>
-          </Card>
-        </ErrorBoundary>
+            ) : (
+              <ResponsiveContainer width="99%" height="99%">
+                <RechartPieChart>
+                  <Pie
+                    data={analysisData.emotionPerformance}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={80}
+                    innerRadius={5}
+                    fill="#8884d8"
+                    dataKey="trades"
+                    nameKey="emotion"
+                    paddingAngle={4}
+                    strokeWidth={1}
+                    stroke="#fff"
+                    label={({ emotion, percent }) => `${emotion}: ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {analysisData.emotionPerformance.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={EMOTION_COLORS[entry.emotion] || "#9ca3af"} 
+                      />
+                    ))}
+                  </Pie>
+                </RechartPieChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
       </div>
       
       {/* Trading Insights Card */}
@@ -376,22 +231,10 @@ export default function Dashboard() {
                   <h3 className="font-semibold mb-2 text-primary">Best Performing Asset</h3>
                   <p className="text-sm">
                     <span className="text-lg font-bold">
-                      {metrics.emotionChartData.length > 0 
-                        ? trades.reduce((acc, trade) => {
-                            if (!acc[trade.asset]) acc[trade.asset] = { asset: trade.asset, pl: 0 };
-                            acc[trade.asset].pl += trade.profitLoss;
-                            return acc;
-                          }, {} as Record<string, { asset: string, pl: number }>)
-                          && Object.values(trades.reduce((acc, trade) => {
-                            if (!acc[trade.asset]) acc[trade.asset] = { asset: trade.asset, pl: 0 };
-                            acc[trade.asset].pl += trade.profitLoss;
-                            return acc;
-                          }, {} as Record<string, { asset: string, pl: number }>))
-                            .sort((a, b) => b.pl - a.pl)[0]?.asset || "No data"
-                        : "No data"}
+                      {bestAsset ? bestAsset.asset : "No data"}
                     </span>
                     <br />
-                    {metrics.emotionChartData.length > 0 
+                    {bestAsset 
                       ? "Focus on short-term trades with this instrument for highest profit potential."
                       : "Add trades to see your best performing assets."}
                   </p>
@@ -401,12 +244,10 @@ export default function Dashboard() {
                   <h3 className="font-semibold mb-2 text-primary">Primary Trading Emotion</h3>
                   <p className="text-sm">
                     <span className="text-lg font-bold">
-                      {metrics.emotionChartData.length > 0
-                        ? metrics.emotionChartData.sort((a, b) => b.value - a.value)[0]?.name
-                        : "No data"}
+                      {primaryEmotion ? primaryEmotion.emotion : "No data"}
                     </span>
                     <br />
-                    {metrics.emotionChartData.length > 0
+                    {primaryEmotion
                       ? "Pay attention to how this emotion affects your decision-making in fast markets."
                       : "Add trades with emotions to analyze your trading psychology."}
                   </p>
@@ -415,21 +256,13 @@ export default function Dashboard() {
                 <div className="bg-card p-4 rounded-lg border shadow-sm">
                   <h3 className="font-semibold mb-2 text-primary">Suggested Action</h3>
                   <p className="text-sm">
-                    {metrics.emotionChartData.length > 0 ? (
+                    {analysisData.assetPerformance.length > 0 ? (
                       <>
                         Consider setting tighter stop losses on your
                         <span className="font-bold">
-                          {" "}{trades.reduce((acc, trade) => {
-                            if (!acc[trade.asset]) acc[trade.asset] = { asset: trade.asset, pl: 0 };
-                            acc[trade.asset].pl += trade.profitLoss;
-                            return acc;
-                          }, {} as Record<string, { asset: string, pl: number }>)
-                          && Object.values(trades.reduce((acc, trade) => {
-                            if (!acc[trade.asset]) acc[trade.asset] = { asset: trade.asset, pl: 0 };
-                            acc[trade.asset].pl += trade.profitLoss;
-                            return acc;
-                          }, {} as Record<string, { asset: string, pl: number }>))
-                            .sort((a, b) => a.pl - b.pl)[0]?.asset || "underperforming assets"}{" "}
+                          {" "}{analysisData.assetPerformance
+                            .filter(a => a.profitLoss < 0)
+                            .sort((a, b) => a.profitLoss - b.profitLoss)[0]?.asset || "underperforming assets"}{" "}
                         </span> 
                         trades to minimize drawdowns in volatile markets.
                       </>
@@ -446,21 +279,10 @@ export default function Dashboard() {
                   Daily Trading Recommendation
                 </h3>
                 <p className="text-sm">
-                  {metrics.emotionChartData.length > 0 ? (
+                  {analysisData.assetPerformance.length > 0 ? (
                     <>
-                      Based on your trading history, you perform best when trading {
-                        trades.reduce((acc, trade) => {
-                          if (!acc[trade.asset]) acc[trade.asset] = { asset: trade.asset, pl: 0 };
-                          acc[trade.asset].pl += trade.profitLoss;
-                          return acc;
-                        }, {} as Record<string, { asset: string, pl: number }>)
-                        && Object.values(trades.reduce((acc, trade) => {
-                          if (!acc[trade.asset]) acc[trade.asset] = { asset: trade.asset, pl: 0 };
-                          acc[trade.asset].pl += trade.profitLoss;
-                          return acc;
-                        }, {} as Record<string, { asset: string, pl: number }>))
-                          .sort((a, b) => b.pl - a.pl)[0]?.asset || "your best assets"
-                      } with a {metrics.emotionChartData.sort((a, b) => b.value - a.value)[0]?.name} mindset. 
+                      Based on your trading history, you perform best when trading {bestAsset?.asset || "your best assets"} 
+                      with a {primaryEmotion?.emotion || "focused"} mindset. 
                       Consider focusing on quick intraday opportunities rather than overnight positions for improved risk management.
                     </>
                   ) : (
