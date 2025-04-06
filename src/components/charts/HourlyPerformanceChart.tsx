@@ -28,18 +28,24 @@ export function HourlyPerformanceChart({
   isEmpty = false, 
   isLoading = false 
 }: HourlyPerformanceProps) {
+  const chartConfig = {
+    profitLoss: { label: "P&L ($)", color: "#60a5fa" },
+    winRate: { label: "Win Rate (%)", color: "#4ade80" }
+  };
+  
   return (
     <ChartContainer 
       title="Best Trading Hours"
       icon={<Clock className="h-5 w-5 text-primary" />}
+      config={chartConfig}
       isEmpty={isEmpty || data.length === 0}
       isLoading={isLoading}
       emptyMessage="No time-based analysis data available yet."
     >
-      <ResponsiveContainer width="99%" height="99%">
+      <ResponsiveContainer width="99%" height={200}>
         <BarChart 
           data={data} 
-          margin={{ top: 5, right: 20, left: 5, bottom: 5 }}
+          margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis 
@@ -67,14 +73,14 @@ export function HourlyPerformanceChart({
             yAxisId="left"
             dataKey="profitLoss"
             name="P&L ($)"
-            fill="#60a5fa"
+            fill={chartConfig.profitLoss.color}
             radius={[4, 4, 0, 0]}
           />
           <Bar
             yAxisId="right"
             dataKey="winRate"
             name="Win Rate (%)"
-            fill="#4ade80"
+            fill={chartConfig.winRate.color}
             radius={[4, 4, 0, 0]}
           />
         </BarChart>

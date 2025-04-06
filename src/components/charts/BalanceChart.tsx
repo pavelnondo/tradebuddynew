@@ -25,8 +25,8 @@ interface BalanceChartProps {
 
 export function BalanceChart({ data, isEmpty = false, isLoading = false }: BalanceChartProps) {
   const chartConfig = {
-    balance: { color: "#3b82f6" },
-    drawdown: { color: "#f87171" }
+    balance: { label: "Balance", color: "#3b82f6" },
+    drawdown: { label: "Drawdown", color: "#f87171" }
   };
 
   return (
@@ -38,10 +38,10 @@ export function BalanceChart({ data, isEmpty = false, isLoading = false }: Balan
       isLoading={isLoading}
       emptyMessage="No balance data available yet."
     >
-      <ResponsiveContainer width="99%" height="99%">
+      <ResponsiveContainer width="99%" height={200}>
         <AreaChart 
           data={data}
-          margin={{ top: 5, right: 40, left: 20, bottom: 5 }}
+          margin={{ top: 10, right: 30, left: 10, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" opacity={0.6} />
           <XAxis 
@@ -58,7 +58,7 @@ export function BalanceChart({ data, isEmpty = false, isLoading = false }: Balan
               value: 'Balance ($)', 
               angle: -90, 
               position: 'insideLeft', 
-              offset: -10,
+              offset: -5,
               style: { textAnchor: 'middle', fontSize: 11 }
             }}
             tick={{ fontSize: 10 }}
@@ -73,7 +73,7 @@ export function BalanceChart({ data, isEmpty = false, isLoading = false }: Balan
               value: 'Drawdown (%)', 
               angle: 90, 
               position: 'insideRight', 
-              offset: -10,
+              offset: -5,
               style: { textAnchor: 'middle', fontSize: 11 }
             }}
             tick={{ fontSize: 10 }}

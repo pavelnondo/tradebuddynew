@@ -77,8 +77,6 @@ export function ChartWrapper({
     <div className="h-full w-full">
       <UIChartContainer title={title} config={uiConfig}>
         {children}
-        <ChartTooltip content={<ChartTooltipContent />} />
-        <ChartLegend content={<ChartLegendContent />} />
       </UIChartContainer>
     </div>
   );

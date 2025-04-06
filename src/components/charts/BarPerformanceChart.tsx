@@ -36,8 +36,8 @@ export function BarPerformanceChart({
   emptyMessage = "No data available yet."
 }: BarPerformanceProps) {
   const chartConfig = {
-    profit: { color: "hsl(143, 85%, 46%)" },
-    loss: { color: "hsl(0, 84%, 60%)" },
+    profit: { label: "Profit", color: "hsl(143, 85%, 46%)" },
+    loss: { label: "Loss", color: "hsl(0, 84%, 60%)" },
   };
 
   return (
@@ -49,10 +49,10 @@ export function BarPerformanceChart({
       emptyMessage={emptyMessage}
       config={chartConfig}
     >
-      <ResponsiveContainer width="99%" height="99%">
+      <ResponsiveContainer width="99%" height={200}>
         <BarChart 
           data={data} 
-          margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+          margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis 
