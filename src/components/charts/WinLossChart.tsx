@@ -22,8 +22,8 @@ interface WinLossChartProps {
 
 export function WinLossChart({ data, isEmpty = false, isLoading = false }: WinLossChartProps) {
   const chartConfig = {
-    wins: { color: "#4ade80" },
-    losses: { color: "#f87171" },
+    wins: { label: "Wins", color: "#4ade80" },
+    losses: { label: "Losses", color: "#f87171" },
   };
 
   const chartData = [
