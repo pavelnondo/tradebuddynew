@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react';
 import { Trade } from '@/types';
 
@@ -65,6 +64,26 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
         
         return acc;
       }, [] as { date: string; balance: number; drawdown: number }[]);
+    
+    // Generate trade count by date data
+    const tradesByDate = trades.reduce((acc, trade) => {
+      const date = new Date(trade.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      
+      if (!acc[date]) {
+        acc[date] = {
+          date,
+          count: 0
+        };
+      }
+      
+      acc[date].count += 1;
+      
+      return acc;
+    }, {} as Record<string, { date: string; count: number }>);
+    
+    const tradeCountByDate = Object.values(tradesByDate)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(-14); // Show just the last 14 days for a cleaner view
     
     // Analysis by asset
     const assetPerformance = trades.reduce((acc, trade) => {
@@ -232,6 +251,7 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
         percentageReturn,
         maxDrawdown
       },
+      tradeCountByDate,
       assetPerformance: assetPerformanceArray,
       tradeTypePerformance: tradeTypePerformanceArray,
       emotionPerformance: emotionPerformanceArray,
