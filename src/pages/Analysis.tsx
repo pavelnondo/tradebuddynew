@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from "react";
-import { Activity, Coins, DollarSign, LineChart, ListFilter, TrendingDown, TrendingUp, BarChart3 } from "lucide-react";
+import { Activity, Coins, DollarSign, LineChart, ListFilter, TrendingDown, TrendingUp } from "lucide-react";
 import { useSupabaseTrades } from "@/hooks/useSupabaseTrades";
 import { MetricsCard } from "@/components/metrics/MetricsCard";
 import { WinLossChart } from "@/components/charts/WinLossChart";
@@ -8,7 +9,6 @@ import { HourlyPerformanceChart } from "@/components/charts/HourlyPerformanceCha
 import { InsightsPanel } from "@/components/analysis/InsightsPanel";
 import { useTradeAnalysis } from "@/hooks/useTradeAnalysis";
 import { Loader2 } from "lucide-react";
-import { TradeCountChart } from "@/components/charts/TradeCountChart";
 
 export default function Analysis() {
   const [initialBalance] = useState<number>(() => {
@@ -79,11 +79,6 @@ export default function Analysis() {
         </div>
       ) : (
         <>
-          {/* New Trade Count Chart instead of Balance Chart */}
-          <div className="border rounded-lg shadow-sm bg-card" style={{ height: "250px" }}>
-            <TradeCountChart data={analysisData.tradeCountByDate} />
-          </div>
-          
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <MetricsCard 
