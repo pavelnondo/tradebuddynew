@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { supabase } from '@/integrations/supabase/client';
 
 const BITCOIN_ADDRESS = 'bc1qeyh7ws3r3jc8y3mt9uu5q0h7mj3glmasxpxrnx';
 const ETHEREUM_ADDRESS = '0x0a0BeFF80798Ac4Ea76Ab13af6154556804421d6';
@@ -40,7 +41,7 @@ export default function Donate() {
     }
   };
 
-  const handleSendSuggestion = () => {
+  const handleSendSuggestion = async () => {
     if (!suggestion.trim()) {
       toast({
         title: "Empty suggestion",
@@ -52,16 +53,32 @@ export default function Donate() {
 
     setIsSending(true);
 
-    // Simulate sending the suggestion
-    setTimeout(() => {
-      setIsSending(false);
+    try {
+      const { error } = await supabase.functions.invoke('send-suggestion', {
+        body: {
+          email: email.trim(),
+          suggestion: suggestion.trim(),
+        },
+      });
+
+      if (error) throw error;
+
       setSuggestion('');
       setEmail('');
       toast({
-        title: "Suggestion received",
+        title: "Suggestion sent",
         description: "Thank you for your feedback!",
       });
-    }, 1000);
+    } catch (err) {
+      console.error('Error sending suggestion:', err);
+      toast({
+        title: "Error",
+        description: "Failed to send your suggestion. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (

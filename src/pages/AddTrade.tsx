@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -131,37 +132,6 @@ export default function AddTrade() {
       )
     );
   };
-  
-  // Calculate profit/loss automatically
-  const calculateProfitLoss = () => {
-    const entryPrice = form.getValues("entryPrice");
-    const exitPrice = form.getValues("exitPrice");
-    const positionSize = form.getValues("positionSize");
-    const tradeType = form.getValues("tradeType");
-    
-    if (entryPrice && exitPrice && positionSize) {
-      let pnl: number;
-      
-      if (tradeType === "Buy" || tradeType === "Long") {
-        pnl = (exitPrice - entryPrice) * positionSize;
-      } else {
-        pnl = (entryPrice - exitPrice) * positionSize;
-      }
-      
-      form.setValue("profitLoss", parseFloat(pnl.toFixed(2)));
-    }
-  };
-  
-  // Monitor entry/exit price and position size to auto-calculate P/L
-  useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name === "entryPrice" || name === "exitPrice" || name === "positionSize" || name === "tradeType") {
-        calculateProfitLoss();
-      }
-    });
-    
-    return () => subscription.unsubscribe();
-  }, [form.watch]);
   
   // Handle screenshot file selection
   const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -352,9 +322,7 @@ export default function AddTrade() {
                   <FormItem>
                     <FormLabel>Entry Price</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" {...field} onChange={(e) => {
-                        field.onChange(e);
-                      }} />
+                      <Input type="number" step="0.01" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -369,9 +337,7 @@ export default function AddTrade() {
                   <FormItem>
                     <FormLabel>Exit Price</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" {...field} onChange={(e) => {
-                        field.onChange(e);
-                      }} />
+                      <Input type="number" step="0.01" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -386,9 +352,7 @@ export default function AddTrade() {
                   <FormItem>
                     <FormLabel>Position Size</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" {...field} onChange={(e) => {
-                        field.onChange(e);
-                      }} />
+                      <Input type="number" step="0.01" {...field} />
                     </FormControl>
                     <FormDescription>
                       Number of shares, contracts, or units.
@@ -398,34 +362,23 @@ export default function AddTrade() {
                 )}
               />
               
-              {/* Profit/Loss */}
+              {/* Profit/Loss - Now manually entered, not auto-calculated */}
               <FormField
                 control={form.control}
                 name="profitLoss"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Profit/Loss</FormLabel>
-                    <div className="flex items-center gap-2">
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          step="0.01" 
-                          className={field.value >= 0 ? "text-green-600" : "text-red-600"} 
-                          {...field} 
-                          disabled
-                        />
-                      </FormControl>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        size="icon"
-                        onClick={calculateProfitLoss}
-                      >
-                        <RefreshCw className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        className={field.value >= 0 ? "text-green-600" : "text-red-600"} 
+                        {...field} 
+                      />
+                    </FormControl>
                     <FormDescription>
-                      Automatically calculated based on entry/exit prices and position size.
+                      Enter your profit or loss manually.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
