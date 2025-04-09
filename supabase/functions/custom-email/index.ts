@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -72,10 +71,11 @@ serve(async (req) => {
               <div class="logo">Trade Buddy</div>
             </div>
             <div class="content">
-              <h2>Confirm Your Email</h2>
-              <p>Thank you for signing up with Trade Buddy. Please confirm your email address by clicking the button below:</p>
+              <h2>Welcome to Trade Buddy!</h2>
+              <p>Thank you for signing up with Trade Buddy. You're now part of our community of traders who track, analyze, and improve their trading performance.</p>
+              <p>Please confirm your email address by clicking the button below to activate your Trade Buddy account:</p>
               <div style="text-align: center;">
-                <a href="${url}" class="button">Confirm Email</a>
+                <a href="${url}" class="button">Confirm Email & Activate Account</a>
               </div>
               <p>If you didn't sign up for Trade Buddy, you can safely ignore this email.</p>
             </div>
