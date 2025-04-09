@@ -34,18 +34,35 @@ serve(async (req: Request) => {
       });
     }
 
+    // Get EmailJS credentials from environment variables
+    const serviceId = Deno.env.get('EMAILJS_SERVICE_ID');
+    const templateId = Deno.env.get('EMAILJS_TEMPLATE_ID');
+    const userId = Deno.env.get('EMAILJS_USER_ID');
+
+    // Validate that all required credentials are present
+    if (!serviceId || !templateId || !userId) {
+      console.error('Missing EmailJS credentials:', { serviceId, templateId, userId });
+      return new Response(JSON.stringify({ error: 'Email service configuration is incomplete' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Send email using EmailJS
     const emailjsData = {
-      service_id: Deno.env.get('EMAILJS_SERVICE_ID'),
-      template_id: Deno.env.get('EMAILJS_TEMPLATE_ID'),
-      user_id: Deno.env.get('EMAILJS_USER_ID'),
+      service_id: serviceId,
+      template_id: templateId,
+      user_id: userId,
       template_params: {
         to_email: 'pavelmozgalove@gmail.com',
         from_email: email || 'anonymous@user.com',
         suggestion: suggestion,
         reply_to: email || 'anonymous@user.com',
+        year: new Date().getFullYear(),
       },
     };
+
+    console.log('Sending email with data:', JSON.stringify(emailjsData, null, 2));
 
     const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
       method: 'POST',
