@@ -1,17 +1,16 @@
-
 import React from 'react';
-import { Clock } from 'lucide-react';
+import { Bar } from 'react-chartjs-2';
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
   Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { ChartContainer } from "@/components/ChartContainer";
-import { ChartTooltipContent } from "@/components/ui/chart";
+  Legend,
+} from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 interface HourlyPerformanceProps {
   data: Array<{
@@ -23,68 +22,73 @@ interface HourlyPerformanceProps {
   isLoading?: boolean;
 }
 
-export function HourlyPerformanceChart({ 
-  data, 
-  isEmpty = false, 
-  isLoading = false 
+export function HourlyPerformanceChart({
+  data,
+  isEmpty = false,
+  isLoading = false
 }: HourlyPerformanceProps) {
-  const chartConfig = {
-    profitLoss: { label: "P&L ($)", color: "#60a5fa" },
-    winRate: { label: "Win Rate (%)", color: "#4ade80" }
+  const chartData = {
+    labels: data.map(d => d.hourFormatted),
+    datasets: [
+      {
+        label: 'P&L ($)',
+        data: data.map(d => d.profitLoss),
+        backgroundColor: '#60a5fa',
+        yAxisID: 'y',
+        borderRadius: 4,
+      },
+      {
+        label: 'Win Rate (%)',
+        data: data.map(d => d.winRate),
+        backgroundColor: '#4ade80',
+        yAxisID: 'y1',
+        borderRadius: 4,
+      },
+    ],
   };
-  
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: true,
+    layout: { padding: 10 },
+    plugins: {
+      legend: { display: true, position: 'top' as const },
+      title: { display: false },
+      tooltip: { enabled: true },
+    },
+    scales: {
+      x: {
+        title: { display: true, text: 'Hour' },
+        ticks: { font: { size: 10 } },
+      },
+      y: {
+        type: 'linear' as const,
+        display: true,
+        position: 'left' as const,
+        title: { display: true, text: 'P&L ($)' },
+        ticks: { font: { size: 10 } },
+      },
+      y1: {
+        type: 'linear' as const,
+        display: true,
+        position: 'right' as const,
+        title: { display: true, text: 'Win Rate (%)' },
+        grid: { drawOnChartArea: false },
+        ticks: { font: { size: 10 } },
+      },
+    },
+  };
+
+  if (isLoading) {
+    return <div className="chart-container">Loading...</div>;
+  }
+  if (isEmpty || data.length === 0) {
+    return <div className="chart-container">No time-based analysis data available yet.</div>;
+  }
+
   return (
-    <ChartContainer 
-      title="Best Trading Hours"
-      icon={<Clock className="h-5 w-5 text-primary" />}
-      config={chartConfig}
-      isEmpty={isEmpty || data.length === 0}
-      isLoading={isLoading}
-      emptyMessage="No time-based analysis data available yet."
-    >
-      <ResponsiveContainer width="99%" height={180}>
-        <BarChart 
-          data={data} 
-          margin={{ top: 15, right: 30, left: 10, bottom: 15 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis 
-            dataKey="hourFormatted"
-            tick={{ fontSize: 10 }}
-            tickMargin={5}
-            height={40}
-          />
-          <YAxis 
-            yAxisId="left" 
-            orientation="left"
-            tick={{ fontSize: 10 }}
-            tickMargin={5}
-            width={35}
-          />
-          <YAxis 
-            yAxisId="right" 
-            orientation="right"
-            tick={{ fontSize: 10 }}
-            tickMargin={5}
-            width={35}
-          />
-          <Tooltip content={<ChartTooltipContent />} />
-          <Bar
-            yAxisId="left"
-            dataKey="profitLoss"
-            name="P&L ($)"
-            fill={chartConfig.profitLoss.color}
-            radius={[4, 4, 0, 0]}
-          />
-          <Bar
-            yAxisId="right"
-            dataKey="winRate"
-            name="Win Rate (%)"
-            fill={chartConfig.winRate.color}
-            radius={[4, 4, 0, 0]}
-          />
-        </BarChart>
-      </ResponsiveContainer>
-    </ChartContainer>
+    <div className="chart-container">
+      <Bar data={chartData} options={options} />
+    </div>
   );
 }

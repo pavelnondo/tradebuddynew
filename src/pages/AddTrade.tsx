@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,12 +21,10 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { toast } from 'sonner';
 
 import { Trade, TradeType, EmotionType, Checklist, ChecklistItem } from '@/types';
-import { useSupabaseTrades } from '@/hooks/useSupabaseTrades';
 import { useChecklists } from '@/hooks/useChecklists';
 import { DateTimeInput } from '@/components/DateTimeInput';
 import { FeatureToggle } from '@/components/FeatureToggle';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
-import { useSpeechToText } from '@/hooks/useSpeechToText';
 
 // Form validation schema using Zod
 const formSchema = z.object({
@@ -66,7 +63,6 @@ export default function AddTrade() {
   const [showAdvancedFeatures, setShowAdvancedFeatures] = useState(false);
   
   // Initialize hooks
-  const { addTrade, uploadScreenshot } = useSupabaseTrades();
   const { fetchChecklists, getChecklist } = useChecklists();
   
   // Initialize form
@@ -157,52 +153,58 @@ export default function AddTrade() {
   // Form submission handler
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
-    
     try {
-      // Upload screenshot if present
-      let screenshotUrl = undefined;
+      let screenshotUrl = null;
       if (screenshotFile) {
-        setIsUploading(true);
-        screenshotUrl = await uploadScreenshot(screenshotFile);
-        setIsUploading(false);
+        const formData = new FormData();
+        formData.append('screenshot', screenshotFile);
+        const uploadRes = await fetch('http://localhost:4000/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        if (!uploadRes.ok) throw new Error('Failed to upload screenshot');
+        const uploadData = await uploadRes.json();
+        screenshotUrl = uploadData.url;
       }
-      
-      // Prepare the trade data
-      const trade: Trade = {
-        id: '', // Will be assigned by Supabase
-        date: format(values.date, 'yyyy-MM-dd'),
-        asset: values.asset,
-        tradeType: values.tradeType,
-        entryPrice: values.entryPrice,
-        exitPrice: values.exitPrice,
-        positionSize: values.positionSize,
-        profitLoss: values.profitLoss,
+      // Prepare the trade data for backend
+      const tradeData = {
+        symbol: values.asset,
+        type: values.tradeType,
+        entry_price: values.entryPrice,
+        exit_price: values.exitPrice,
+        quantity: values.positionSize,
+        entry_time: values.date,
+        exit_time: values.date, // or use a separate field if available
+        pnl: values.profitLoss,
         notes: values.notes || '',
         emotion: values.emotion,
         setup: values.setup,
-        executionQuality: values.executionQuality,
+        execution_quality: values.executionQuality,
         duration: values.duration,
+        checklist_id: values.checklist_id ? parseInt(values.checklist_id, 10) : null,
+        checklist_completed: selectedChecklist && checklistItems.length > 0
+          ? checklistItems.map(item => ({ text: item.text, completed: !!item.completed }))
+          : null,
         screenshot: screenshotUrl,
-        checklist_id: values.checklist_id,
-        checklist_completed: selectedChecklist ? checklistItems : undefined,
       };
-      
-      // Add the trade to the database
-      const result = await addTrade(trade);
-      
-      if (result) {
+      // POST to backend
+      const res = await fetch('http://localhost:4000/trades', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tradeData),
+      });
+      if (res.ok) {
         toast.success("Trade Added", {
           description: "Your trade has been successfully added to your journal.",
         });
-        
-        // Navigate back to trade history
         navigate('/trades');
       } else {
-        throw new Error("Failed to add trade");
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to add trade");
       }
     } catch (error: any) {
       toast.error("Error", {
-        description: error.message || "Failed to add trade",
+        description: error.message || "Failed to add trade. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -517,20 +519,18 @@ export default function AddTrade() {
                       <FormItem>
                         <FormLabel>Trading Checklist</FormLabel>
                         <Select 
-                          onValueChange={handleChecklistChange} 
-                          value={field.value || "none"}
+                          value={form.watch('checklist_id') || ''} 
+                          onValueChange={val => form.setValue('checklist_id', val)}
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select a checklist" />
+                              <SelectValue placeholder="Select a trading checklist" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="none">None</SelectItem>
                             {checklists.map((checklist) => (
-                              <SelectItem key={checklist.id} value={checklist.id}>
-                                {checklist.name}
-                              </SelectItem>
+                              <SelectItem key={checklist.id} value={String(checklist.id)}>{checklist.name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>

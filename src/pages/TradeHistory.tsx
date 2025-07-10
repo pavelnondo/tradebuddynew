@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -6,33 +5,21 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { useSupabaseTrades } from "@/hooks/useSupabaseTrades";
 import { ChecklistItem, Trade } from "@/types";
 import { Download, Filter, Image, Search, Trash2, Loader2, CheckSquare } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import { useApiTrades } from '@/hooks/useApiTrades';
 
 export default function TradeHistory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [tradeTypeFilter, setTradeTypeFilter] = useState<string>("all");
   const [emotionFilter, setEmotionFilter] = useState<string>("all");
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
-  const [trades, setTrades] = useState<Trade[]>([]);
+  const { trades, isLoading, error, fetchTrades } = useApiTrades();
   
-  // Use Supabase trades hook
-  const { fetchTrades, deleteTrade: deleteSupabaseTrade, isLoading, error } = useSupabaseTrades();
   const { toast } = useToast();
-  
-  // Fetch trades from Supabase on component mount
-  useEffect(() => {
-    const loadTrades = async () => {
-      const tradesData = await fetchTrades();
-      setTrades(tradesData);
-    };
-    
-    loadTrades();
-  }, [fetchTrades]);
   
   // Apply filters to trades
   const filteredTrades = trades.filter((trade) => {
@@ -60,23 +47,20 @@ export default function TradeHistory() {
   
   // Delete trade
   const handleDeleteTrade = async (id: string, event: React.MouseEvent) => {
-    event.stopPropagation(); // Prevent row click
-    
-    const success = await deleteSupabaseTrade(id);
-    
-    if (success) {
-      setTrades(trades.filter(trade => trade.id !== id));
-      
-      // If we're deleting the currently selected trade, clear the selection
-      if (selectedTrade && selectedTrade.id === id) {
-        setSelectedTrade(null);
+    event.stopPropagation();
+    try {
+      const res = await fetch(`http://localhost:4000/trades/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        await fetchTrades();
+        if (selectedTrade && selectedTrade.id === id) setSelectedTrade(null);
+        toast({
+          title: "Trade Deleted",
+          description: "The trade has been removed from your history.",
+        });
+      } else {
+        throw new Error("Failed to delete trade");
       }
-      
-      toast({
-        title: "Trade Deleted",
-        description: "The trade has been removed from your history.",
-      });
-    } else {
+    } catch (err) {
       toast({
         title: "Error",
         description: "Failed to delete trade. Please try again.",
@@ -93,10 +77,10 @@ export default function TradeHistory() {
       new Date(trade.date).toLocaleString(),
       trade.asset,
       trade.tradeType,
-      trade.entryPrice,
-      trade.exitPrice,
+      typeof trade.entryPrice === 'number' ? trade.entryPrice.toFixed(2) : '0.00',
+      typeof trade.exitPrice === 'number' ? trade.exitPrice.toFixed(2) : '0.00',
       trade.positionSize,
-      trade.profitLoss,
+      typeof trade.profitLoss === 'number' ? (trade.profitLoss >= 0 ? "+" : "") + `$${trade.profitLoss.toFixed(2)}` : '$0.00',
       trade.emotion,
       `"${trade.notes.replace(/"/g, '""')}"`, // Handle quotes in notes
     ]);
@@ -128,6 +112,75 @@ export default function TradeHistory() {
     if (items.length === 0) return 0;
     const completedItems = items.filter(item => item.completed).length;
     return Math.round((completedItems / items.length) * 100);
+  };
+
+  // Add state for editing
+  const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
+  const [editForm, setEditForm] = useState<any>({});
+
+  // Edit trade handler
+  const handleEditTrade = (trade: Trade) => {
+    setEditingTrade(trade);
+    setEditForm({
+      asset: trade.asset,
+      tradeType: trade.tradeType,
+      entryPrice: trade.entryPrice,
+      exitPrice: trade.exitPrice,
+      positionSize: trade.positionSize,
+      profitLoss: trade.profitLoss,
+      notes: trade.notes,
+      emotion: trade.emotion,
+      setup: trade.setup,
+      executionQuality: trade.executionQuality,
+      duration: trade.duration,
+      checklist_id: trade.checklist_id,
+      checklist_completed: trade.checklist_completed,
+      screenshot: trade.screenshot,
+      date: trade.date,
+    });
+  };
+
+  // Save edit
+  const handleSaveEdit = async () => {
+    if (!editingTrade) return;
+    try {
+      const res = await fetch(`http://localhost:4000/trades/${editingTrade.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symbol: editForm.asset,
+          type: editForm.tradeType,
+          entry_price: editForm.entryPrice,
+          exit_price: editForm.exitPrice,
+          quantity: editForm.positionSize,
+          entry_time: editForm.date,
+          exit_time: editForm.date,
+          pnl: editForm.profitLoss,
+          notes: editForm.notes,
+          emotion: editForm.emotion,
+          setup: editForm.setup,
+          execution_quality: editForm.executionQuality,
+          duration: editForm.duration,
+          checklist_id: editForm.checklist_id,
+          checklist_completed: editForm.checklist_completed,
+          screenshot: editForm.screenshot,
+        }),
+      });
+      if (res.ok) {
+        await fetchTrades();
+        setEditingTrade(null);
+        toast({ title: 'Trade Updated', description: 'The trade has been updated.' });
+      } else {
+        throw new Error('Failed to update trade');
+      }
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to update trade. Please try again.', variant: 'destructive' });
+    }
+  };
+
+  // Cancel edit
+  const handleCancelEdit = () => {
+    setEditingTrade(null);
   };
 
   return (
@@ -242,11 +295,11 @@ export default function TradeHistory() {
                       <TableCell onClick={() => viewTrade(trade)}>{new Date(trade.date).toLocaleString()}</TableCell>
                       <TableCell onClick={() => viewTrade(trade)} className="font-medium">{trade.asset}</TableCell>
                       <TableCell onClick={() => viewTrade(trade)}>{trade.tradeType}</TableCell>
-                      <TableCell onClick={() => viewTrade(trade)}>${trade.entryPrice.toFixed(2)}</TableCell>
-                      <TableCell onClick={() => viewTrade(trade)}>${trade.exitPrice.toFixed(2)}</TableCell>
+                      <TableCell onClick={() => viewTrade(trade)}>${typeof trade.entryPrice === 'number' ? trade.entryPrice.toFixed(2) : '0.00'}</TableCell>
+                      <TableCell onClick={() => viewTrade(trade)}>${typeof trade.exitPrice === 'number' ? trade.exitPrice.toFixed(2) : '0.00'}</TableCell>
                       <TableCell onClick={() => viewTrade(trade)}>{trade.positionSize}</TableCell>
-                      <TableCell onClick={() => viewTrade(trade)} className={trade.profitLoss >= 0 ? "text-green-500" : "text-red-500"}>
-                        {trade.profitLoss >= 0 ? "+" : ""}${trade.profitLoss.toFixed(2)}
+                      <TableCell onClick={() => viewTrade(trade)} className={typeof trade.profitLoss === 'number' ? (trade.profitLoss >= 0 ? "text-green-500" : "text-red-500") : "text-muted-foreground"}>
+                        {typeof trade.profitLoss === 'number' ? (trade.profitLoss >= 0 ? "+" : "") + `$${trade.profitLoss.toFixed(2)}` : '$0.00'}
                       </TableCell>
                       <TableCell onClick={() => viewTrade(trade)}>{trade.emotion}</TableCell>
                       <TableCell onClick={() => viewTrade(trade)}>
@@ -338,11 +391,11 @@ export default function TradeHistory() {
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">Entry Price:</dt>
-                    <dd>${selectedTrade.entryPrice.toFixed(2)}</dd>
+                    <dd>${typeof selectedTrade.entryPrice === 'number' ? selectedTrade.entryPrice.toFixed(2) : '0.00'}</dd>
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">Exit Price:</dt>
-                    <dd>${selectedTrade.exitPrice.toFixed(2)}</dd>
+                    <dd>${typeof selectedTrade.exitPrice === 'number' ? selectedTrade.exitPrice.toFixed(2) : '0.00'}</dd>
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">Position Size:</dt>
@@ -350,8 +403,8 @@ export default function TradeHistory() {
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">Profit/Loss:</dt>
-                    <dd className={selectedTrade.profitLoss >= 0 ? "text-green-500 font-bold" : "text-red-500 font-bold"}>
-                      {selectedTrade.profitLoss >= 0 ? "+" : ""}${selectedTrade.profitLoss.toFixed(2)}
+                    <dd className={typeof selectedTrade.profitLoss === 'number' ? (selectedTrade.profitLoss >= 0 ? "text-green-500 font-bold" : "text-red-500 font-bold") : "text-muted-foreground"}>
+                      {typeof selectedTrade.profitLoss === 'number' ? (selectedTrade.profitLoss >= 0 ? "+" : "") + `$${selectedTrade.profitLoss.toFixed(2)}` : '$0.00'}
                     </dd>
                   </div>
                   <div className="flex justify-between">
@@ -432,6 +485,30 @@ export default function TradeHistory() {
             </div>
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* Render edit form if editingTrade is set */}
+      {editingTrade && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow-lg w-full max-w-lg">
+            <h2 className="text-xl font-bold mb-4">Edit Trade</h2>
+            <div className="space-y-4">
+              <input className="w-full border p-2" value={editForm.asset} onChange={e => setEditForm({ ...editForm, asset: e.target.value })} placeholder="Asset" />
+              <input className="w-full border p-2" value={editForm.tradeType} onChange={e => setEditForm({ ...editForm, tradeType: e.target.value })} placeholder="Trade Type" />
+              <input className="w-full border p-2" type="number" value={editForm.entryPrice} onChange={e => setEditForm({ ...editForm, entryPrice: Number(e.target.value) })} placeholder="Entry Price" />
+              <input className="w-full border p-2" type="number" value={editForm.exitPrice} onChange={e => setEditForm({ ...editForm, exitPrice: Number(e.target.value) })} placeholder="Exit Price" />
+              <input className="w-full border p-2" type="number" value={editForm.positionSize} onChange={e => setEditForm({ ...editForm, positionSize: Number(e.target.value) })} placeholder="Position Size" />
+              <input className="w-full border p-2" type="number" value={editForm.profitLoss} onChange={e => setEditForm({ ...editForm, profitLoss: Number(e.target.value) })} placeholder="Profit/Loss" />
+              <input className="w-full border p-2" value={editForm.notes} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} placeholder="Notes" />
+              <input className="w-full border p-2" value={editForm.emotion} onChange={e => setEditForm({ ...editForm, emotion: e.target.value })} placeholder="Emotion" />
+              <input className="w-full border p-2" value={editForm.setup} onChange={e => setEditForm({ ...editForm, setup: e.target.value })} placeholder="Setup" />
+              <input className="w-full border p-2" value={editForm.executionQuality} onChange={e => setEditForm({ ...editForm, executionQuality: e.target.value })} placeholder="Execution Quality" />
+              <input className="w-full border p-2" value={editForm.duration} onChange={e => setEditForm({ ...editForm, duration: e.target.value })} placeholder="Duration" />
+              <button className="bg-blue-600 text-white px-4 py-2 rounded" onClick={handleSaveEdit}>Save</button>
+              <button className="bg-gray-300 px-4 py-2 rounded ml-2" onClick={handleCancelEdit}>Cancel</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

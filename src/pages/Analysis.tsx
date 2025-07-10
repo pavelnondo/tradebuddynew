@@ -1,14 +1,50 @@
-
 import { useState, useEffect } from "react";
 import { Activity, Coins, DollarSign, LineChart, ListFilter, TrendingDown, TrendingUp } from "lucide-react";
-import { useSupabaseTrades } from "@/hooks/useSupabaseTrades";
 import { MetricsCard } from "@/components/metrics/MetricsCard";
-import { WinLossChart } from "@/components/charts/WinLossChart";
-import { BarPerformanceChart } from "@/components/charts/BarPerformanceChart";
 import { HourlyPerformanceChart } from "@/components/charts/HourlyPerformanceChart";
 import { InsightsPanel } from "@/components/analysis/InsightsPanel";
 import { useTradeAnalysis } from "@/hooks/useTradeAnalysis";
 import { Loader2 } from "lucide-react";
+import { useApiTrades } from '@/hooks/useApiTrades';
+import { GraphSection } from "@/components/GraphSection";
+import { Bar, Doughnut } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
+import { BalanceChart } from '@/components/charts/BalanceChart';
+import { WinLossChart } from '@/components/charts/WinLossChart';
+import { BarPerformanceChart } from '@/components/charts/BarPerformanceChart';
+import { EmotionsWinRateChart } from '@/components/charts/EmotionsWinRateChart';
+import { TradeTypePerformanceChart } from '@/components/charts/TradeTypePerformanceChart';
+import { BestTradingHoursChart } from '@/components/charts/BestTradingHoursChart';
+
+function ChartContainer({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ height: 320, minWidth: 0, flex: 1, border: '2px solid #e0e0e0', borderRadius: 8, padding: 10, background: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
+      <h3 style={{ marginBottom: 8, fontSize: 16 }}>{title}</h3>
+      <div style={{ flex: 1, minHeight: 0 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// Sample data
+const barData = {
+  labels: ['A', 'B', 'C'],
+  datasets: [{ label: 'Sample', data: [12, 19, 3], backgroundColor: '#4ade80' }],
+};
+const doughnutData = {
+  labels: ['X', 'Y'],
+  datasets: [{ data: [60, 40], backgroundColor: ['#4ade80', '#f87171'] }],
+};
 
 export default function Analysis() {
   const [initialBalance] = useState<number>(() => {
@@ -16,18 +52,7 @@ export default function Analysis() {
     return savedBalance ? parseFloat(savedBalance) : 10000; // Default to 10,000 if not set
   });
   
-  const [trades, setTrades] = useState([]);
-  const { fetchTrades, isLoading } = useSupabaseTrades();
-  
-  // Fetch trades from Supabase on component mount
-  useEffect(() => {
-    const loadTrades = async () => {
-      const tradesData = await fetchTrades();
-      setTrades(tradesData);
-    };
-    
-    loadTrades();
-  }, [fetchTrades]);
+  const { trades, isLoading, error, fetchTrades } = useApiTrades();
   
   // Calculate analysis data using our new hook
   const analysisData = useTradeAnalysis(trades, initialBalance);
@@ -83,112 +108,85 @@ export default function Analysis() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <MetricsCard 
               title="Win Rate" 
-              value={`${analysisData.metrics.winRate.toFixed(1)}%`} 
+              value={`${typeof analysisData.metrics.winRate === 'number' ? analysisData.metrics.winRate.toFixed(1) : '0.0'}%`} 
               icon={<TrendingUp className="text-muted-foreground" />} 
             />
             
             <MetricsCard 
               title="Profit Factor" 
-              value={analysisData.metrics.profitFactor.toFixed(2)} 
+              value={typeof analysisData.metrics.profitFactor === 'number' ? analysisData.metrics.profitFactor.toFixed(2) : '0.00'} 
               icon={<Activity className="text-muted-foreground" />} 
             />
             
             <MetricsCard 
               title="Avg. Win" 
-              value={`$${analysisData.metrics.avgWin.toFixed(2)}`} 
+              value={`$${typeof analysisData.metrics.avgWin === 'number' ? analysisData.metrics.avgWin.toFixed(2) : '0.00'}`} 
               icon={<TrendingUp />}
               valueClassName="text-green-500"
             />
             
             <MetricsCard 
               title="Avg. Loss" 
-              value={`$${analysisData.metrics.avgLoss.toFixed(2)}`} 
+              value={`$${typeof analysisData.metrics.avgLoss === 'number' ? analysisData.metrics.avgLoss.toFixed(2) : '0.00'}`} 
               icon={<TrendingDown />}
               valueClassName="text-red-500"
             />
             
             <MetricsCard 
               title="Risk:Reward" 
-              value={`1:${analysisData.metrics.riskRewardRatio.toFixed(2)}`} 
+              value={`1:${typeof analysisData.metrics.riskRewardRatio === 'number' ? analysisData.metrics.riskRewardRatio.toFixed(2) : '0.00'}`} 
               icon={<ListFilter className="text-muted-foreground" />} 
             />
             
             <MetricsCard 
               title="Max Drawdown" 
-              value={`${analysisData.metrics.maxDrawdown.toFixed(2)}%`} 
+              value={`${typeof analysisData.metrics.maxDrawdown === 'number' ? analysisData.metrics.maxDrawdown.toFixed(2) : '0.00'}%`} 
               icon={<TrendingDown />}
               valueClassName="text-red-500"
             />
             
             <MetricsCard 
               title="Total Profit" 
-              value={`$${analysisData.metrics.totalProfit.toFixed(2)}`} 
+              value={`$${typeof analysisData.metrics.totalProfit === 'number' ? analysisData.metrics.totalProfit.toFixed(2) : '0.00'}`} 
               icon={<DollarSign />}
               valueClassName="text-green-500"
             />
             
             <MetricsCard 
               title="Total Loss" 
-              value={`$${Math.abs(analysisData.metrics.totalLoss).toFixed(2)}`} 
+              value={`$${typeof analysisData.metrics.totalLoss === 'number' ? Math.abs(analysisData.metrics.totalLoss).toFixed(2) : '0.00'}`} 
               icon={<DollarSign />}
               valueClassName="text-red-500"
             />
             
             <MetricsCard 
               title="Net P&L" 
-              value={`$${analysisData.metrics.totalProfitLoss.toFixed(2)}`} 
+              value={`$${typeof analysisData.metrics.totalProfitLoss === 'number' ? analysisData.metrics.totalProfitLoss.toFixed(2) : '0.00'}`} 
               icon={<Coins />}
               valueClassName={analysisData.metrics.totalProfitLoss >= 0 ? "text-green-500" : "text-red-500"}
             />
           </div>
           
           {/* Charts Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Win/Loss Ratio */}
-            <div className="border rounded-lg shadow-sm bg-card" style={{ height: "250px" }}>
-              <WinLossChart data={analysisData.winLossData} />
-            </div>
-            
-            {/* Asset Performance */}
-            <div className="border rounded-lg shadow-sm bg-card" style={{ height: "250px" }}>
-              <BarPerformanceChart 
-                data={analysisData.assetPerformance}
-                title="Asset Performance"
-                dataKey="profitLoss"
-                categoryKey="asset"
-                nameKey="Profit/Loss"
-                emptyMessage="No asset performance data available yet."
-              />
-            </div>
-            
-            {/* Emotions vs Win Rate */}
-            <div className="border rounded-lg shadow-sm bg-card" style={{ height: "250px" }}>
-              <BarPerformanceChart 
-                data={analysisData.emotionPerformance}
-                title="Emotions vs Win Rate"
-                dataKey="winRate"
-                categoryKey="emotion"
-                nameKey="Win Rate (%)"
-                emptyMessage="No emotion data available yet."
-              />
-            </div>
-            
-            {/* Trade Type Performance */}
-            <div className="border rounded-lg shadow-sm bg-card" style={{ height: "250px" }}>
-              <BarPerformanceChart 
-                data={analysisData.tradeTypePerformance}
-                title="Trade Type Performance"
-                dataKey="profitLoss"
-                categoryKey="type"
-                nameKey="Profit/Loss"
-                emptyMessage="No trade type performance data available yet."
-              />
-            </div>
-            
-            {/* Trading Hours Analysis */}
-            <div className="border rounded-lg shadow-sm bg-card" style={{ height: "250px" }}>
-              <HourlyPerformanceChart data={analysisData.tradesByHour} />
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <ChartContainer title="Balance Over Time">
+              <BalanceChart balanceOverTime={analysisData.balanceOverTime} />
+            </ChartContainer>
+            <ChartContainer title="Win/Loss Ratio">
+              <WinLossChart wins={analysisData.metrics.profitableTrades} losses={analysisData.metrics.lossTrades} />
+            </ChartContainer>
+            <ChartContainer title="Asset Performance">
+              <BarPerformanceChart data={analysisData.assetPerformance} />
+            </ChartContainer>
+            <ChartContainer title="Emotions vs Win Rate">
+              <EmotionsWinRateChart data={analysisData.emotionPerformance} />
+            </ChartContainer>
+            <ChartContainer title="Trade Type Performance">
+              <TradeTypePerformanceChart data={analysisData.tradeTypePerformance} />
+            </ChartContainer>
+            <ChartContainer title="Best Trading Hours">
+              <BestTradingHoursChart data={analysisData.tradesByHour} />
+            </ChartContainer>
           </div>
           
           {/* Insights Section */}

@@ -40,3 +40,143 @@
 .read-the-docs {
   color: #888;
 }
+
+/* === Chart Container Reset & Improved Visuals === */
+.chart-container {
+  height: 320px;
+  min-width: 0;
+  flex: 1 1 0;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 10px;
+  margin: 0 auto 20px;
+  overflow: hidden;
+  background: #fff;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+@media (max-width: 768px) {
+  .chart-container {
+    /* width: 100%; */
+    height: 300px;
+  }
+}
+.chart-heading {
+  margin-bottom: 8px;
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+/* Chart.js canvas fix */
+canvas {
+  display: block;
+  box-sizing: border-box;
+  font-family: var(--font-family, 'Inter', 'Roboto', sans-serif);
+  color: var(--text-primary, #fff);
+}
+
+/* Chart axis/grid style for dark mode */
+.chartjs-render-monitor .chartjs-axis,
+.chartjs-render-monitor .chartjs-grid {
+  stroke: #333 !important;
+  stroke-width: 0.5px !important;
+}
+
+/* Remove unwanted padding/margin from chart wrappers */
+.chart-container > * {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Ensure labels/legends don't touch borders */
+.chart-container .chartjs-legend,
+.chart-container .chartjs-title,
+.chart-container .chartjs-axis-label {
+  margin-left: 8px;
+  margin-right: 8px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 600px) {
+  .chart-container {
+    padding: 10px;
+    min-height: 160px;
+    max-height: 260px;
+    border-radius: 6px;
+  }
+}
+
+.graph-section {
+  background: #181a20;
+  border: 2px solid #23263a;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 32px;
+  box-shadow: 0 4px 24px 0 rgba(0,0,0,0.10);
+  transition: box-shadow 0.2s;
+}
+@media (max-width: 600px) {
+  .graph-section {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+}
+
+.charts-wrapper {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  width: 90%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.chart-left-container,
+.chart-right-container {
+  width: 45%;
+  min-width: 300px;
+  height: 240px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 12px;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-left-container {
+  margin-right: auto;
+}
+
+.chart-right-container {
+  margin-left: auto;
+}
+
+.chart-left-container h3,
+.chart-right-container h3 {
+  font-size: 14px;
+  margin: 0 0 8px 0;
+  color: #555;
+}
+
+.chart-left-container canvas,
+.chart-right-container canvas {
+  width: 100% !important;
+  height: calc(100% - 24px) !important;
+}
+
+@media (max-width: 768px) {
+  .charts-wrapper { flex-direction: column; }
+  .chart-left-container, 
+  .chart-right-container { 
+    width: 100%;
+    margin: 0 0 20px 0;
+  }
+}

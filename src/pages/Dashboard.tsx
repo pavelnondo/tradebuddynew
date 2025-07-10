@@ -1,11 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowDown, ArrowUp, BarChart3, CandlestickChart, DollarSign, Bolt, Loader2, Timer } from "lucide-react";
-import { useSupabaseTrades } from "@/hooks/useSupabaseTrades";
 import { InitialBalanceControl } from "@/components/forms/InitialBalanceControl";
 import { MetricsCard } from "@/components/metrics/MetricsCard";
-import { BalanceChart } from "@/components/charts/BalanceChart";
 import { useTradeAnalysis } from "@/hooks/useTradeAnalysis";
 import {
   Cell,
@@ -13,6 +10,46 @@ import {
   PieChart as RechartPieChart,
   ResponsiveContainer,
 } from "recharts";
+import { useApiTrades } from '@/hooks/useApiTrades';
+import { useNavigate } from 'react-router-dom';
+import { Bar, Doughnut } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { BalanceChart } from '@/components/charts/BalanceChart';
+import { WinLossChart } from '@/components/charts/WinLossChart';
+import { BarPerformanceChart } from '@/components/charts/BarPerformanceChart';
+import { EmotionsWinRateChart } from '@/components/charts/EmotionsWinRateChart';
+import { TradeTypePerformanceChart } from '@/components/charts/TradeTypePerformanceChart';
+import { BestTradingHoursChart } from '@/components/charts/BestTradingHoursChart';
+ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
+
+function ChartContainer({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ height: 320, minWidth: 0, flex: 1, border: '2px solid #e0e0e0', borderRadius: 8, padding: 10, background: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
+      <h3 style={{ marginBottom: 8, fontSize: 16 }}>{title}</h3>
+      <div style={{ flex: 1, minHeight: 0 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// Sample data
+const barData = {
+  labels: ['A', 'B', 'C'],
+  datasets: [{ label: 'Sample', data: [12, 19, 3], backgroundColor: '#4ade80' }],
+};
+const doughnutData = {
+  labels: ['X', 'Y'],
+  datasets: [{ data: [60, 40], backgroundColor: ['#4ade80', '#f87171'] }],
+};
 
 export default function Dashboard() {
   const [initialBalance, setInitialBalance] = useState<number>(() => {
@@ -20,18 +57,9 @@ export default function Dashboard() {
     return savedBalance ? parseFloat(savedBalance) : 10000; // Default to 10,000 if not set
   });
   
-  const [trades, setTrades] = useState([]);
-  const { fetchTrades, isLoading, error } = useSupabaseTrades();
+  const { trades, isLoading, error, fetchTrades } = useApiTrades();
   
-  // Fetch trades from Supabase on component mount
-  useEffect(() => {
-    const loadTrades = async () => {
-      const tradesData = await fetchTrades();
-      setTrades(tradesData);
-    };
-    
-    loadTrades();
-  }, [fetchTrades]);
+  const navigate = useNavigate();
   
   // Calculate analysis data using our hook
   const analysisData = useTradeAnalysis(trades, initialBalance);
@@ -87,14 +115,24 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Trading Dashboard</h1>
-        <div className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
-          Short-term Trading Performance
+      {/* Balance Overview Section */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b pb-4 mb-4">
+        <div>
+          <h1 className="text-3xl font-bold mb-1">Trading Dashboard</h1>
+          <div className="flex flex-col md:flex-row md:items-center gap-2 text-muted-foreground">
+            <span className="bg-muted px-3 py-1 rounded-full text-sm">Initial Balance: <span className="font-semibold text-primary">${initialBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></span>
+            <span className="bg-muted px-3 py-1 rounded-full text-sm">Current Balance: <span className="font-semibold text-green-600">${typeof analysisData.metrics.currentBalance === 'number' ? analysisData.metrics.currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</span></span>
+          </div>
         </div>
+        <button
+          className="bg-primary text-white px-6 py-2 rounded-lg font-semibold shadow hover:bg-primary/90 transition"
+          onClick={() => navigate('/add-trade')}
+        >
+          + Add Trade
+        </button>
       </div>
       
-      {/* Balance Section */}
+      {/* InitialBalanceControl Section (keep for editing initial balance) */}
       <InitialBalanceControl 
         initialBalance={initialBalance}
         onBalanceChange={handleInitialBalanceChange}
@@ -119,7 +157,7 @@ export default function Dashboard() {
             <CardDescription>Win Rate</CardDescription>
             <CardTitle className="text-2xl flex items-center">
               <CandlestickChart className="mr-2 h-5 w-5 text-primary" />
-              {analysisData.metrics.totalTrades ? analysisData.metrics.winRate.toFixed(1) : 0}%
+              {analysisData.metrics.totalTrades ? (typeof analysisData.metrics.winRate === 'number' ? analysisData.metrics.winRate.toFixed(1) : '0.0') : 0}%
             </CardTitle>
           </CardHeader>
         </Card>
@@ -130,7 +168,7 @@ export default function Dashboard() {
             <CardTitle className={`text-2xl flex items-center ${analysisData.metrics.totalProfitLoss > 0 ? 'text-green-500' : analysisData.metrics.totalProfitLoss < 0 ? 'text-red-500' : ''}`}>
               <DollarSign className="mr-2 h-5 w-5" />
               {analysisData.metrics.totalProfitLoss > 0 ? '+' : ''}
-              ${analysisData.metrics.totalProfitLoss.toFixed(2)}
+              ${typeof analysisData.metrics.totalProfitLoss === 'number' ? analysisData.metrics.totalProfitLoss.toFixed(2) : '0.00'}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -146,70 +184,32 @@ export default function Dashboard() {
               ) : (
                 <DollarSign className="mr-2 h-5 w-5" />
               )}
-              ${Math.abs(analysisData.metrics.avgWin).toFixed(2)}
+              ${typeof analysisData.metrics.avgWin === 'number' ? Math.abs(analysisData.metrics.avgWin).toFixed(2) : '0.00'}
             </CardTitle>
           </CardHeader>
         </Card>
       </div>
       
       {/* Chart Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Balance Chart */}
-        <Card className="shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <BarChart3 className="h-5 w-5 text-primary mr-2" />
-              Account Balance Trend
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-2 md:p-3 lg:p-4 h-[300px]">
-            <BalanceChart data={analysisData.balanceOverTime} isEmpty={analysisData.balanceOverTime.length === 0} />
-          </CardContent>
-        </Card>
-        
-        {/* Emotions Chart */}
-        <Card className="shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Bolt className="h-5 w-5 text-primary mr-2" />
-              Trading Mindset Analysis
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-2 md:p-3 lg:p-4 h-[300px]">
-            {analysisData.emotionPerformance.length === 0 ? (
-              <div className="flex items-center justify-center h-full w-full">
-                <p className="text-muted-foreground text-center">No emotion data available. Add trades with emotions to see your mindset analysis.</p>
-              </div>
-            ) : (
-              <ResponsiveContainer width="99%" height="99%">
-                <RechartPieChart>
-                  <Pie
-                    data={analysisData.emotionPerformance}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    innerRadius={5}
-                    fill="#8884d8"
-                    dataKey="trades"
-                    nameKey="emotion"
-                    paddingAngle={4}
-                    strokeWidth={1}
-                    stroke="#fff"
-                    label={({ emotion, percent }) => `${emotion}: ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {analysisData.emotionPerformance.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={EMOTION_COLORS[entry.emotion] || "#9ca3af"} 
-                      />
-                    ))}
-                  </Pie>
-                </RechartPieChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <ChartContainer title="Balance Over Time">
+          <BalanceChart balanceOverTime={analysisData.balanceOverTime} />
+        </ChartContainer>
+        <ChartContainer title="Win/Loss Ratio">
+          <WinLossChart wins={analysisData.metrics.profitableTrades} losses={analysisData.metrics.lossTrades} />
+        </ChartContainer>
+        <ChartContainer title="Asset Performance">
+          <BarPerformanceChart data={analysisData.assetPerformance} />
+        </ChartContainer>
+        <ChartContainer title="Emotions vs Win Rate">
+          <EmotionsWinRateChart data={analysisData.emotionPerformance} />
+        </ChartContainer>
+        <ChartContainer title="Trade Type Performance">
+          <TradeTypePerformanceChart data={analysisData.tradeTypePerformance} />
+        </ChartContainer>
+        <ChartContainer title="Best Trading Hours">
+          <BestTradingHoursChart data={analysisData.tradesByHour} />
+        </ChartContainer>
       </div>
       
       {/* Trading Insights Card */}

@@ -11,27 +11,24 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
-interface AssetPerformance {
-  asset: string;
-  trades: number;
-  wins: number;
-  losses: number;
-  profitLoss: number;
+interface BestTradingHour {
+  hourFormatted: string;
   winRate: number;
+  profitLoss: number;
 }
 
-interface BarPerformanceChartProps {
-  data: AssetPerformance[];
+interface BestTradingHoursChartProps {
+  data: BestTradingHour[];
 }
 
-export function BarPerformanceChart({ data }: BarPerformanceChartProps) {
+export function BestTradingHoursChart({ data }: BestTradingHoursChartProps) {
   const chartData = {
-    labels: data.map((d) => d.asset),
+    labels: data.map((d) => d.hourFormatted),
     datasets: [
       {
-        label: 'Profit/Loss',
-        data: data.map((d) => d.profitLoss),
-        backgroundColor: data.map((d) => d.profitLoss >= 0 ? '#4ade80' : '#f87171'),
+        label: 'Win Rate (%)',
+        data: data.map((d) => d.winRate),
+        backgroundColor: '#4ade80',
       },
     ],
   };
@@ -43,9 +40,9 @@ export function BarPerformanceChart({ data }: BarPerformanceChartProps) {
       tooltip: { enabled: true },
     },
     scales: {
-      x: { title: { display: true, text: 'Asset' } },
-      y: { title: { display: true, text: 'Profit/Loss' } },
+      x: { title: { display: true, text: 'Hour' } },
+      y: { title: { display: true, text: 'Win Rate (%)' }, min: 0, max: 100 },
     },
   };
   return <Bar data={chartData} options={options} />;
-}
+} 

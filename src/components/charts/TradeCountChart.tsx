@@ -10,7 +10,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ChartContainer } from "@/components/ChartContainer";
 import { ChartTooltipContent } from "@/components/ui/chart";
 
 interface TradeCountChartProps {
@@ -23,20 +22,16 @@ interface TradeCountChartProps {
 }
 
 export function TradeCountChart({ data, isEmpty = false, isLoading = false }: TradeCountChartProps) {
-  const chartConfig = {
-    count: { label: "Number of Trades", color: "#60a5fa" }
-  };
+  if (isLoading) {
+    return <div className="chart-container" style={{ minHeight: 180 }}>Loading...</div>;
+  }
+  if (isEmpty || data.length === 0) {
+    return <div className="chart-container" style={{ minHeight: 180 }}>No trading frequency data available yet.</div>;
+  }
 
   return (
-    <ChartContainer 
-      title="Trade Frequency"
-      icon={<BarChart3 className="h-5 w-5 text-primary" />}
-      config={chartConfig}
-      isEmpty={isEmpty || data.length === 0}
-      isLoading={isLoading}
-      emptyMessage="No trading frequency data available yet."
-    >
-      <ResponsiveContainer width="99%" height={180}>
+    <div className="chart-container" style={{ minHeight: 180 }}>
+      <ResponsiveContainer width="100%" height="100%">
         <BarChart 
           data={data}
           margin={{ top: 15, right: 30, left: 10, bottom: 15 }}
@@ -59,11 +54,11 @@ export function TradeCountChart({ data, isEmpty = false, isLoading = false }: Tr
           <Bar
             dataKey="count"
             name="Trades"
-            fill={chartConfig.count.color}
+            fill="#60a5fa"
             radius={[4, 4, 0, 0]}
           />
         </BarChart>
       </ResponsiveContainer>
-    </ChartContainer>
+    </div>
   );
 }
