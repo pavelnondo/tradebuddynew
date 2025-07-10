@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checklist, ChecklistItem, Trade } from "@/types";
-import { useSupabaseTrades } from "@/hooks/useSupabaseTrades";
 import { useChecklists } from "@/hooks/useChecklists";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -22,6 +20,7 @@ import {
   PlusCircle, 
   X 
 } from "lucide-react";
+import { useApiTrades } from '@/hooks/useApiTrades';
 
 export default function Strategy() {
   const [selectedChecklistId, setSelectedChecklistId] = useState<string | null>(null);
@@ -36,9 +35,9 @@ export default function Strategy() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [checklists, setChecklists] = useState<Checklist[]>([]);
 
-  const { fetchTrades, uploadScreenshot } = useSupabaseTrades();
   const { fetchChecklists, getChecklist } = useChecklists();
   const { toast } = useToast();
+  const { trades: apiTrades, isLoading: apiTradesLoading, error: apiTradesError, fetchTrades: fetchApiTrades } = useApiTrades();
 
   // Load checklists and trades on component mount
   useEffect(() => {
@@ -48,7 +47,7 @@ export default function Strategy() {
         const checklistsData = await fetchChecklists();
         setChecklists(checklistsData);
         
-        const tradesData = await fetchTrades();
+        const tradesData = await fetchApiTrades();
         setTrades(tradesData);
         
         // Set the first checklist as selected by default if available
@@ -68,7 +67,7 @@ export default function Strategy() {
     };
     
     loadInitialData();
-  }, [fetchChecklists, fetchTrades, toast]);
+  }, [fetchChecklists, toast, fetchApiTrades]);
 
   // Load selected checklist details when ID changes
   useEffect(() => {

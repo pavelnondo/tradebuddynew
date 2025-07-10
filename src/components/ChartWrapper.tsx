@@ -74,7 +74,7 @@ export function ChartWrapper({
   });
 
   return (
-    <div className="h-full w-full border border-border rounded-md bg-background p-2">
+    <div className="h-full w-full chart-container p-0 border border-border rounded-md bg-background">
       {/* Wrap children in a Fragment so it's always a single ReactElement */}
       <UIChartContainer title={title} config={uiConfig}>
         {React.isValidElement(children) ? (

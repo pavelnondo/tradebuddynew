@@ -11,8 +11,8 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
-interface AssetPerformance {
-  asset: string;
+interface TradeTypePerformance {
+  type: string;
   trades: number;
   wins: number;
   losses: number;
@@ -20,13 +20,13 @@ interface AssetPerformance {
   winRate: number;
 }
 
-interface BarPerformanceChartProps {
-  data: AssetPerformance[];
+interface TradeTypePerformanceChartProps {
+  data: TradeTypePerformance[];
 }
 
-export function BarPerformanceChart({ data }: BarPerformanceChartProps) {
+export function TradeTypePerformanceChart({ data }: TradeTypePerformanceChartProps) {
   const chartData = {
-    labels: data.map((d) => d.asset),
+    labels: data.map((d) => d.type),
     datasets: [
       {
         label: 'Profit/Loss',
@@ -43,9 +43,9 @@ export function BarPerformanceChart({ data }: BarPerformanceChartProps) {
       tooltip: { enabled: true },
     },
     scales: {
-      x: { title: { display: true, text: 'Asset' } },
+      x: { title: { display: true, text: 'Trade Type' } },
       y: { title: { display: true, text: 'Profit/Loss' } },
     },
   };
   return <Bar data={chartData} options={options} />;
-}
+} 

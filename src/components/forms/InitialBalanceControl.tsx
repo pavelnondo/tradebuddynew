@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,19 +56,19 @@ export function InitialBalanceControl({
           </p>
         </div>
         
-        {showCurrentBalance && typeof currentBalance !== 'undefined' && typeof percentageReturn !== 'undefined' && (
+        {showCurrentBalance && typeof currentBalance === 'number' && typeof percentageReturn === 'number' && !isNaN(currentBalance) && !isNaN(percentageReturn) && (
           <div className="flex space-x-4">
             <div className="text-center p-3 bg-muted rounded-md">
               <div className="text-muted-foreground text-xs">Current Balance</div>
               <div className={`text-xl font-semibold ${currentBalance >= initialBalance ? 'text-green-500' : 'text-red-500'}`}>
-                ${currentBalance.toFixed(2)}
+                ${!isNaN(currentBalance) ? currentBalance.toFixed(2) : '0.00'}
               </div>
             </div>
             
             <div className="text-center p-3 bg-muted rounded-md">
               <div className="text-muted-foreground text-xs">Total Return</div>
               <div className={`text-xl font-semibold ${percentageReturn >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                {percentageReturn.toFixed(2)}%
+                {!isNaN(percentageReturn) ? percentageReturn.toFixed(2) : '0.00'}%
               </div>
             </div>
           </div>

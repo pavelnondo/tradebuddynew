@@ -11,8 +11,8 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
-interface AssetPerformance {
-  asset: string;
+interface EmotionPerformance {
+  emotion: string;
   trades: number;
   wins: number;
   losses: number;
@@ -20,18 +20,18 @@ interface AssetPerformance {
   winRate: number;
 }
 
-interface BarPerformanceChartProps {
-  data: AssetPerformance[];
+interface EmotionsWinRateChartProps {
+  data: EmotionPerformance[];
 }
 
-export function BarPerformanceChart({ data }: BarPerformanceChartProps) {
+export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
   const chartData = {
-    labels: data.map((d) => d.asset),
+    labels: data.map((d) => d.emotion),
     datasets: [
       {
-        label: 'Profit/Loss',
-        data: data.map((d) => d.profitLoss),
-        backgroundColor: data.map((d) => d.profitLoss >= 0 ? '#4ade80' : '#f87171'),
+        label: 'Win Rate (%)',
+        data: data.map((d) => d.winRate),
+        backgroundColor: '#4ade80',
       },
     ],
   };
@@ -43,9 +43,9 @@ export function BarPerformanceChart({ data }: BarPerformanceChartProps) {
       tooltip: { enabled: true },
     },
     scales: {
-      x: { title: { display: true, text: 'Asset' } },
-      y: { title: { display: true, text: 'Profit/Loss' } },
+      x: { title: { display: true, text: 'Emotion' } },
+      y: { title: { display: true, text: 'Win Rate (%)' }, min: 0, max: 100 },
     },
   };
   return <Bar data={chartData} options={options} />;
-}
+} 

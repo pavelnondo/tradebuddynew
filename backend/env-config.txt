@@ -1,0 +1,5 @@
+    PGHOST=localhost
+    PGUSER=tradebuddy_user
+    PGPASSWORD=pavel123
+    PGDATABASE=tradebuddy
+    PGPORT=5432

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -239,7 +238,7 @@ export default function Checklists() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {checklist.items.map((item, index) => (
+                  {(Array.isArray(checklist.items) ? checklist.items : []).map((item, index) => (
                     <div key={item.id} className="flex items-start">
                       <div className="h-5 w-5 mr-2 flex items-center justify-center">
                         {index + 1}.
