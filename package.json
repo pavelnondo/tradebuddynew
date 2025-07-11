@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev:all": "concurrently \"npm run backend --prefix ./backend\" \"npm run telegram --prefix ./backend\" \"npm run dev --prefix ./src\"",
+    "dev:all": "concurrently \"node backend/index.js\" \"node backend/telegram-webhook.js\" \"npm run dev\"",
     "backend": "node backend/index.js",
     "telegram": "node backend/telegram-webhook.js",
     "dev": "vite",
