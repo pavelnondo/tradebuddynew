@@ -6,7 +6,15 @@ const multer = require('multer');
 const path = require('path');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://217.151.231.249:5173',
+    'http://172.19.0.1:5173',
+    'http://172.18.0.1:5173'
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 const pool = new Pool(); // uses .env for config
