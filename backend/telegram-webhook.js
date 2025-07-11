@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 const axios = require('axios');
+const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 app.use(cors());
@@ -32,7 +33,7 @@ app.post('/telegram-webhook', async (req, res) => {
     console.log(`Received message from ${username}: ${text || 'voice/document'}`);
 
     // Generate unique processing ID
-    const processingId = generateUUID();
+    const processingId = uuidv4();
 
     // Structure data for n8n
     const n8nPayload = {
@@ -103,15 +104,6 @@ function determineMessageType(message) {
     return 'text_message';
   }
   return 'unknown';
-}
-
-// Generate UUID for processing tracking
-function generateUUID() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c == 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
 }
 
 // Save processed data to database
