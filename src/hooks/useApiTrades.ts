@@ -3,13 +3,13 @@ import { Trade } from '@/types';
 
 // Get the API base URL dynamically
 const getApiBaseUrl = () => {
-  // If we're in development, use the current hostname with port 4000
+  // If we're in development, use the current hostname with port 4004
   if (import.meta.env.DEV) {
     const hostname = window.location.hostname;
-    return `http://${hostname}:4000`;
+    return `http://${hostname}:4004`;
   }
   // For production, you might want to use a different URL
-  return import.meta.env.VITE_API_URL || 'http://localhost:4000';
+  return import.meta.env.VITE_API_URL || 'http://localhost:4004';
 };
 
 export function useApiTrades() {
