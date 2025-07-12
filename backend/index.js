@@ -4,6 +4,15 @@ const cors = require('cors');
 const { Pool } = require('pg');
 const multer = require('multer');
 const path = require('path');
+const { 
+  createUser, 
+  findUserByCredentials, 
+  findUserByTelegramId, 
+  createOrLinkTelegramUser,
+  generateToken, 
+  authenticateToken, 
+  optionalAuth 
+} = require('./auth');
 
 const app = express();
 app.use(cors());
@@ -30,9 +39,132 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-app.get('/trades', async (req, res) => {
+// Authentication endpoints
+app.post('/auth/register', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM trades ORDER BY id DESC');
+    const { username, email, password } = req.body;
+    
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: 'Username, email, and password are required' });
+    }
+    
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    }
+    
+    const user = await createUser(username, email, password);
+    const token = generateToken(user.id, user.username, user.role);
+    
+    res.status(201).json({
+      success: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role
+      },
+      token
+    });
+  } catch (err) {
+    if (err.code === '23505') { // Unique constraint violation
+      return res.status(400).json({ error: 'Username or email already exists' });
+    }
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+    
+    const user = await findUserByCredentials(email, password);
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+    
+    const token = generateToken(user.id, user.username, user.role);
+    
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role
+      },
+      token
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/auth/telegram', async (req, res) => {
+  try {
+    const { telegramId, telegramUsername } = req.body;
+    
+    if (!telegramId) {
+      return res.status(400).json({ error: 'Telegram ID is required' });
+    }
+    
+    const user = await createOrLinkTelegramUser(telegramId, telegramUsername);
+    const token = generateToken(user.id, user.username, user.role);
+    
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role
+      },
+      token
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/auth/me', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, username, email, telegram_id, telegram_username, role FROM users WHERE id = $1',
+      [req.user.userId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({
+      success: true,
+      user: result.rows[0]
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Protected routes - require authentication
+app.get('/trades', optionalAuth, async (req, res) => {
+  try {
+    let query = 'SELECT * FROM trades';
+    let params = [];
+    
+    // If user is authenticated, filter by user_id
+    if (req.user) {
+      query += ' WHERE user_id = $1';
+      params.push(req.user.userId);
+    }
+    
+    query += ' ORDER BY id DESC';
+    
+    const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -40,20 +172,23 @@ app.get('/trades', async (req, res) => {
 });
 
 // Create a trade (now supports advanced fields)
-app.post('/trades', async (req, res) => {
+app.post('/trades', optionalAuth, async (req, res) => {
   const {
     symbol, type, entry_price, exit_price, quantity, entry_time, exit_time, pnl, notes,
     emotion, setup, execution_quality, duration, checklist_id, checklist_completed, screenshot
   } = req.body;
+  
   try {
     const checklistCompletedJson = checklist_completed ? JSON.stringify(checklist_completed) : null;
+    const userId = req.user ? req.user.userId : null;
+    
     const result = await pool.query(
       `INSERT INTO trades (symbol, type, entry_price, exit_price, quantity, entry_time, exit_time, pnl, notes,
-        emotion, setup, execution_quality, duration, checklist_id, checklist_completed, screenshot)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        emotion, setup, execution_quality, duration, checklist_id, checklist_completed, screenshot, user_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
        RETURNING *`,
       [symbol, type, entry_price, exit_price, quantity, entry_time, exit_time, pnl, notes,
-        emotion, setup, execution_quality, duration, checklist_id, checklistCompletedJson, screenshot]
+        emotion, setup, execution_quality, duration, checklist_id, checklistCompletedJson, screenshot, userId]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {

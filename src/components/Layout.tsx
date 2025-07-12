@@ -3,7 +3,16 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import ErrorBoundary from "./ErrorBoundary";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,6 +23,7 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, logout } = useAuth();
 
   // Toggle dark/light theme
   const toggleTheme = () => {
@@ -38,6 +48,15 @@ export function Layout({ children }: LayoutProps) {
     { path: "/checklists", label: "Checklists" },
   ];
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out.",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <header className="border-b">
@@ -49,6 +68,29 @@ export function Layout({ children }: LayoutProps) {
             <Button variant="ghost" size="icon" onClick={toggleTheme}>
               {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
             </Button>
+            
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <User size={20} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{user.username}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </header>

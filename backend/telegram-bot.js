@@ -5,6 +5,7 @@ const { Pool } = require('pg');
 const multer = require('multer');
 const path = require('path');
 const axios = require('axios');
+const { createOrLinkTelegramUser, generateToken } = require('./auth');
 
 const app = express();
 app.use(cors());
@@ -78,31 +79,55 @@ app.post('/telegram-webhook', async (req, res) => {
 
     console.log(`Received message from ${username}: ${text}`);
 
-    // Forward the complete Telegram data to N8N
-    const n8nResult = await forwardToN8N(req.body);
+    // Authenticate or create user from Telegram
+    let user;
+    try {
+      user = await createOrLinkTelegramUser(userId, username);
+      console.log(`User authenticated: ${user.username} (ID: ${user.id})`);
+    } catch (error) {
+      console.error('Error authenticating Telegram user:', error);
+      await sendTelegramMessage(chatId, "❌ Authentication error. Please try again.");
+      return res.status(500).json({ error: 'Authentication failed' });
+    }
+
+    // Forward the complete Telegram data to N8N with user context
+    const telegramDataWithUser = {
+      ...req.body,
+      user: {
+        id: user.id,
+        username: user.username,
+        telegram_id: user.telegram_id
+      }
+    };
+    
+    const n8nResult = await forwardToN8N(telegramDataWithUser);
     
     if (!n8nResult.success) {
       console.warn('Failed to forward to N8N, but continuing with local processing');
     } else if (n8nResult.processedData) {
       // Handle processed data from N8N
-      await handleN8NProcessedData(n8nResult.processedData, message.chat.id);
+      await handleN8NProcessedData(n8nResult.processedData, message.chat.id, user.id);
     }
 
     // Handle different types of messages
     if (voice) {
-      await handleVoiceMessage(message, voice);
+      await handleVoiceMessage(message, voice, user.id);
     } else if (document) {
-      await handleDocumentUpload(message, document);
+      await handleDocumentUpload(message, document, user.id);
     } else if (text.startsWith('/')) {
-      await handleCommand(message, text);
+      await handleCommand(message, text, user.id);
     } else {
-      await handleTextMessage(message, text);
+      await handleTextMessage(message, text, user.id);
     }
 
     res.json({ 
       success: true, 
       n8nForwarded: n8nResult.success,
-      n8nStatus: n8nResult.status 
+      n8nStatus: n8nResult.status,
+      user: {
+        id: user.id,
+        username: user.username
+      }
     });
   } catch (error) {
     console.error('Telegram webhook error:', error);

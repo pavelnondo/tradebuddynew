@@ -1,6 +1,36 @@
 -- Add processing_id column to existing trades table
 ALTER TABLE trades ADD COLUMN IF NOT EXISTS processing_id VARCHAR(255);
 
+-- Create users table for authentication
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    telegram_id BIGINT UNIQUE,
+    telegram_username VARCHAR(100),
+    is_active BOOLEAN DEFAULT true,
+    role VARCHAR(20) DEFAULT 'user',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create user sessions table
+CREATE TABLE IF NOT EXISTS user_sessions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    session_token VARCHAR(255) UNIQUE NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Add user_id to existing tables
+ALTER TABLE trades ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE ai_analysis ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE processing_logs ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE voice_messages ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE document_uploads ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
+
 -- Create AI analysis table
 CREATE TABLE IF NOT EXISTS ai_analysis (
     id SERIAL PRIMARY KEY,
@@ -61,13 +91,22 @@ CREATE TABLE IF NOT EXISTS document_uploads (
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_trades_processing_id ON trades(processing_id);
+CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id);
 CREATE INDEX IF NOT EXISTS idx_ai_analysis_trade_id ON ai_analysis(trade_id);
 CREATE INDEX IF NOT EXISTS idx_ai_analysis_processing_id ON ai_analysis(processing_id);
+CREATE INDEX IF NOT EXISTS idx_ai_analysis_user_id ON ai_analysis(user_id);
 CREATE INDEX IF NOT EXISTS idx_processing_logs_processing_id ON processing_logs(processing_id);
 CREATE INDEX IF NOT EXISTS idx_processing_logs_chat_id ON processing_logs(chat_id);
 CREATE INDEX IF NOT EXISTS idx_processing_logs_status ON processing_logs(status);
+CREATE INDEX IF NOT EXISTS idx_processing_logs_user_id ON processing_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_voice_messages_processing_id ON voice_messages(processing_id);
+CREATE INDEX IF NOT EXISTS idx_voice_messages_user_id ON voice_messages(user_id);
 CREATE INDEX IF NOT EXISTS idx_document_uploads_processing_id ON document_uploads(processing_id);
+CREATE INDEX IF NOT EXISTS idx_document_uploads_user_id ON document_uploads(user_id);
+CREATE INDEX IF NOT EXISTS idx_users_telegram_id ON users(telegram_id);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
 
 -- Create function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -81,6 +120,11 @@ $$ language 'plpgsql';
 -- Create trigger for processing_logs
 CREATE TRIGGER update_processing_logs_updated_at 
     BEFORE UPDATE ON processing_logs 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Create trigger for users
+CREATE TRIGGER update_users_updated_at 
+    BEFORE UPDATE ON users 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Insert sample data for testing (optional)
