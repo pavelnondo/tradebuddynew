@@ -197,7 +197,7 @@ app.post('/trades', optionalAuth, async (req, res) => {
 });
 
 // Update a trade (now supports advanced fields)
-app.put('/trades/:id', async (req, res) => {
+app.put('/trades/:id', optionalAuth, async (req, res) => {
   const { id } = req.params;
   const {
     symbol, type, entry_price, exit_price, quantity, entry_time, exit_time, pnl, notes,
@@ -205,13 +205,27 @@ app.put('/trades/:id', async (req, res) => {
   } = req.body;
   try {
     const checklistCompletedJson = checklist_completed ? JSON.stringify(checklist_completed) : null;
-    const result = await pool.query(
-      `UPDATE trades SET symbol=$1, type=$2, entry_price=$3, exit_price=$4, quantity=$5, entry_time=$6, exit_time=$7, pnl=$8, notes=$9,
-        emotion=$10, setup=$11, execution_quality=$12, duration=$13, checklist_id=$14, checklist_completed=$15, screenshot=$16
-       WHERE id=$17 RETURNING *`,
-      [symbol, type, entry_price, exit_price, quantity, entry_time, exit_time, pnl, notes,
-        emotion, setup, execution_quality, duration, checklist_id, checklistCompletedJson, screenshot, id]
-    );
+    const userId = req.user ? req.user.userId : null;
+    
+    let query = `UPDATE trades SET symbol=$1, type=$2, entry_price=$3, exit_price=$4, quantity=$5, entry_time=$6, exit_time=$7, pnl=$8, notes=$9,
+        emotion=$10, setup=$11, execution_quality=$12, duration=$13, checklist_id=$14, checklist_completed=$15, screenshot=$16`;
+    let params = [symbol, type, entry_price, exit_price, quantity, entry_time, exit_time, pnl, notes,
+        emotion, setup, execution_quality, duration, checklist_id, checklistCompletedJson, screenshot];
+    
+    if (userId) {
+      query += ` WHERE id=$17 AND user_id=$18 RETURNING *`;
+      params.push(id, userId);
+    } else {
+      query += ` WHERE id=$17 RETURNING *`;
+      params.push(id);
+    }
+    
+    const result = await pool.query(query, params);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Trade not found or access denied' });
+    }
+    
     res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -219,10 +233,25 @@ app.put('/trades/:id', async (req, res) => {
 });
 
 // Delete a trade
-app.delete('/trades/:id', async (req, res) => {
+app.delete('/trades/:id', optionalAuth, async (req, res) => {
   const { id } = req.params;
   try {
-    await pool.query('DELETE FROM trades WHERE id=$1', [id]);
+    const userId = req.user ? req.user.userId : null;
+    
+    let query = 'DELETE FROM trades WHERE id=$1';
+    let params = [id];
+    
+    if (userId) {
+      query += ' AND user_id=$2';
+      params.push(userId);
+    }
+    
+    const result = await pool.query(query, params);
+    
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Trade not found or access denied' });
+    }
+    
     res.status(204).end();
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -230,9 +259,21 @@ app.delete('/trades/:id', async (req, res) => {
 });
 
 // Get all checklists
-app.get('/checklists', async (req, res) => {
+app.get('/checklists', optionalAuth, async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM checklists ORDER BY id DESC');
+    const userId = req.user ? req.user.userId : null;
+    
+    let query = 'SELECT * FROM checklists';
+    let params = [];
+    
+    if (userId) {
+      query += ' WHERE user_id = $1';
+      params.push(userId);
+    }
+    
+    query += ' ORDER BY id DESC';
+    
+    const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -240,12 +281,22 @@ app.get('/checklists', async (req, res) => {
 });
 
 // Get a single checklist by ID
-app.get('/checklists/:id', async (req, res) => {
+app.get('/checklists/:id', optionalAuth, async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query('SELECT * FROM checklists WHERE id=$1', [id]);
+    const userId = req.user ? req.user.userId : null;
+    
+    let query = 'SELECT * FROM checklists WHERE id=$1';
+    let params = [id];
+    
+    if (userId) {
+      query += ' AND user_id=$2';
+      params.push(userId);
+    }
+    
+    const result = await pool.query(query, params);
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Checklist not found' });
+      return res.status(404).json({ error: 'Checklist not found or access denied' });
     }
     res.json(result.rows[0]);
   } catch (err) {
@@ -265,9 +316,21 @@ app.get('/checklists/:id/items', async (req, res) => {
 });
 
 // Get all screenshots
-app.get('/screenshots', async (req, res) => {
+app.get('/screenshots', optionalAuth, async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM screenshots ORDER BY id DESC');
+    const userId = req.user ? req.user.userId : null;
+    
+    let query = 'SELECT * FROM screenshots';
+    let params = [];
+    
+    if (userId) {
+      query += ' WHERE user_id = $1';
+      params.push(userId);
+    }
+    
+    query += ' ORDER BY id DESC';
+    
+    const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -275,23 +338,39 @@ app.get('/screenshots', async (req, res) => {
 });
 
 // Screenshot upload endpoint
-app.post('/upload', upload.single('screenshot'), (req, res) => {
+app.post('/upload', optionalAuth, upload.single('screenshot'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }
-  // Return the public URL for the uploaded file
-  const url = `/public/lovable-uploads/${req.file.filename}`;
-  res.json({ url });
+  
+  try {
+    const userId = req.user ? req.user.userId : null;
+    const url = `/public/lovable-uploads/${req.file.filename}`;
+    
+    // Save screenshot record to database with user_id
+    if (userId) {
+      await pool.query(
+        'INSERT INTO screenshots (file_path, user_id) VALUES ($1, $2)',
+        [url, userId]
+      );
+    }
+    
+    res.json({ url });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // --- CHECKLIST CRUD ---
 // Create a checklist
-app.post('/checklists', async (req, res) => {
+app.post('/checklists', optionalAuth, async (req, res) => {
   const { name, description } = req.body;
   try {
+    const userId = req.user ? req.user.userId : null;
+    
     const result = await pool.query(
-      'INSERT INTO checklists (name, description) VALUES ($1, $2) RETURNING *',
-      [name, description]
+      'INSERT INTO checklists (name, description, user_id) VALUES ($1, $2, $3) RETURNING *',
+      [name, description, userId]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -300,14 +379,28 @@ app.post('/checklists', async (req, res) => {
 });
 
 // Update a checklist
-app.put('/checklists/:id', async (req, res) => {
+app.put('/checklists/:id', optionalAuth, async (req, res) => {
   const { id } = req.params;
   const { name, description } = req.body;
   try {
-    const result = await pool.query(
-      'UPDATE checklists SET name=$1, description=$2 WHERE id=$3 RETURNING *',
-      [name, description, id]
-    );
+    const userId = req.user ? req.user.userId : null;
+    
+    let query = 'UPDATE checklists SET name=$1, description=$2 WHERE id=$3';
+    let params = [name, description, id];
+    
+    if (userId) {
+      query += ' AND user_id=$4';
+      params.push(userId);
+    }
+    
+    query += ' RETURNING *';
+    
+    const result = await pool.query(query, params);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Checklist not found or access denied' });
+    }
+    
     res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -315,9 +408,26 @@ app.put('/checklists/:id', async (req, res) => {
 });
 
 // Delete a checklist (and its items)
-app.delete('/checklists/:id', async (req, res) => {
+app.delete('/checklists/:id', optionalAuth, async (req, res) => {
   const { id } = req.params;
   try {
+    const userId = req.user ? req.user.userId : null;
+    
+    // First check if checklist belongs to user
+    let checkQuery = 'SELECT id FROM checklists WHERE id=$1';
+    let checkParams = [id];
+    
+    if (userId) {
+      checkQuery += ' AND user_id=$2';
+      checkParams.push(userId);
+    }
+    
+    const checkResult = await pool.query(checkQuery, checkParams);
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Checklist not found or access denied' });
+    }
+    
+    // Delete checklist items and checklist
     await pool.query('DELETE FROM checklist_items WHERE checklist_id=$1', [id]);
     await pool.query('DELETE FROM checklists WHERE id=$1', [id]);
     res.status(204).end();

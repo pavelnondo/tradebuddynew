@@ -30,6 +30,8 @@ ALTER TABLE ai_analysis ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES user
 ALTER TABLE processing_logs ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
 ALTER TABLE voice_messages ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
 ALTER TABLE document_uploads ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE checklists ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE screenshots ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
 
 -- Create AI analysis table
 CREATE TABLE IF NOT EXISTS ai_analysis (
@@ -103,6 +105,8 @@ CREATE INDEX IF NOT EXISTS idx_voice_messages_processing_id ON voice_messages(pr
 CREATE INDEX IF NOT EXISTS idx_voice_messages_user_id ON voice_messages(user_id);
 CREATE INDEX IF NOT EXISTS idx_document_uploads_processing_id ON document_uploads(processing_id);
 CREATE INDEX IF NOT EXISTS idx_document_uploads_user_id ON document_uploads(user_id);
+CREATE INDEX IF NOT EXISTS idx_checklists_user_id ON checklists(user_id);
+CREATE INDEX IF NOT EXISTS idx_screenshots_user_id ON screenshots(user_id);
 CREATE INDEX IF NOT EXISTS idx_users_telegram_id ON users(telegram_id);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token);
