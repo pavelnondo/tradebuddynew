@@ -32,71 +32,16 @@ app.post('/telegram-webhook', async (req, res) => {
     console.log('Webhook received - Raw body:', req.body.toString());
     console.log('Webhook received - Request headers:', req.headers);
     
-    // Parse the raw body as JSON
-    let body;
-    let rawBodyStr = req.body.toString();
+    // Just forward the raw body to n8n without parsing
+    const rawBody = req.body.toString();
     
-    // Clean up malformed JSON from shell escaping
-    try {
-      // First try to parse as-is
-      body = JSON.parse(rawBodyStr);
-    } catch (parseError) {
-      console.error('Initial JSON parse error:', parseError);
-      console.error('Raw body that failed to parse:', rawBodyStr);
-      
-      // Try to clean up the malformed JSON
-      try {
-        // Remove extra backslashes and fix escaping
-        let cleanedBody = rawBodyStr
-          .replace(/\\:/g, ':')  // Fix escaped colons
-          .replace(/\\"/g, '"')  // Fix escaped quotes
-          .replace(/\\\\/g, '\\'); // Fix double backslashes
-        
-        console.log('Cleaned body:', cleanedBody);
-        body = JSON.parse(cleanedBody);
-      } catch (cleanupError) {
-        console.error('JSON cleanup also failed:', cleanupError);
-        console.error('Cleaned body that failed:', cleanedBody);
-        return res.status(400).json({ error: 'Invalid JSON after cleanup' });
-      }
-    }
+    // Send raw data to n8n for AI processing
+    console.log('Sending raw data to n8n:', rawBody);
     
-    const { message } = body;
-    
-    if (!message) {
-      console.log('No message in request body');
-      return res.status(400).json({ error: 'No message received' });
-    }
-
-    const chatId = message.chat.id;
-    const userId = message.from.id;
-    const username = message.from.username;
-    const text = message.text || '';
-    const voice = message.voice || null;
-    const document = message.document || null;
-
-    console.log(`Received message from ${username}: ${text || 'voice/document'}`);
-
-    // Generate unique processing ID
-    const processingId = uuidv4();
-
-    // Structure data for n8n
-    const n8nPayload = {
-      type: determineMessageType(message),
-      raw_message: text,
-      voice: voice,
-      document: document,
-      chat_id: chatId,
-      user_id: userId,
-      username: username,
-      timestamp: new Date().toISOString(),
-      processing_id: processingId
-    };
-
-    // Send to n8n for AI processing
-    console.log('Sending to n8n:', n8nPayload);
-    
-    const n8nResponse = await axios.post(N8N_WEBHOOK_URL, n8nPayload, {
+    const n8nResponse = await axios.post(N8N_WEBHOOK_URL, {
+      raw_webhook_data: rawBody,
+      timestamp: new Date().toISOString()
+    }, {
       headers: {
         'Content-Type': 'application/json'
       },
@@ -108,34 +53,10 @@ app.post('/telegram-webhook', async (req, res) => {
 
     console.log('n8n response:', n8nResponse.data);
 
-    // Process n8n response
-    const processedData = n8nResponse.data;
-    
-    if (processedData.success) {
-      // Save to database
-      await saveToDatabase(processedData);
-      
-      // Send response back to Telegram
-      await sendTelegramMessage(chatId, processedData.message || '✅ Trade processed successfully!');
-    } else {
-      // Handle error
-      await sendTelegramMessage(chatId, '❌ Error processing your request. Please try again.');
-    }
-
-    res.json({ success: true });
+    // Send simple response back to Telegram
+    res.json({ success: true, message: 'Data forwarded to n8n' });
   } catch (error) {
     console.error('Telegram webhook error:', error);
-    
-    // Try to send error message to user if we have chat_id
-    try {
-      const chatId = req.body?.message?.chat?.id;
-      if (chatId) {
-        await sendTelegramMessage(chatId, '❌ Sorry, there was an error processing your request. Please try again.');
-      }
-    } catch (sendError) {
-      console.error('Error sending error message:', sendError);
-    }
-    
     res.status(500).json({ error: error.message });
   }
 });
