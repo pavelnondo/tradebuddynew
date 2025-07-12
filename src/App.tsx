@@ -13,6 +13,9 @@ import Settings from "./pages/Settings";
 import Checklists from "./pages/Checklists";
 import Strategy from "./pages/Strategy";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { AuthProvider } from "./hooks/useAuth";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import Login from "./pages/Login";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,13 +29,42 @@ const queryClient = new QueryClient({
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<ErrorBoundary><Layout><Dashboard /></Layout></ErrorBoundary>} />
-      <Route path="/trades" element={<ErrorBoundary><Layout><TradeHistory /></Layout></ErrorBoundary>} />
-      <Route path="/add-trade" element={<ErrorBoundary><Layout><AddTrade /></Layout></ErrorBoundary>} />
-      <Route path="/analysis" element={<ErrorBoundary><Layout><Analysis /></Layout></ErrorBoundary>} />
-      <Route path="/checklists" element={<ErrorBoundary><Layout><Checklists /></Layout></ErrorBoundary>} />
-      <Route path="/strategy" element={<ErrorBoundary><Layout><Strategy /></Layout></ErrorBoundary>} />
-      <Route path="/settings" element={<ErrorBoundary><Layout><Settings /></Layout></ErrorBoundary>} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/" element={
+        <ProtectedRoute>
+          <ErrorBoundary><Layout><Dashboard /></Layout></ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      <Route path="/trades" element={
+        <ProtectedRoute>
+          <ErrorBoundary><Layout><TradeHistory /></Layout></ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      <Route path="/add-trade" element={
+        <ProtectedRoute>
+          <ErrorBoundary><Layout><AddTrade /></Layout></ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      <Route path="/analysis" element={
+        <ProtectedRoute>
+          <ErrorBoundary><Layout><Analysis /></Layout></ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      <Route path="/checklists" element={
+        <ProtectedRoute>
+          <ErrorBoundary><Layout><Checklists /></Layout></ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      <Route path="/strategy" element={
+        <ProtectedRoute>
+          <ErrorBoundary><Layout><Strategy /></Layout></ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      <Route path="/settings" element={
+        <ProtectedRoute>
+          <ErrorBoundary><Layout><Settings /></Layout></ErrorBoundary>
+        </ProtectedRoute>
+      } />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -41,13 +73,15 @@ const AppRoutes = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
-      <TooltipProvider>
-        <ErrorBoundary>
-          <Toaster />
-          <Sonner />
-          <AppRoutes />
-        </ErrorBoundary>
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <ErrorBoundary>
+            <Toaster />
+            <Sonner />
+            <AppRoutes />
+          </ErrorBoundary>
+        </TooltipProvider>
+      </AuthProvider>
     </BrowserRouter>
   </QueryClientProvider>
 );
