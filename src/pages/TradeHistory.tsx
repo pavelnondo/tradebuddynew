@@ -49,7 +49,7 @@ export default function TradeHistory() {
   const handleDeleteTrade = async (id: string, event: React.MouseEvent) => {
     event.stopPropagation();
     try {
-      const res = await fetch(`http://localhost:4000/trades/${id}`, { method: 'DELETE' });
+      const res = await fetch(`http://localhost:4004/trades/${id}`, { method: 'DELETE' });
       if (res.ok) {
         await fetchTrades();
         if (selectedTrade && selectedTrade.id === id) setSelectedTrade(null);
@@ -144,7 +144,7 @@ export default function TradeHistory() {
   const handleSaveEdit = async () => {
     if (!editingTrade) return;
     try {
-      const res = await fetch(`http://localhost:4000/trades/${editingTrade.id}`, {
+      const res = await fetch(`http://localhost:4004/trades/${editingTrade.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

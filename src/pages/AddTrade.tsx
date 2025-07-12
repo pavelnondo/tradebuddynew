@@ -158,7 +158,7 @@ export default function AddTrade() {
       if (screenshotFile) {
         const formData = new FormData();
         formData.append('screenshot', screenshotFile);
-        const uploadRes = await fetch('http://localhost:4000/upload', {
+        const uploadRes = await fetch('http://localhost:4004/upload', {
           method: 'POST',
           body: formData,
         });
@@ -188,7 +188,7 @@ export default function AddTrade() {
         screenshot: screenshotUrl,
       };
       // POST to backend
-      const res = await fetch('http://localhost:4000/trades', {
+      const res = await fetch('http://localhost:4004/trades', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(tradeData),

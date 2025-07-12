@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
@@ -8,7 +9,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const pool = new Pool();
+const pool = new Pool({
+  host: process.env.PGHOST || 'localhost',
+  user: process.env.PGUSER || 'tradebuddy_user',
+  password: process.env.PGPASSWORD || 'pavel123',
+  database: process.env.PGDATABASE || 'tradebuddy',
+  port: process.env.PGPORT || 5432,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
 
 // Configuration
 const N8N_WEBHOOK_URL = 'https://4807387-or91258.twc1.net/webhook/b43064f8-12fc-4ae0-9ab4-bdceed7542ba';
