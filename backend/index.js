@@ -447,6 +447,100 @@ app.delete('/checklists/:id/items', async (req, res) => {
   }
 });
 
+// --- TRADING SETUPS CRUD ---
+// Get all trading setups
+app.get('/setups', optionalAuth, async (req, res) => {
+  try {
+    const userId = req.user ? req.user.userId : null;
+    
+    let query = 'SELECT * FROM trading_setups WHERE is_active = true';
+    let params = [];
+    
+    if (userId) {
+      query += ' AND user_id = $1';
+      params.push(userId);
+    }
+    
+    query += ' ORDER BY name ASC';
+    
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Create a trading setup
+app.post('/setups', optionalAuth, async (req, res) => {
+  const { name, description, setup_type, entry_criteria, exit_criteria, risk_management, notes } = req.body;
+  try {
+    const userId = req.user ? req.user.userId : null;
+    
+    const result = await pool.query(
+      'INSERT INTO trading_setups (user_id, name, description, setup_type, entry_criteria, exit_criteria, risk_management, notes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+      [userId, name, description, setup_type, entry_criteria, exit_criteria, risk_management, notes]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update a trading setup
+app.put('/setups/:id', optionalAuth, async (req, res) => {
+  const { id } = req.params;
+  const { name, description, setup_type, entry_criteria, exit_criteria, risk_management, notes, is_active } = req.body;
+  try {
+    const userId = req.user ? req.user.userId : null;
+    
+    let query = 'UPDATE trading_setups SET name=$1, description=$2, setup_type=$3, entry_criteria=$4, exit_criteria=$5, risk_management=$6, notes=$7, is_active=$8 WHERE id=$9';
+    let params = [name, description, setup_type, entry_criteria, exit_criteria, risk_management, notes, is_active, id];
+    
+    if (userId) {
+      query += ' AND user_id=$10';
+      params.push(userId);
+    }
+    
+    query += ' RETURNING *';
+    
+    const result = await pool.query(query, params);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Setup not found or access denied' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete a trading setup
+app.delete('/setups/:id', optionalAuth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const userId = req.user ? req.user.userId : null;
+    
+    let query = 'DELETE FROM trading_setups WHERE id=$1';
+    let params = [id];
+    
+    if (userId) {
+      query += ' AND user_id=$2';
+      params.push(userId);
+    }
+    
+    const result = await pool.query(query, params);
+    
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Setup not found or access denied' });
+    }
+    
+    res.status(204).end();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- CHECKLIST ITEM CRUD ---
 // Create a checklist item
 app.post('/checklists/:id/items', async (req, res) => {

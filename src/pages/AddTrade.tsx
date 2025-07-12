@@ -104,6 +104,8 @@ export default function AddTrade() {
   
   // Handle checklist selection change
   const handleChecklistChange = async (checklistId: string) => {
+    console.log('Checklist changed to:', checklistId);
+    
     // If "none" is selected, set to undefined (no checklist)
     if (checklistId === "none") {
       form.setValue('checklist_id', undefined);
@@ -114,10 +116,15 @@ export default function AddTrade() {
     
     form.setValue('checklist_id', checklistId);
     
-    const checklist = await getChecklist(checklistId);
-    if (checklist) {
-      setSelectedChecklist(checklist);
-      setChecklistItems(checklist.items.map(item => ({ ...item, completed: false })));
+    try {
+      const checklist = await getChecklist(checklistId);
+      console.log('Loaded checklist:', checklist);
+      if (checklist) {
+        setSelectedChecklist(checklist);
+        setChecklistItems(checklist.items.map(item => ({ ...item, completed: false })));
+      }
+    } catch (error) {
+      console.error('Error loading checklist:', error);
     }
   };
   
@@ -521,7 +528,7 @@ export default function AddTrade() {
                         <FormLabel>Trading Checklist</FormLabel>
                         <Select 
                           value={form.watch('checklist_id') || ''} 
-                          onValueChange={val => form.setValue('checklist_id', val)}
+                          onValueChange={handleChecklistChange}
                         >
                           <FormControl>
                             <SelectTrigger>
