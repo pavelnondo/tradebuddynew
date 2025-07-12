@@ -25,7 +25,7 @@ import { useChecklists } from '@/hooks/useChecklists';
 import { DateTimeInput } from '@/components/DateTimeInput';
 import { FeatureToggle } from '@/components/FeatureToggle';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
-import { buildApiUrl } from '@/lib/api';
+import { buildApiUrl, getAuthHeaders } from '@/lib/api';
 
 // Form validation schema using Zod
 const formSchema = z.object({
@@ -168,6 +168,7 @@ export default function AddTrade() {
         formData.append('screenshot', screenshotFile);
         const uploadRes = await fetch(buildApiUrl('/upload'), {
           method: 'POST',
+          headers: getAuthHeaders(),
           body: formData,
         });
         if (!uploadRes.ok) throw new Error('Failed to upload screenshot');
@@ -189,7 +190,7 @@ export default function AddTrade() {
         setup: values.setup,
         execution_quality: values.executionQuality,
         duration: values.duration,
-        checklist_id: values.checklist_id ? parseInt(values.checklist_id, 10) : null,
+        checklist_id: values.checklist_id && values.checklist_id !== "none" ? parseInt(values.checklist_id, 10) : null,
         checklist_completed: selectedChecklist && checklistItems.length > 0
           ? checklistItems.map(item => ({ text: item.text, completed: !!item.completed }))
           : null,
@@ -198,7 +199,10 @@ export default function AddTrade() {
       // POST to backend
       const res = await fetch(buildApiUrl('/trades'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify(tradeData),
       });
       if (res.ok) {

@@ -28,7 +28,7 @@ import { BarPerformanceChart } from '@/components/charts/BarPerformanceChart';
 import { EmotionsWinRateChart } from '@/components/charts/EmotionsWinRateChart';
 import { TradeTypePerformanceChart } from '@/components/charts/TradeTypePerformanceChart';
 import { BestTradingHoursChart } from '@/components/charts/BestTradingHoursChart';
-import { TelegramBotCard } from '@/components/TelegramBotCard';
+
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
 
 function ChartContainer({ title, children }: { title: string; children: React.ReactNode }) {
@@ -191,127 +191,117 @@ export default function Dashboard() {
         </Card>
       </div>
       
-      {/* Chart Section and Telegram Bot */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          {/* Chart Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <ChartContainer title="Balance Over Time">
-              <BalanceChart balanceOverTime={analysisData.balanceOverTime} />
-            </ChartContainer>
-            <ChartContainer title="Win/Loss Ratio">
-              <WinLossChart wins={analysisData.metrics.profitableTrades} losses={analysisData.metrics.lossTrades} />
-            </ChartContainer>
-            <ChartContainer title="Asset Performance">
-              <BarPerformanceChart data={analysisData.assetPerformance} />
-            </ChartContainer>
-            <ChartContainer title="Emotions vs Win Rate">
-              <EmotionsWinRateChart data={analysisData.emotionPerformance} />
-            </ChartContainer>
-            <ChartContainer title="Trade Type Performance">
-              <TradeTypePerformanceChart data={analysisData.tradeTypePerformance} />
-            </ChartContainer>
-            <ChartContainer title="Best Trading Hours">
-              <BestTradingHoursChart data={analysisData.tradesByHour} />
-            </ChartContainer>
-          </div>
-          
-          {/* Trading Insights Card */}
-          <Card className="shadow-md hover:shadow-lg transition-shadow bg-gradient-to-r from-secondary/5 to-transparent mt-8">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Bolt className="mr-2 h-5 w-5 text-primary" />
-                Trading Insights
-              </CardTitle>
-              <CardDescription>
-                Actionable insights to improve your trading performance
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {trades.length > 0 ? (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-card p-4 rounded-lg border shadow-sm">
-                      <h3 className="font-semibold mb-2 text-primary">Best Performing Asset</h3>
-                      <p className="text-sm">
-                        <span className="text-lg font-bold">
-                          {bestAsset ? bestAsset.asset : "No data"}
-                        </span>
-                        <br />
-                        {bestAsset 
-                          ? "Focus on short-term trades with this instrument for highest profit potential."
-                          : "Add trades to see your best performing assets."}
-                      </p>
-                    </div>
-                    
-                    <div className="bg-card p-4 rounded-lg border shadow-sm">
-                      <h3 className="font-semibold mb-2 text-primary">Primary Trading Emotion</h3>
-                      <p className="text-sm">
-                        <span className="text-lg font-bold">
-                          {primaryEmotion ? primaryEmotion.emotion : "No data"}
-                        </span>
-                        <br />
-                        {primaryEmotion
-                          ? "Pay attention to how this emotion affects your decision-making in fast markets."
-                          : "Add trades with emotions to analyze your trading psychology."}
-                      </p>
-                    </div>
-                    
-                    <div className="bg-card p-4 rounded-lg border shadow-sm">
-                      <h3 className="font-semibold mb-2 text-primary">Suggested Action</h3>
-                      <p className="text-sm">
-                        {analysisData.assetPerformance.length > 0 ? (
-                          <>
-                            Consider setting tighter stop losses on your
-                            <span className="font-bold">
-                              {" "}{analysisData.assetPerformance
-                                .filter(a => a.profitLoss < 0)
-                                .sort((a, b) => a.profitLoss - b.profitLoss)[0]?.asset || "underperforming assets"}{" "}
-                            </span> 
-                            trades to minimize drawdowns in volatile markets.
-                          </>
-                        ) : (
-                          "Add trades to receive personalized trading suggestions."
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-muted/50 p-4 rounded-lg">
-                    <h3 className="font-semibold mb-2 flex items-center">
-                      <Timer className="mr-2 h-4 w-4" />
-                      Daily Trading Recommendation
-                    </h3>
-                    <p className="text-sm">
-                      {analysisData.assetPerformance.length > 0 ? (
-                        <>
-                          Based on your trading history, you perform best when trading {bestAsset?.asset || "your best assets"} 
-                          with a {primaryEmotion?.emotion || "focused"} mindset. 
-                          Consider focusing on quick intraday opportunities rather than overnight positions for improved risk management.
-                        </>
-                      ) : (
-                        "Start recording your trades to receive personalized recommendations based on your trading patterns."
-                      )}
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <div className="bg-muted/50 p-6 rounded-lg text-center">
-                  <h3 className="font-semibold mb-3">No Trading Data Available</h3>
-                  <p className="text-sm max-w-md mx-auto">
-                    Add your trading history to receive personalized insights and recommendations to improve your performance.
+      {/* Chart Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <ChartContainer title="Balance Over Time">
+          <BalanceChart balanceOverTime={analysisData.balanceOverTime} />
+        </ChartContainer>
+        <ChartContainer title="Win/Loss Ratio">
+          <WinLossChart wins={analysisData.metrics.profitableTrades} losses={analysisData.metrics.lossTrades} />
+        </ChartContainer>
+        <ChartContainer title="Asset Performance">
+          <BarPerformanceChart data={analysisData.assetPerformance} />
+        </ChartContainer>
+        <ChartContainer title="Emotions vs Win Rate">
+          <EmotionsWinRateChart data={analysisData.emotionPerformance} />
+        </ChartContainer>
+        <ChartContainer title="Trade Type Performance">
+          <TradeTypePerformanceChart data={analysisData.tradeTypePerformance} />
+        </ChartContainer>
+        <ChartContainer title="Best Trading Hours">
+          <BestTradingHoursChart data={analysisData.tradesByHour} />
+        </ChartContainer>
+      </div>
+      
+      {/* Trading Insights Card */}
+      <Card className="shadow-md hover:shadow-lg transition-shadow bg-gradient-to-r from-secondary/5 to-transparent mt-8">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Bolt className="mr-2 h-5 w-5 text-primary" />
+            Trading Insights
+          </CardTitle>
+          <CardDescription>
+            Actionable insights to improve your trading performance
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {trades.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-card p-4 rounded-lg border shadow-sm">
+                  <h3 className="font-semibold mb-2 text-primary">Best Performing Asset</h3>
+                  <p className="text-sm">
+                    <span className="text-lg font-bold">
+                      {bestAsset ? bestAsset.asset : "No data"}
+                    </span>
+                    <br />
+                    {bestAsset 
+                      ? "Focus on short-term trades with this instrument for highest profit potential."
+                      : "Add trades to see your best performing assets."}
                   </p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-        
-        {/* Telegram Bot Card */}
-        <div className="lg:col-span-1">
-          <TelegramBotCard />
-        </div>
-      </div>
+                
+                <div className="bg-card p-4 rounded-lg border shadow-sm">
+                  <h3 className="font-semibold mb-2 text-primary">Primary Trading Emotion</h3>
+                  <p className="text-sm">
+                    <span className="text-lg font-bold">
+                      {primaryEmotion ? primaryEmotion.emotion : "No data"}
+                    </span>
+                    <br />
+                    {primaryEmotion
+                      ? "Pay attention to how this emotion affects your decision-making in fast markets."
+                      : "Add trades with emotions to analyze your trading psychology."}
+                  </p>
+                </div>
+                
+                <div className="bg-card p-4 rounded-lg border shadow-sm">
+                  <h3 className="font-semibold mb-2 text-primary">Suggested Action</h3>
+                  <p className="text-sm">
+                    {analysisData.assetPerformance.length > 0 ? (
+                      <>
+                        Consider setting tighter stop losses on your
+                        <span className="font-bold">
+                          {" "}{analysisData.assetPerformance
+                            .filter(a => a.profitLoss < 0)
+                            .sort((a, b) => a.profitLoss - b.profitLoss)[0]?.asset || "underperforming assets"}{" "}
+                        </span> 
+                        trades to minimize drawdowns in volatile markets.
+                      </>
+                    ) : (
+                      "Add trades to receive personalized trading suggestions."
+                    )}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <h3 className="font-semibold mb-2 flex items-center">
+                  <Timer className="mr-2 h-4 w-4" />
+                  Daily Trading Recommendation
+                </h3>
+                <p className="text-sm">
+                  {analysisData.assetPerformance.length > 0 ? (
+                    <>
+                      Based on your trading history, you perform best when trading {bestAsset?.asset || "your best assets"} 
+                      with a {primaryEmotion?.emotion || "focused"} mindset. 
+                      Consider focusing on quick intraday opportunities rather than overnight positions for improved risk management.
+                    </>
+                  ) : (
+                    "Start recording your trades to receive personalized recommendations based on your trading patterns."
+                  )}
+                </p>
+              </div>
+            </>
+          ) : (
+            <div className="bg-muted/50 p-6 rounded-lg text-center">
+              <h3 className="font-semibold mb-3">No Trading Data Available</h3>
+              <p className="text-sm max-w-md mx-auto">
+                Add your trading history to receive personalized insights and recommendations to improve your performance.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

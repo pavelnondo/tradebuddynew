@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Trade } from '@/types';
+import { getAuthHeaders } from '@/lib/api';
 
 // Get the API base URL dynamically
 const getApiBaseUrl = () => {
@@ -22,7 +23,9 @@ export function useApiTrades() {
     setError(null);
     try {
       const apiBaseUrl = getApiBaseUrl();
-      const res = await fetch(`${apiBaseUrl}/trades`);
+      const res = await fetch(`${apiBaseUrl}/trades`, {
+        headers: getAuthHeaders()
+      });
       if (!res.ok) throw new Error('Failed to fetch trades');
       const data = await res.json();
       // Map backend fields to frontend Trade type and parse dates
