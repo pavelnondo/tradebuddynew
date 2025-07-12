@@ -46,6 +46,7 @@ export function Layout({ children }: LayoutProps) {
     { path: "/trades", label: "Trade History" },
     { path: "/analysis", label: "Analysis" },
     { path: "/checklists", label: "Checklists" },
+    { path: "/telegram", label: "Telegram" },
   ];
 
   const handleLogout = () => {

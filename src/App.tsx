@@ -12,6 +12,7 @@ import Analysis from "./pages/Analysis";
 import Settings from "./pages/Settings";
 import Checklists from "./pages/Checklists";
 import Strategy from "./pages/Strategy";
+import Telegram from "./pages/Telegram";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { AuthProvider } from "./hooks/useAuth";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -53,6 +54,11 @@ const AppRoutes = () => {
       <Route path="/checklists" element={
         <ProtectedRoute>
           <ErrorBoundary><Layout><Checklists /></Layout></ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      <Route path="/telegram" element={
+        <ProtectedRoute>
+          <ErrorBoundary><Layout><Telegram /></Layout></ErrorBoundary>
         </ProtectedRoute>
       } />
       <Route path="/strategy" element={
