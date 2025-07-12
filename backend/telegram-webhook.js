@@ -8,30 +8,9 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 app.use(cors());
 
-// Add raw body logging middleware
-app.use((req, res, next) => {
-  if (req.path === '/telegram-webhook') {
-    let rawBody = '';
-    req.on('data', chunk => {
-      rawBody += chunk.toString();
-    });
-    req.on('end', () => {
-      console.log('Raw webhook body:', rawBody);
-      console.log('Content-Type:', req.headers['content-type']);
-      console.log('User-Agent:', req.headers['user-agent']);
-    });
-  }
-  next();
-});
-
-app.use(express.json({
-  verify: (req, res, buf) => {
-    if (req.path === '/telegram-webhook') {
-      console.log('JSON parsing buffer length:', buf.length);
-      console.log('JSON parsing buffer preview:', buf.toString().substring(0, 200));
-    }
-  }
-}));
+// Use raw body parsing for webhook endpoint
+app.use('/telegram-webhook', express.raw({ type: 'application/json' }));
+app.use(express.json());
 
 const pool = new Pool({
   host: process.env.PGHOST || 'localhost',
@@ -49,10 +28,21 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '[REDACTED]';
 // Telegram Webhook Handler
 app.post('/telegram-webhook', async (req, res) => {
   try {
-    console.log('Webhook received - Request body:', JSON.stringify(req.body, null, 2));
+    console.log('Webhook received - Raw body length:', req.body.length);
+    console.log('Webhook received - Raw body:', req.body.toString());
     console.log('Webhook received - Request headers:', req.headers);
     
-    const { message } = req.body;
+    // Parse the raw body as JSON
+    let body;
+    try {
+      body = JSON.parse(req.body.toString());
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      console.error('Raw body that failed to parse:', req.body.toString());
+      return res.status(400).json({ error: 'Invalid JSON' });
+    }
+    
+    const { message } = body;
     
     if (!message) {
       console.log('No message in request body');
