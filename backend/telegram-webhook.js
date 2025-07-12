@@ -34,12 +34,31 @@ app.post('/telegram-webhook', async (req, res) => {
     
     // Parse the raw body as JSON
     let body;
+    let rawBodyStr = req.body.toString();
+    
+    // Clean up malformed JSON from shell escaping
     try {
-      body = JSON.parse(req.body.toString());
+      // First try to parse as-is
+      body = JSON.parse(rawBodyStr);
     } catch (parseError) {
-      console.error('JSON parse error:', parseError);
-      console.error('Raw body that failed to parse:', req.body.toString());
-      return res.status(400).json({ error: 'Invalid JSON' });
+      console.error('Initial JSON parse error:', parseError);
+      console.error('Raw body that failed to parse:', rawBodyStr);
+      
+      // Try to clean up the malformed JSON
+      try {
+        // Remove extra backslashes and fix escaping
+        let cleanedBody = rawBodyStr
+          .replace(/\\:/g, ':')  // Fix escaped colons
+          .replace(/\\"/g, '"')  // Fix escaped quotes
+          .replace(/\\\\/g, '\\'); // Fix double backslashes
+        
+        console.log('Cleaned body:', cleanedBody);
+        body = JSON.parse(cleanedBody);
+      } catch (cleanupError) {
+        console.error('JSON cleanup also failed:', cleanupError);
+        console.error('Cleaned body that failed:', cleanedBody);
+        return res.status(400).json({ error: 'Invalid JSON after cleanup' });
+      }
     }
     
     const { message } = body;
