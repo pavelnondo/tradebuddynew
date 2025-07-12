@@ -11,6 +11,7 @@ import { Checklist, ChecklistItem } from "@/types";
 import { useChecklists } from "@/hooks/useChecklists";
 import { PlusCircle, Trash2, Edit, CheckSquare, FileCheck, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { generateUUID } from "@/lib/utils";
 
 export default function Checklists() {
   const [checklists, setChecklists] = useState<Checklist[]>([]);
@@ -21,7 +22,7 @@ export default function Checklists() {
   const [newChecklistName, setNewChecklistName] = useState("");
   const [newChecklistDescription, setNewChecklistDescription] = useState("");
   const [newChecklistItems, setNewChecklistItems] = useState<ChecklistItem[]>([
-    { id: crypto.randomUUID(), text: "" }
+    { id: generateUUID(), text: "" }
   ]);
   
   const navigate = useNavigate();
@@ -47,7 +48,7 @@ export default function Checklists() {
   const addChecklistItem = () => {
     setNewChecklistItems([
       ...newChecklistItems,
-      { id: crypto.randomUUID(), text: "" }
+      { id: generateUUID(), text: "" }
     ]);
   };
   
@@ -165,7 +166,7 @@ export default function Checklists() {
   const resetChecklistForm = () => {
     setNewChecklistName("");
     setNewChecklistDescription("");
-    setNewChecklistItems([{ id: crypto.randomUUID(), text: "" }]);
+    setNewChecklistItems([{ id: generateUUID(), text: "" }]);
     setSelectedChecklist(null);
   };
   
