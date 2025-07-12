@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { useApiTrades } from '@/hooks/useApiTrades';
+import { buildApiUrl } from '@/lib/api';
 
 export default function TradeHistory() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -49,7 +50,7 @@ export default function TradeHistory() {
   const handleDeleteTrade = async (id: string, event: React.MouseEvent) => {
     event.stopPropagation();
     try {
-      const res = await fetch(`http://localhost:4004/trades/${id}`, { method: 'DELETE' });
+      const res = await fetch(buildApiUrl(`/trades/${id}`), { method: 'DELETE' });
       if (res.ok) {
         await fetchTrades();
         if (selectedTrade && selectedTrade.id === id) setSelectedTrade(null);
@@ -144,7 +145,7 @@ export default function TradeHistory() {
   const handleSaveEdit = async () => {
     if (!editingTrade) return;
     try {
-      const res = await fetch(`http://localhost:4004/trades/${editingTrade.id}`, {
+      const res = await fetch(buildApiUrl(`/trades/${editingTrade.id}`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
