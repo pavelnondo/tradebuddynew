@@ -1,8 +1,16 @@
+require('dotenv').config();
 const { Pool } = require('pg');
 
 class AIAnalysisService {
   constructor() {
-    this.pool = new Pool();
+    this.pool = new Pool({
+      host: process.env.PGHOST || 'localhost',
+      user: process.env.PGUSER || 'tradebuddy_user',
+      password: process.env.PGPASSWORD || 'your_db_password_here',
+      database: process.env.PGDATABASE || 'tradebuddy',
+      port: process.env.PGPORT || 5432,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
   }
 
   // Analyze voice message and extract trade information

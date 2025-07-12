@@ -9,7 +9,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const pool = new Pool(); // uses .env for config
+const pool = new Pool({
+  host: process.env.PGHOST || 'localhost',
+  user: process.env.PGUSER || 'tradebuddy_user',
+  password: process.env.PGPASSWORD || 'your_db_password_here',
+  database: process.env.PGDATABASE || 'tradebuddy',
+  port: process.env.PGPORT || 5432,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
 
 // Set up multer for screenshot uploads
 const storage = multer.diskStorage({

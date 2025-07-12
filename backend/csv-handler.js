@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { Pool } = require('pg');
 const csv = require('csv-parser');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
@@ -6,7 +7,14 @@ const path = require('path');
 
 class CSVHandler {
   constructor() {
-    this.pool = new Pool();
+    this.pool = new Pool({
+      host: process.env.PGHOST || 'localhost',
+      user: process.env.PGUSER || 'tradebuddy_user',
+      password: process.env.PGPASSWORD || 'your_db_password_here',
+      database: process.env.PGDATABASE || 'tradebuddy',
+      port: process.env.PGPORT || 5432,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
   }
 
   // Export trades to CSV
