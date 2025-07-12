@@ -19,7 +19,7 @@ const pool = new Pool({
 });
 
 // Configuration
-const N8N_WEBHOOK_URL = 'https://4807387-or91258.twc1.net/webhook/b43064f8-12fc-4ae0-9ab4-bdceed7542ba';
+const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook/b43064f8-12fc-4ae0-9ab4-bdceed7542ba';
 const TELEGRAM_BOT_TOKEN = '8161307137:AAEY21iCaHb1RdLYym4A9gT5FPg6v_3VQdU';
 
 // Telegram Webhook Handler
