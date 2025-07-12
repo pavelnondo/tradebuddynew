@@ -19,8 +19,8 @@ const pool = new Pool({
 });
 
 // Configuration
-const N8N_WEBHOOK_URL = '[REDACTED]';
-const TELEGRAM_BOT_TOKEN = '[REDACTED]';
+const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || '[REDACTED]';
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '[REDACTED]';
 
 // Telegram Webhook Handler
 app.post('/telegram-webhook', async (req, res) => {
