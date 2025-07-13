@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { config } from '@/config';
+import { buildApiUrl } from '@/lib/api';
 
 interface User {
   id: number;
@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const verifyToken = async (tokenToVerify: string) => {
     try {
-      const response = await fetch(`${config.apiUrl}/auth/me`, {
+      const response = await fetch(buildApiUrl('/auth/me'), {
         headers: {
           'Authorization': `Bearer ${tokenToVerify}`,
         },

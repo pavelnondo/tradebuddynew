@@ -1,7 +1,7 @@
 // Configuration for the application
 export const config = {
   // API Configuration
-  apiUrl: import.meta.env.VITE_API_URL || 'http://mytradebuddy.ru/api',
+  apiUrl: import.meta.env.VITE_API_URL || '/api',
   
   // Environment
   isDevelopment: import.meta.env.DEV,
