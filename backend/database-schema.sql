@@ -91,6 +91,49 @@ CREATE TABLE IF NOT EXISTS document_uploads (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Create dialogs table for storing Telegram messages
+CREATE TABLE IF NOT EXISTS dialogs (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    telegram_user_id BIGINT NOT NULL,
+    telegram_username VARCHAR(100),
+    message_id BIGINT NOT NULL,
+    chat_id BIGINT NOT NULL,
+    message_text TEXT,
+    message_type VARCHAR(50) DEFAULT 'text',
+    is_from_bot BOOLEAN DEFAULT false,
+    is_from_user BOOLEAN DEFAULT true,
+    processing_id VARCHAR(255),
+    status VARCHAR(50) DEFAULT 'received',
+    raw_message JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create checklists table
+CREATE TABLE IF NOT EXISTS checklists (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    items JSONB NOT NULL,
+    is_completed BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create screenshots table
+CREATE TABLE IF NOT EXISTS screenshots (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    file_path VARCHAR(500) NOT NULL,
+    file_name VARCHAR(255),
+    file_size INTEGER,
+    mime_type VARCHAR(100),
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_trades_processing_id ON trades(processing_id);
 CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id);
@@ -107,6 +150,12 @@ CREATE INDEX IF NOT EXISTS idx_document_uploads_processing_id ON document_upload
 CREATE INDEX IF NOT EXISTS idx_document_uploads_user_id ON document_uploads(user_id);
 CREATE INDEX IF NOT EXISTS idx_checklists_user_id ON checklists(user_id);
 CREATE INDEX IF NOT EXISTS idx_screenshots_user_id ON screenshots(user_id);
+CREATE INDEX IF NOT EXISTS idx_dialogs_user_id ON dialogs(user_id);
+CREATE INDEX IF NOT EXISTS idx_dialogs_telegram_user_id ON dialogs(telegram_user_id);
+CREATE INDEX IF NOT EXISTS idx_dialogs_chat_id ON dialogs(chat_id);
+CREATE INDEX IF NOT EXISTS idx_dialogs_message_id ON dialogs(message_id);
+CREATE INDEX IF NOT EXISTS idx_dialogs_processing_id ON dialogs(processing_id);
+CREATE INDEX IF NOT EXISTS idx_dialogs_created_at ON dialogs(created_at);
 CREATE INDEX IF NOT EXISTS idx_users_telegram_id ON users(telegram_id);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token);
@@ -129,6 +178,11 @@ CREATE TRIGGER update_processing_logs_updated_at
 -- Create trigger for users
 CREATE TRIGGER update_users_updated_at 
     BEFORE UPDATE ON users 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Create trigger for dialogs
+CREATE TRIGGER update_dialogs_updated_at 
+    BEFORE UPDATE ON dialogs 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Insert sample data for testing (optional)
