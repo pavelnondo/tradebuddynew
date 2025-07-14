@@ -9,6 +9,7 @@ import {
   Legend,
 } from 'chart.js';
 import { useEffect, useState } from 'react';
+import { getChartConfig } from '../../lib/chartConfig';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
@@ -27,6 +28,7 @@ interface EmotionsWinRateChartProps {
 
 export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
   const [isDark, setIsDark] = useState(false);
+  
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));
     const observer = new MutationObserver(() => {
@@ -35,28 +37,147 @@ export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     return () => observer.disconnect();
   }, []);
-  const barColor = isDark ? '#22c55e' : '#4ade80';
+
+  const config = getChartConfig(isDark);
+  const { colors } = config;
+
+  // Create gradient colors based on win rate performance
+  const getBarColor = (winRate: number) => {
+    if (winRate >= 70) return colors.success;
+    if (winRate >= 50) return colors.secondary;
+    if (winRate >= 30) return colors.accent;
+    return colors.danger;
+  };
+
   const chartData = {
     labels: data.map((d) => d.emotion),
     datasets: [
       {
         label: 'Win Rate (%)',
         data: data.map((d) => d.winRate),
-        backgroundColor: barColor,
+        backgroundColor: data.map((d) => getBarColor(d.winRate)),
+        borderColor: data.map((d) => getBarColor(d.winRate)),
+        borderWidth: 1,
+        borderRadius: 6,
+        borderSkipped: false,
+        hoverBackgroundColor: data.map((d) => getBarColor(d.winRate)),
+        hoverBorderColor: '#ffffff',
+        hoverBorderWidth: 2,
       },
     ],
   };
+
   const options = {
-    responsive: true,
-    maintainAspectRatio: false,
+    ...config.chartJsDefaults,
     plugins: {
-      legend: { display: true, position: 'top' as const },
-      tooltip: { enabled: true },
+      ...config.chartJsDefaults.plugins,
+      legend: {
+        ...config.chartJsDefaults.plugins.legend,
+        display: false, // Hide legend for cleaner look
+      },
+      tooltip: {
+        ...config.chartJsDefaults.plugins.tooltip,
+        callbacks: {
+          title: function(context: any) {
+            return `Emotion: ${context[0].label}`;
+          },
+          label: function(context: any) {
+            const emotionData = data[context.dataIndex];
+            return [
+              `Win Rate: ${context.parsed.y.toFixed(1)}%`,
+              `Total Trades: ${emotionData.trades}`,
+              `Wins: ${emotionData.wins}`,
+              `Losses: ${emotionData.losses}`,
+              `P&L: ${new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2,
+              }).format(emotionData.profitLoss)}`,
+            ];
+          },
+        },
+      },
     },
     scales: {
-      x: { title: { display: true, text: 'Emotion' } },
-      y: { title: { display: true, text: 'Win Rate (%)' }, min: 0, max: 100 },
+      ...config.chartJsDefaults.scales,
+      x: {
+        ...config.chartJsDefaults.scales.x,
+        title: {
+          display: true,
+          text: 'Emotion',
+          font: {
+            family: 'Inter, system-ui, sans-serif',
+            size: 12,
+            weight: '500',
+          },
+          color: isDark ? '#9ca3af' : '#6b7280',
+          padding: { top: 10 },
+        },
+      },
+      y: {
+        ...config.chartJsDefaults.scales.y,
+        title: {
+          display: true,
+          text: 'Win Rate (%)',
+          font: {
+            family: 'Inter, system-ui, sans-serif',
+            size: 12,
+            weight: '500',
+          },
+          color: isDark ? '#9ca3af' : '#6b7280',
+          padding: { bottom: 10 },
+        },
+        min: 0,
+        max: 100,
+        ticks: {
+          ...config.chartJsDefaults.scales.y.ticks,
+          callback: function(value: any) {
+            return `${value}%`;
+          },
+        },
+      },
+    },
+    elements: {
+      ...config.chartJsDefaults.elements,
+      bar: {
+        borderRadius: 6,
+        borderSkipped: false,
+      },
     },
   };
-  return <Bar data={chartData} options={options} />;
+
+  return (
+    <div className="relative w-full h-full">
+      <div className="absolute top-4 left-4 z-10">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          Emotional Performance
+        </h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Win rate by trading emotion
+        </p>
+      </div>
+      <div className="absolute top-4 right-4 z-10">
+        <div className="flex items-center space-x-4 text-xs">
+          <div className="flex items-center space-x-1">
+            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+            <span className="text-gray-600 dark:text-gray-400">70%+</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+            <span className="text-gray-600 dark:text-gray-400">50-69%</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+            <span className="text-gray-600 dark:text-gray-400">30-49%</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <div className="w-3 h-3 rounded-full bg-red-500"></div>
+            <span className="text-gray-600 dark:text-gray-400">&lt;30%</span>
+          </div>
+        </div>
+      </div>
+      <Bar data={chartData} options={options} />
+    </div>
+  );
 } 
