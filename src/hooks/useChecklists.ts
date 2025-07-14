@@ -2,12 +2,11 @@ import { useState, useCallback } from 'react';
 import { Checklist, ChecklistItem } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { buildApiUrl } from '@/lib/api';
+import { getAuthHeaders } from '@/lib/api';
 
 export function useChecklists() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const { getAuthHeaders } = require('@/lib/api');
 
   const fetchChecklists = useCallback(async (): Promise<Checklist[]> => {
     setIsLoading(true);
