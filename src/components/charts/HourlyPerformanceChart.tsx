@@ -9,6 +9,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import { useEffect, useState } from 'react';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -27,20 +28,31 @@ export function HourlyPerformanceChart({
   isEmpty = false,
   isLoading = false
 }: HourlyPerformanceProps) {
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    setIsDark(document.documentElement.classList.contains('dark'));
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+  const profitColor = isDark ? '#2563eb' : '#60a5fa';
+  const winRateColor = isDark ? '#22c55e' : '#4ade80';
   const chartData = {
     labels: data.map(d => d.hourFormatted),
     datasets: [
       {
         label: 'P&L ($)',
         data: data.map(d => d.profitLoss),
-        backgroundColor: '#60a5fa',
+        backgroundColor: profitColor,
         yAxisID: 'y',
         borderRadius: 4,
       },
       {
         label: 'Win Rate (%)',
         data: data.map(d => d.winRate),
-        backgroundColor: '#4ade80',
+        backgroundColor: winRateColor,
         yAxisID: 'y1',
         borderRadius: 4,
       },

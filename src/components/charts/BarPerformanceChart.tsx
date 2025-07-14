@@ -8,6 +8,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import { useEffect, useState } from 'react';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
@@ -25,13 +26,24 @@ interface BarPerformanceChartProps {
 }
 
 export function BarPerformanceChart({ data }: BarPerformanceChartProps) {
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    setIsDark(document.documentElement.classList.contains('dark'));
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+  const positiveColor = isDark ? '#22c55e' : '#4ade80';
+  const negativeColor = isDark ? '#ef4444' : '#f87171';
   const chartData = {
     labels: data.map((d) => d.asset),
     datasets: [
       {
         label: 'Profit/Loss',
         data: data.map((d) => d.profitLoss),
-        backgroundColor: data.map((d) => d.profitLoss >= 0 ? '#4ade80' : '#f87171'),
+        backgroundColor: data.map((d) => d.profitLoss >= 0 ? positiveColor : negativeColor),
       },
     ],
   };

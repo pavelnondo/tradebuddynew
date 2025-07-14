@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { MessageCircle, Smartphone, Zap, Brain } from "lucide-react";
 
 export function TelegramBotCard() {
-  const botUsername = "TradeBuddyAI_bot"; // Replace with your actual bot username
+  const botUsername = "TBTradebuddy_bot"; // Updated bot username
   const telegramUrl = `https://t.me/${botUsername}`;
 
   return (

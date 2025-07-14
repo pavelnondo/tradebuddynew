@@ -7,17 +7,19 @@ export function useChecklists() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { getAuthHeaders } = require('@/lib/api');
+
   const fetchChecklists = useCallback(async (): Promise<Checklist[]> => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(buildApiUrl('/checklists'));
+      const res = await fetch(buildApiUrl('/checklists'), { headers: getAuthHeaders() });
       if (!res.ok) throw new Error('Failed to fetch checklists');
       const data = await res.json();
       // Fetch items for each checklist in parallel
       const checklistsWithItems = await Promise.all(
         data.map(async (checklist: any) => {
-          const itemsRes = await fetch(buildApiUrl(`/checklists/${checklist.id}/items`));
+          const itemsRes = await fetch(buildApiUrl(`/checklists/${checklist.id}/items`), { headers: getAuthHeaders() });
           let items = [];
           if (itemsRes.ok) {
             const rawItems = await itemsRes.json();
@@ -45,13 +47,13 @@ export function useChecklists() {
     setError(null);
     try {
       // Fetch all checklists and find the one with the given id
-      const checklistRes = await fetch(buildApiUrl('/checklists'));
+      const checklistRes = await fetch(buildApiUrl('/checklists'), { headers: getAuthHeaders() });
       if (!checklistRes.ok) throw new Error('Failed to fetch checklist');
       const checklists = await checklistRes.json();
       const checklist = checklists.find((c: any) => c.id == id);
       if (!checklist) throw new Error('Checklist not found');
       // Fetch the items for this checklist
-      const itemsRes = await fetch(buildApiUrl(`/checklists/${id}/items`));
+      const itemsRes = await fetch(buildApiUrl(`/checklists/${id}/items`), { headers: getAuthHeaders() });
       if (!itemsRes.ok) throw new Error('Failed to fetch checklist items');
       const items = await itemsRes.json();
       // Map DB fields to frontend fields
