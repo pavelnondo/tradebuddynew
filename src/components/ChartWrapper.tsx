@@ -2,14 +2,11 @@
 import React, { ReactNode } from 'react';
 import {
   ChartContainer as UIChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
   type ChartConfig as UIChartConfig
 } from '@/components/ui/chart';
 import { Loader2 } from 'lucide-react';
 import { ChartConfig } from '@/utils/chartUtils';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 interface ChartWrapperProps {
   title: string;
@@ -32,26 +29,28 @@ export function ChartWrapper({
 }: ChartWrapperProps) {
   if (isLoading) {
     return (
-      <div className="flex h-full w-full items-center justify-center border border-border rounded-md bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <Card>
+        <CardContent className="flex h-full w-full items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </CardContent>
+      </Card>
     );
   }
 
   if (isEmpty) {
     return (
-      <div className="flex h-full w-full items-center justify-center border border-border rounded-md bg-background">
-        <p className="text-center text-muted-foreground">{emptyMessage}</p>
-      </div>
+      <Card>
+        <CardContent className="flex h-full w-full items-center justify-center">
+          <p className="text-center text-muted-foreground">{emptyMessage}</p>
+        </CardContent>
+      </Card>
     );
   }
 
   // Convert our ChartConfig to UI ChartConfig format
   const uiConfig: UIChartConfig = {};
-  
   Object.entries(config).forEach(([key, value]) => {
     if (value.theme && value.theme.light && value.theme.dark) {
-      // When using theme, don't include color property at all
       uiConfig[key] = {
         label: value.label,
         theme: {
@@ -60,13 +59,11 @@ export function ChartWrapper({
         }
       };
     } else if (value.color) {
-      // When using color, don't include theme property at all
       uiConfig[key] = {
         label: value.label,
         color: value.color
       };
     } else {
-      // Just set the label if no theme or color
       uiConfig[key] = { 
         label: value.label 
       };
@@ -74,15 +71,22 @@ export function ChartWrapper({
   });
 
   return (
-    <div className="h-full w-full chart-container p-0 border border-border rounded-md bg-background">
-      {/* Wrap children in a Fragment so it's always a single ReactElement */}
-      <UIChartContainer title={title} config={uiConfig}>
-        {React.isValidElement(children) ? (
-          children
-        ) : (
-          <React.Fragment>{children}</React.Fragment>
-        )}
-      </UIChartContainer>
-    </div>
+    <Card className="h-full w-full flex flex-col">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-base">
+          {icon}
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex-1 flex flex-col justify-center">
+        <UIChartContainer title={title} config={uiConfig}>
+          {React.isValidElement(children) ? (
+            children
+          ) : (
+            <React.Fragment>{children}</React.Fragment>
+          )}
+        </UIChartContainer>
+      </CardContent>
+    </Card>
   );
 }

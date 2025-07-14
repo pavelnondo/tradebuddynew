@@ -24,17 +24,7 @@ import { BarPerformanceChart } from '@/components/charts/BarPerformanceChart';
 import { EmotionsWinRateChart } from '@/components/charts/EmotionsWinRateChart';
 import { TradeTypePerformanceChart } from '@/components/charts/TradeTypePerformanceChart';
 import { BestTradingHoursChart } from '@/components/charts/BestTradingHoursChart';
-
-function ChartContainer({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div style={{ height: 320, minWidth: 0, flex: 1, border: '2px solid #e0e0e0', borderRadius: 8, padding: 10, background: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
-      <h3 style={{ marginBottom: 8, fontSize: 16 }}>{title}</h3>
-      <div style={{ flex: 1, minHeight: 0 }}>
-        {children}
-      </div>
-    </div>
-  );
-}
+import { ChartContainer } from '@/components/ChartContainer';
 
 // Sample data
 const barData = {
