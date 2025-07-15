@@ -60,8 +60,14 @@ export function TradeTypePerformanceChart({ data }: TradeTypePerformanceChartPro
       tooltip: { enabled: true },
     },
     scales: {
-      x: { title: { display: true, text: 'Trade Type' } },
-      y: { title: { display: true, text: 'Profit/Loss' } },
+      x: {
+        title: { display: true, text: 'Trade Type' },
+        grid: { color: isDark ? '#fff' : '#000' },
+      },
+      y: {
+        title: { display: true, text: 'Profit/Loss' },
+        grid: { color: isDark ? '#fff' : '#000' },
+      },
     },
   };
   return (

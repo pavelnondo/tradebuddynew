@@ -61,8 +61,14 @@ export function BarPerformanceChart({ data }: BarPerformanceChartProps) {
       tooltip: { enabled: true },
     },
     scales: {
-      x: { title: { display: true, text: 'Asset' } },
-      y: { title: { display: true, text: 'Profit/Loss' } },
+      x: {
+        title: { display: true, text: 'Asset' },
+        grid: { color: isDark ? '#fff' : '#000' },
+      },
+      y: {
+        title: { display: true, text: 'Profit/Loss' },
+        grid: { color: isDark ? '#fff' : '#000' },
+      },
     },
   };
   return (

@@ -193,24 +193,24 @@ export default function Analysis() {
           
           {/* Charts Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-card rounded-lg shadow-md p-6">
+            <div className="bg-card rounded-lg shadow-md p-6 h-[400px]">
               <h3 className="text-lg font-semibold text-left mb-4">Balance Over Time</h3>
               <BalanceChart balanceOverTime={analysisData.balanceOverTime || []} />
             </div>
             {/* Removed Win/Loss Ratio chart */}
-            <div className="bg-card rounded-lg shadow-md p-6">
+            <div className="bg-card rounded-lg shadow-md p-6 h-[400px]">
               <h3 className="text-lg font-semibold text-left mb-4">Asset Performance</h3>
               <BarPerformanceChart data={analysisData.assetPerformance || []} />
             </div>
-            <div className="bg-card rounded-lg shadow-md p-6">
+            <div className="bg-card rounded-lg shadow-md p-6 h-[400px]">
               <h3 className="text-lg font-semibold text-left mb-4">Emotions vs Win Rate</h3>
               <EmotionsWinRateChart data={analysisData.emotionPerformance || []} />
             </div>
-            <div className="bg-card rounded-lg shadow-md p-6">
+            <div className="bg-card rounded-lg shadow-md p-6 h-[400px]">
               <h3 className="text-lg font-semibold text-left mb-4">Trade Type Performance</h3>
               <TradeTypePerformanceChart data={analysisData.tradeTypePerformance || []} />
             </div>
-            <div className="bg-card rounded-lg shadow-md p-6">
+            <div className="bg-card rounded-lg shadow-md p-6 h-[400px]">
               <h3 className="text-lg font-semibold text-left mb-4">Best Trading Hours</h3>
               <BestTradingHoursChart data={analysisData.tradesByHour || []} />
             </div>

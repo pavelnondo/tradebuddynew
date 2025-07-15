@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { useApiTrades } from '@/hooks/useApiTrades';
 import { buildApiUrl, getAuthHeaders } from '@/lib/api';
+import TradeForm from "@/components/TradeForm";
 
 export default function TradeHistory() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -496,26 +497,12 @@ export default function TradeHistory() {
 
       {/* Render edit form if editingTrade is set */}
       {editingTrade && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow-lg w-full max-w-lg">
-            <h2 className="text-xl font-bold mb-4">Edit Trade</h2>
-            <div className="space-y-4">
-              <input className="w-full border p-2" value={editForm.asset} onChange={e => setEditForm({ ...editForm, asset: e.target.value })} placeholder="Asset" />
-              <input className="w-full border p-2" value={editForm.tradeType} onChange={e => setEditForm({ ...editForm, tradeType: e.target.value })} placeholder="Trade Type" />
-              <input className="w-full border p-2" type="number" value={editForm.entryPrice} onChange={e => setEditForm({ ...editForm, entryPrice: Number(e.target.value) })} placeholder="Entry Price" />
-              <input className="w-full border p-2" type="number" value={editForm.exitPrice} onChange={e => setEditForm({ ...editForm, exitPrice: Number(e.target.value) })} placeholder="Exit Price" />
-              <input className="w-full border p-2" type="number" value={editForm.positionSize} onChange={e => setEditForm({ ...editForm, positionSize: Number(e.target.value) })} placeholder="Position Size" />
-              <input className="w-full border p-2" type="number" value={editForm.profitLoss} onChange={e => setEditForm({ ...editForm, profitLoss: Number(e.target.value) })} placeholder="Profit/Loss" />
-              <input className="w-full border p-2" value={editForm.notes} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} placeholder="Notes" />
-              <input className="w-full border p-2" value={editForm.emotion} onChange={e => setEditForm({ ...editForm, emotion: e.target.value })} placeholder="Emotion" />
-              <input className="w-full border p-2" value={editForm.setup} onChange={e => setEditForm({ ...editForm, setup: e.target.value })} placeholder="Setup" />
-              <input className="w-full border p-2" value={editForm.executionQuality} onChange={e => setEditForm({ ...editForm, executionQuality: e.target.value })} placeholder="Execution Quality" />
-              <input className="w-full border p-2" value={editForm.duration} onChange={e => setEditForm({ ...editForm, duration: e.target.value })} placeholder="Duration" />
-              <button className="bg-blue-600 text-white px-4 py-2 rounded" onClick={handleSaveEdit}>Save</button>
-              <button className="bg-gray-300 px-4 py-2 rounded ml-2" onClick={handleCancelEdit}>Cancel</button>
-            </div>
-          </div>
-        </div>
+        <TradeForm
+          mode="edit"
+          initialValues={editingTrade}
+          onSubmit={handleSaveEdit}
+          onCancel={handleCancelEdit}
+        />
       )}
     </div>
   );
