@@ -76,6 +76,26 @@ function TradeForm({
     },
   });
 
+  // Reset form when initialValues changes
+  React.useEffect(() => {
+    form.reset({
+      date: initialValues.date ? new Date(initialValues.date) : new Date(),
+      asset: initialValues.asset || '',
+      tradeType: initialValues.tradeType || 'Buy',
+      entryPrice: initialValues.entryPrice || 0,
+      exitPrice: initialValues.exitPrice || 0,
+      positionSize: initialValues.positionSize || 0,
+      profitLoss: initialValues.profitLoss || 0,
+      notes: initialValues.notes || '',
+      emotion: initialValues.emotion || 'Calm',
+      setup: initialValues.setup || '',
+      executionQuality: initialValues.executionQuality || 5,
+      duration: initialValues.duration,
+      checklist_id: initialValues.checklist_id ? String(initialValues.checklist_id) : undefined,
+    });
+    // eslint-disable-next-line
+  }, [initialValues]);
+
   // Load checklists
   useEffect(() => {
     const loadChecklists = async () => {
