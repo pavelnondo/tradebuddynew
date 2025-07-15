@@ -12,13 +12,14 @@ import {
 } from 'chart.js';
 import React, { useEffect, useState, useRef } from 'react';
 import { getChartConfig, createGradient } from '../../lib/chartConfig';
+import type { Chart as ChartJSInstance } from 'chart.js';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 export function BalanceChart({ balanceOverTime }: { balanceOverTime: { date: string; balance: number }[] }) {
   console.log('Rendering BalanceChart');
   const [isDark, setIsDark] = useState(false);
-  const chartRef = useRef<ChartJS>(null);
+  const chartRef = useRef<ChartJSInstance<'line'>>(null);
   if (!Array.isArray(balanceOverTime) || balanceOverTime.length === 0) {
     return <div className="text-center text-muted-foreground">No balance data available.</div>;
   }
@@ -75,9 +76,27 @@ export function BalanceChart({ balanceOverTime }: { balanceOverTime: { date: str
       legend: {
         ...config.chartJsDefaults.plugins.legend,
         display: false, // Hide legend for cleaner look
+        labels: {
+          ...config.chartJsDefaults.plugins.legend?.labels,
+          font: {
+            family: 'Inter, system-ui, sans-serif',
+            size: 12,
+            weight: 500, // Use number instead of string
+          },
+        },
       },
       tooltip: {
         ...config.chartJsDefaults.plugins.tooltip,
+        titleFont: {
+          family: 'Inter, system-ui, sans-serif',
+          size: 14,
+          weight: 600, // Use number instead of string
+        },
+        bodyFont: {
+          family: 'Inter, system-ui, sans-serif',
+          size: 12,
+          weight: 400, // Use number instead of string
+        },
         callbacks: {
           title: function(context: any) {
             return `Date: ${context[0].label}`;
@@ -103,10 +122,18 @@ export function BalanceChart({ balanceOverTime }: { balanceOverTime: { date: str
           font: {
             family: 'Inter, system-ui, sans-serif',
             size: 12,
-            weight: '500',
+            weight: 500, // Use number instead of string
           },
           color: isDark ? '#9ca3af' : '#6b7280',
           padding: { top: 10 },
+        },
+        ticks: {
+          ...config.chartJsDefaults.scales.x?.ticks,
+          font: {
+            family: 'Inter, system-ui, sans-serif',
+            size: 12,
+            weight: 400, // Use number instead of string
+          },
         },
       },
       y: {
@@ -117,10 +144,18 @@ export function BalanceChart({ balanceOverTime }: { balanceOverTime: { date: str
           font: {
             family: 'Inter, system-ui, sans-serif',
             size: 12,
-            weight: '500',
+            weight: 500, // Use number instead of string
           },
           color: isDark ? '#9ca3af' : '#6b7280',
           padding: { bottom: 10 },
+        },
+        ticks: {
+          ...config.chartJsDefaults.scales.y?.ticks,
+          font: {
+            family: 'Inter, system-ui, sans-serif',
+            size: 12,
+            weight: 400, // Use number instead of string
+          },
         },
       },
     },
@@ -144,16 +179,14 @@ export function BalanceChart({ balanceOverTime }: { balanceOverTime: { date: str
   };
 
   return (
-    <div className="relative w-full h-full">
-      <div className="absolute top-4 left-4 z-10">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Account Balance
-        </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Performance over time
-        </p>
+    <div className="chart-container">
+      <div className="chart-header">
+        <h3 className="chart-title">Account Balance</h3>
+        <p className="chart-subtitle">Performance over time</p>
       </div>
-      <Line ref={chartRef} data={data} options={options} />
+      <div className="chart-body">
+        <Line ref={chartRef} data={data} options={options} />
+      </div>
     </div>
   );
 }

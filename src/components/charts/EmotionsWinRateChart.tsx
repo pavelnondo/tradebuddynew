@@ -77,9 +77,27 @@ export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
       legend: {
         ...config.chartJsDefaults.plugins.legend,
         display: false, // Hide legend for cleaner look
+        labels: {
+          ...config.chartJsDefaults.plugins.legend?.labels,
+          font: {
+            family: 'Inter, system-ui, sans-serif',
+            size: 12,
+            weight: 500, // Use number instead of string
+          },
+        },
       },
       tooltip: {
         ...config.chartJsDefaults.plugins.tooltip,
+        titleFont: {
+          family: 'Inter, system-ui, sans-serif',
+          size: 14,
+          weight: 600, // Use number instead of string
+        },
+        bodyFont: {
+          family: 'Inter, system-ui, sans-serif',
+          size: 12,
+          weight: 400, // Use number instead of string
+        },
         callbacks: {
           title: function(context: any) {
             return `Emotion: ${context[0].label}`;
@@ -112,10 +130,18 @@ export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
           font: {
             family: 'Inter, system-ui, sans-serif',
             size: 12,
-            weight: '500',
+            weight: 500, // Use number instead of string
           },
           color: isDark ? '#9ca3af' : '#6b7280',
           padding: { top: 10 },
+        },
+        ticks: {
+          ...config.chartJsDefaults.scales.x?.ticks,
+          font: {
+            family: 'Inter, system-ui, sans-serif',
+            size: 12,
+            weight: 400, // Use number instead of string
+          },
         },
       },
       y: {
@@ -126,7 +152,7 @@ export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
           font: {
             family: 'Inter, system-ui, sans-serif',
             size: 12,
-            weight: '500',
+            weight: 500, // Use number instead of string
           },
           color: isDark ? '#9ca3af' : '#6b7280',
           padding: { bottom: 10 },
@@ -137,6 +163,11 @@ export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
           ...config.chartJsDefaults.scales.y.ticks,
           callback: function(value: any) {
             return `${value}%`;
+          },
+          font: {
+            family: 'Inter, system-ui, sans-serif',
+            size: 12,
+            weight: 400, // Use number instead of string
           },
         },
       },
@@ -151,17 +182,13 @@ export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
   };
 
   return (
-    <div className="relative w-full h-full">
-      <div className="absolute top-4 left-4 z-10">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Emotional Performance
-        </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Win rate by trading emotion
-        </p>
-      </div>
-      <div className="absolute top-4 right-4 z-10">
-        <div className="flex items-center space-x-4 text-xs">
+    <div className="chart-container">
+      <div className="chart-header flex items-center justify-between">
+        <div>
+          <h3 className="chart-title">Emotional Performance</h3>
+          <p className="chart-subtitle">Win rate by trading emotion</p>
+        </div>
+        <div className="chart-legend flex items-center space-x-4 text-xs">
           <div className="flex items-center space-x-1">
             <div className="w-3 h-3 rounded-full bg-green-500"></div>
             <span className="text-gray-600 dark:text-gray-400">70%+</span>
@@ -180,7 +207,9 @@ export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
           </div>
         </div>
       </div>
-      <Bar data={chartData} options={options} />
+      <div className="chart-body">
+        <Bar data={chartData} options={options} />
+      </div>
     </div>
   );
 } 

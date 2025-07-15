@@ -51,7 +51,7 @@ export function BestTradingHoursChart({ data }: BestTradingHoursChartProps) {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { display: true, position: 'top' as const },
+      legend: { display: false },
       tooltip: { enabled: true },
     },
     scales: {
@@ -59,5 +59,21 @@ export function BestTradingHoursChart({ data }: BestTradingHoursChartProps) {
       y: { title: { display: true, text: 'Win Rate (%)' }, min: 0, max: 100 },
     },
   };
-  return <Bar data={chartData} options={options} />;
+  return (
+    <div className="chart-container">
+      <div className="chart-header">
+        <h3 className="chart-title">Best Trading Hours</h3>
+        <p className="chart-subtitle">Win rate by hour of day</p>
+      </div>
+      <div className="chart-body">
+        <Bar data={chartData} options={options} />
+      </div>
+      <div className="chart-legend flex justify-center space-x-6 text-sm mt-4">
+        <div className="flex items-center space-x-2">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: barColor }}></div>
+          <span className="text-gray-700 dark:text-gray-300">Win Rate (%)</span>
+        </div>
+      </div>
+    </div>
+  );
 } 

@@ -55,7 +55,7 @@ export function BarPerformanceChart({ data }: BarPerformanceChartProps) {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { display: true, position: 'top' as const },
+      legend: { display: false },
       tooltip: { enabled: true },
     },
     scales: {
@@ -63,5 +63,25 @@ export function BarPerformanceChart({ data }: BarPerformanceChartProps) {
       y: { title: { display: true, text: 'Profit/Loss' } },
     },
   };
-  return <Bar data={chartData} options={options} />;
+  return (
+    <div className="chart-container">
+      <div className="chart-header">
+        <h3 className="chart-title">Asset Performance</h3>
+        <p className="chart-subtitle">Profit/Loss by asset</p>
+      </div>
+      <div className="chart-body">
+        <Bar data={chartData} options={options} />
+      </div>
+      <div className="chart-legend flex justify-center space-x-6 text-sm mt-4">
+        <div className="flex items-center space-x-2">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: positiveColor }}></div>
+          <span className="text-gray-700 dark:text-gray-300">Profit</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: negativeColor }}></div>
+          <span className="text-gray-700 dark:text-gray-300">Loss</span>
+        </div>
+      </div>
+    </div>
+  );
 }

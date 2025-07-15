@@ -64,15 +64,58 @@ export function WinLossChart({ data }: WinLossChartProps) {
       legend: {
         ...config.chartJsDefaults.plugins.legend,
         display: false, // Hide legend for cleaner look
+        labels: {
+          ...config.chartJsDefaults.plugins.legend?.labels,
+          font: {
+            family: 'Inter, system-ui, sans-serif',
+            size: 12,
+            weight: 500, // Use number instead of string
+          },
+        },
       },
       tooltip: {
         ...config.chartJsDefaults.plugins.tooltip,
+        titleFont: {
+          family: 'Inter, system-ui, sans-serif',
+          size: 14,
+          weight: 600, // Use number instead of string
+        },
+        bodyFont: {
+          family: 'Inter, system-ui, sans-serif',
+          size: 12,
+          weight: 400, // Use number instead of string
+        },
         callbacks: {
           label: function(context: any) {
             const label = context.label || '';
             const value = context.parsed;
             const percentage = ((value / data.totalTrades) * 100).toFixed(1);
             return `${label}: ${value} (${percentage}%)`;
+          },
+        },
+      },
+    },
+    scales: {
+      ...config.chartJsDefaults.scales,
+      x: {
+        ...config.chartJsDefaults.scales.x,
+        ticks: {
+          ...config.chartJsDefaults.scales.x?.ticks,
+          font: {
+            family: 'Inter, system-ui, sans-serif',
+            size: 12,
+            weight: 400, // Use number instead of string
+          },
+        },
+      },
+      y: {
+        ...config.chartJsDefaults.scales.y,
+        ticks: {
+          ...config.chartJsDefaults.scales.y?.ticks,
+          font: {
+            family: 'Inter, system-ui, sans-serif',
+            size: 12,
+            weight: 400, // Use number instead of string
           },
         },
       },
@@ -87,19 +130,13 @@ export function WinLossChart({ data }: WinLossChartProps) {
   };
 
   return (
-    <div className="relative w-full h-full">
-      <div className="absolute top-4 left-4 z-10">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Win/Loss Ratio
-        </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Trading performance breakdown
-        </p>
+    <div className="chart-container">
+      <div className="chart-header">
+        <h3 className="chart-title">Win/Loss Ratio</h3>
+        <p className="chart-subtitle">Trading performance breakdown</p>
       </div>
-      
-      {/* Center stats */}
-      <div className="absolute inset-0 flex items-center justify-center z-10">
-        <div className="text-center">
+      <div className="chart-body flex flex-col items-center justify-center">
+        <div className="mb-4 text-center">
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {data.winRate.toFixed(1)}%
           </div>
@@ -110,11 +147,8 @@ export function WinLossChart({ data }: WinLossChartProps) {
             {data.totalTrades} total trades
           </div>
         </div>
-      </div>
-
-      {/* Legend */}
-      <div className="absolute bottom-4 left-4 right-4 z-10">
-        <div className="flex justify-center space-x-6 text-sm">
+        <Doughnut data={chartData} options={options} />
+        <div className="chart-legend flex justify-center space-x-6 text-sm mt-4">
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 rounded-full bg-green-500"></div>
             <span className="text-gray-700 dark:text-gray-300">Wins: {data.wins}</span>
@@ -125,8 +159,6 @@ export function WinLossChart({ data }: WinLossChartProps) {
           </div>
         </div>
       </div>
-
-      <Doughnut data={chartData} options={options} />
     </div>
   );
 }
