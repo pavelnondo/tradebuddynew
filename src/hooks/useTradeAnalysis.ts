@@ -41,7 +41,12 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
     const balanceOverTime = trades
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .reduce((acc, trade, index) => {
-        const date = new Date(trade.date).toLocaleDateString();
+        const parsedDate = new Date(trade.date);
+        if (isNaN(parsedDate.getTime())) {
+          // Skip trades with invalid or missing dates
+          return acc;
+        }
+        const date = parsedDate.toLocaleDateString();
         const prevBalance = index > 0 ? acc[index - 1].balance : initialBalance;
         const currentBalance = prevBalance + trade.profitLoss;
         

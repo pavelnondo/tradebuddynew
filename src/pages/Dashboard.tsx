@@ -162,11 +162,9 @@ export default function Dashboard() {
       {/* Chart Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Trade Win % Pie/Donut Chart */}
-        <Card className="flex flex-col items-center justify-center p-6">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-semibold">Trade Win %</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center">
+        <Card className="flex flex-col p-6">
+          <h3 className="text-lg font-semibold text-left mb-4">Trade Win %</h3>
+          <CardContent className="flex flex-col items-center justify-center flex-1">
             <TradeWinPieChart
               winRate={typeof analysisData.metrics.winRate === 'number' ? analysisData.metrics.winRate : 0}
               winCount={analysisData.metrics.profitableTrades}
@@ -176,11 +174,9 @@ export default function Dashboard() {
           </CardContent>
         </Card>
         {/* Emotion Pie/Donut Chart (to be restyled) */}
-        <Card className="flex flex-col items-center justify-center p-6">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-semibold">Emotional Performance</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center">
+        <Card className="flex flex-col p-6">
+          <h3 className="text-lg font-semibold text-left mb-4">Emotional Performance</h3>
+          <CardContent className="flex flex-col items-center justify-center flex-1">
             <EmotionPieChart data={analysisData.emotionPerformance} />
           </CardContent>
         </Card>
