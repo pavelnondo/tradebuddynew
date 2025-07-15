@@ -211,53 +211,38 @@ export default function Analysis() {
           
           {/* Charts Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {analysisData.balanceOverTime && analysisData.balanceOverTime.length > 0 && (
-              <ChartContainer title="Balance Over Time">
-                <BalanceChart balanceOverTime={analysisData.balanceOverTime} />
-              </ChartContainer>
-            )}
-            {typeof analysisData.metrics.winRate === 'number' && (
-              <ChartContainer title="Win/Loss Ratio">
-                <WinLossChart data={{
-                  wins: analysisData.metrics.profitableTrades,
-                  losses: analysisData.metrics.lossTrades,
-                  totalTrades: analysisData.metrics.totalTrades,
-                  winRate: analysisData.metrics.winRate,
-                }} />
-              </ChartContainer>
-            )}
-            {analysisData.assetPerformance && analysisData.assetPerformance.length > 0 && (
-              <ChartContainer title="Asset Performance">
-                <BarPerformanceChart data={analysisData.assetPerformance} />
-              </ChartContainer>
-            )}
-            {analysisData.emotionPerformance && analysisData.emotionPerformance.length > 0 && (
-              <ChartContainer title="Emotions vs Win Rate">
-                <EmotionsWinRateChart data={analysisData.emotionPerformance} />
-              </ChartContainer>
-            )}
-            {analysisData.tradeTypePerformance && analysisData.tradeTypePerformance.length > 0 && (
-              <ChartContainer title="Trade Type Performance">
-                <TradeTypePerformanceChart data={analysisData.tradeTypePerformance} />
-              </ChartContainer>
-            )}
-            {analysisData.tradesByHour && analysisData.tradesByHour.length > 0 && (
-              <ChartContainer title="Best Trading Hours">
-                <BestTradingHoursChart data={analysisData.tradesByHour} />
-              </ChartContainer>
-            )}
+            <ChartContainer title="Balance Over Time">
+              <BalanceChart balanceOverTime={analysisData.balanceOverTime || []} />
+            </ChartContainer>
+            <ChartContainer title="Win/Loss Ratio">
+              <WinLossChart data={{
+                wins: analysisData.metrics?.profitableTrades ?? 0,
+                losses: analysisData.metrics?.lossTrades ?? 0,
+                totalTrades: analysisData.metrics?.totalTrades ?? 0,
+                winRate: typeof analysisData.metrics?.winRate === 'number' ? analysisData.metrics.winRate : 0,
+              }} />
+            </ChartContainer>
+            <ChartContainer title="Asset Performance">
+              <BarPerformanceChart data={analysisData.assetPerformance || []} />
+            </ChartContainer>
+            <ChartContainer title="Emotions vs Win Rate">
+              <EmotionsWinRateChart data={analysisData.emotionPerformance || []} />
+            </ChartContainer>
+            <ChartContainer title="Trade Type Performance">
+              <TradeTypePerformanceChart data={analysisData.tradeTypePerformance || []} />
+            </ChartContainer>
+            <ChartContainer title="Best Trading Hours">
+              <BestTradingHoursChart data={analysisData.tradesByHour || []} />
+            </ChartContainer>
           </div>
-          
           {/* Insights Section */}
-          {(bestAsset || worstAsset || bestEmotion || bestTradeType || bestHour) && (
-            <InsightsPanel 
-              bestAsset={bestAsset}
-              worstAsset={worstAsset}
-              bestEmotion={bestEmotion}
-              bestTradeType={bestTradeType}
-              bestHour={bestHour}
-            />
-          )}
+          <InsightsPanel 
+            bestAsset={bestAsset}
+            worstAsset={worstAsset}
+            bestEmotion={bestEmotion}
+            bestTradeType={bestTradeType}
+            bestHour={bestHour}
+          />
             </TabsContent>
             <TabsContent value="calendar">
               {/* Monthly summary */}
