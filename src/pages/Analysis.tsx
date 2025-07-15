@@ -41,6 +41,7 @@ const doughnutData = {
 };
 
 export default function Analysis() {
+  console.log('Rendering Analysis page');
   const [initialBalance] = useState<number>(() => {
     const savedBalance = localStorage.getItem('initialTradingBalance');
     return savedBalance ? parseFloat(savedBalance) : 10000; // Default to 10,000 if not set
@@ -48,6 +49,7 @@ export default function Analysis() {
   
   const { trades, isLoading, error, fetchTrades } = useApiTrades();
   
+  console.log('Calling useTradeAnalysis');
   // Calculate analysis data using our new hook
   const analysisData = useTradeAnalysis(trades, initialBalance);
   

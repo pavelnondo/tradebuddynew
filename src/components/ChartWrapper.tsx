@@ -27,6 +27,7 @@ export function ChartWrapper({
   emptyMessage = "No data available",
   children
 }: ChartWrapperProps) {
+  console.log('Rendering ChartWrapper');
   if (isLoading) {
     return (
       <Card>
