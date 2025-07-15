@@ -86,22 +86,24 @@ export function EmotionPieChart({ data }: EmotionPieChartProps) {
   };
 
   return (
-    <div className="relative flex items-center justify-center w-full h-64">
-      <Doughnut ref={chartRef} data={chartData} options={options} />
-      {/* Center stats overlay */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-        <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-          {topEmotion ? topEmotion.emotion : 'No Data'}
-        </div>
-        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          Top Emotion
-        </div>
-        <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-          {totalTrades} trades
+    <div className="relative flex flex-col items-center w-full h-64"> {/* Use flex-col for vertical stacking */}
+      <div className="w-full h-48 relative flex items-center justify-center"> {/* Chart container, slightly reduced height */}
+        <Doughnut ref={chartRef} data={chartData} options={options} />
+        {/* Center stats overlay */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
+            {topEmotion ? topEmotion.emotion : 'No Data'}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Top Emotion
+          </div>
+          <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            {totalTrades} trades
+          </div>
         </div>
       </div>
-      {/* Legend */}
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex flex-wrap justify-center space-x-4 text-xs">
+      {/* Legend below chart, not overlapping */}
+      <div className="flex flex-wrap justify-center space-x-4 text-xs mt-2">
         {data.map((d) => (
           <div key={d.emotion} className="flex items-center space-x-2 mb-1">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: EMOTION_COLORS[d.emotion] || '#a1a1aa' }}></div>

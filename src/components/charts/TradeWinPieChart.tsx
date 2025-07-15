@@ -64,25 +64,29 @@ export function TradeWinPieChart({ winRate, winCount, lossCount, totalTrades }: 
       easing: 'easeInOutQuart' as const,
     },
     cutout: '70%',
+    rotation: -90, // Start at the bottom
+    circumference: 180, // Only show half the circle
   };
 
   return (
-    <div className="relative flex items-center justify-center w-full h-64">
-      <Doughnut ref={chartRef} data={data} options={options} />
-      {/* Center stats overlay */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-        <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-          {winRate.toFixed(1)}%
-        </div>
-        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          Win Rate
-        </div>
-        <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-          {totalTrades} trades
+    <div className="relative flex flex-col items-center w-full h-48"> {/* Reduced height for semi-circle */}
+      <div className="w-full h-40 relative"> {/* Chart container */}
+        <Doughnut ref={chartRef} data={data} options={options} />
+        {/* Center stats overlay */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style={{top: '30%'}}> {/* Move overlay lower for semi-circle */}
+          <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+            {winRate.toFixed(1)}%
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Win Rate
+          </div>
+          <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            {totalTrades} trades
+          </div>
         </div>
       </div>
-      {/* Legend */}
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-6 text-xs">
+      {/* Legend below chart, not overlapping */}
+      <div className="flex justify-center space-x-6 text-xs mt-2">
         <div className="flex items-center space-x-2">
           <div className="w-3 h-3 rounded-full bg-green-500"></div>
           <span className="text-gray-700 dark:text-gray-300">Wins: {winCount}</span>
