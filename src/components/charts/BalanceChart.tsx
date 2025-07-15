@@ -16,6 +16,7 @@ import { getChartConfig, createGradient } from '../../lib/chartConfig';
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 export function BalanceChart({ balanceOverTime }: { balanceOverTime: { date: string; balance: number }[] }) {
+  console.log('Rendering BalanceChart');
   const [isDark, setIsDark] = useState(false);
   const chartRef = useRef<ChartJS>(null);
   if (!Array.isArray(balanceOverTime) || balanceOverTime.length === 0) {

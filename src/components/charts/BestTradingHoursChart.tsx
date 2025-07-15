@@ -23,6 +23,7 @@ interface BestTradingHoursChartProps {
 }
 
 export function BestTradingHoursChart({ data }: BestTradingHoursChartProps) {
+  console.log('Rendering BestTradingHoursChart');
   const [isDark, setIsDark] = useState(false);
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));

@@ -27,6 +27,7 @@ interface EmotionsWinRateChartProps {
 }
 
 export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
+  console.log('Rendering EmotionsWinRateChart');
   const [isDark, setIsDark] = useState(false);
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));

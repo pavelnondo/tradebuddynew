@@ -25,6 +25,7 @@ interface TradeTypePerformanceChartProps {
 }
 
 export function TradeTypePerformanceChart({ data }: TradeTypePerformanceChartProps) {
+  console.log('Rendering TradeTypePerformanceChart');
   const [isDark, setIsDark] = useState(false);
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));
