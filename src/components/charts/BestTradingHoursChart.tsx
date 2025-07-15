@@ -57,8 +57,14 @@ export function BestTradingHoursChart({ data }: BestTradingHoursChartProps) {
       tooltip: { enabled: true },
     },
     scales: {
-      x: { title: { display: true, text: 'Hour' } },
-      y: { title: { display: true, text: 'Win Rate (%)' }, min: 0, max: 100 },
+      x: {
+        title: { display: true, text: 'Hour' },
+        grid: { color: isDark ? '#fff' : '#000' },
+      },
+      y: {
+        title: { display: true, text: 'Win Rate (%)' }, min: 0, max: 100,
+        grid: { color: isDark ? '#fff' : '#000' },
+      },
     },
   };
   return (
