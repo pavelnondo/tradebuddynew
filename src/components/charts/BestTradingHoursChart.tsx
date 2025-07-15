@@ -62,7 +62,7 @@ export function BestTradingHoursChart({ data }: BestTradingHoursChartProps) {
     },
   };
   return (
-    <div className="chart-container">
+    <div className="chart-container bg-card border shadow rounded-lg p-6">
       <div className="chart-header">
         <h3 className="chart-title">Best Trading Hours</h3>
         <p className="chart-subtitle">Win rate by hour of day</p>
