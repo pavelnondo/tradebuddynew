@@ -61,6 +61,29 @@ export default function Analysis() {
     );
   }
   
+  // Debug logging for analysisData and chart props
+  console.log('analysisData:', analysisData);
+  console.log('balanceOverTime:', analysisData.balanceOverTime);
+  console.log('metrics:', analysisData.metrics);
+  console.log('assetPerformance:', analysisData.assetPerformance);
+  console.log('emotionPerformance:', analysisData.emotionPerformance);
+  console.log('tradeTypePerformance:', analysisData.tradeTypePerformance);
+  console.log('tradesByHour:', analysisData.tradesByHour);
+
+  // Prepare chart props for logging
+  const winLossChartProps = {
+    wins: analysisData.metrics?.profitableTrades ?? 0,
+    losses: analysisData.metrics?.lossTrades ?? 0,
+    totalTrades: analysisData.metrics?.totalTrades ?? 0,
+    winRate: typeof analysisData.metrics?.winRate === 'number' ? analysisData.metrics.winRate : 0,
+  };
+  console.log('BalanceChart props:', analysisData.balanceOverTime);
+  console.log('WinLossChart props:', winLossChartProps);
+  console.log('BarPerformanceChart props:', analysisData.assetPerformance);
+  console.log('EmotionsWinRateChart props:', analysisData.emotionPerformance);
+  console.log('TradeTypePerformanceChart props:', analysisData.tradeTypePerformance);
+  console.log('BestTradingHoursChart props:', analysisData.tradesByHour);
+
   // Find best performing assets and insights
   const bestAsset = analysisData.assetPerformance.length > 0
     ? [...analysisData.assetPerformance].sort((a, b) => b.profitLoss - a.profitLoss)[0]
@@ -215,12 +238,7 @@ export default function Analysis() {
               <BalanceChart balanceOverTime={analysisData.balanceOverTime || []} />
             </ChartContainer>
             <ChartContainer title="Win/Loss Ratio">
-              <WinLossChart data={{
-                wins: analysisData.metrics?.profitableTrades ?? 0,
-                losses: analysisData.metrics?.lossTrades ?? 0,
-                totalTrades: analysisData.metrics?.totalTrades ?? 0,
-                winRate: typeof analysisData.metrics?.winRate === 'number' ? analysisData.metrics.winRate : 0,
-              }} />
+              <WinLossChart data={winLossChartProps} />
             </ChartContainer>
             <ChartContainer title="Asset Performance">
               <BarPerformanceChart data={analysisData.assetPerformance || []} />
