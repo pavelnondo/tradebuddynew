@@ -66,6 +66,8 @@ export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
         hoverBackgroundColor: data.map((d) => getBarColor(d.winRate)),
         hoverBorderColor: '#ffffff',
         hoverBorderWidth: 2,
+        barThickness: 18,
+        maxBarThickness: 22,
       },
     ],
   };
