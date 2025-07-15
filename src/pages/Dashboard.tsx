@@ -29,6 +29,8 @@ import { EmotionsWinRateChart } from '@/components/charts/EmotionsWinRateChart';
 import { TradeTypePerformanceChart } from '@/components/charts/TradeTypePerformanceChart';
 import { BestTradingHoursChart } from '@/components/charts/BestTradingHoursChart';
 import { ChartContainer } from '@/components/ChartContainer';
+import { TradeWinPieChart } from '@/components/charts/TradeWinPieChart';
+import { EmotionPieChart } from '@/components/charts/EmotionPieChart';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
 
@@ -183,24 +185,40 @@ export default function Dashboard() {
       
       {/* Chart Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <ChartContainer title="Balance Over Time">
-          <BalanceChart balanceOverTime={analysisData.balanceOverTime} />
-        </ChartContainer>
-        <ChartContainer title="Win/Loss Ratio">
-          <WinLossChart wins={analysisData.metrics.profitableTrades} losses={analysisData.metrics.lossTrades} />
-        </ChartContainer>
-        <ChartContainer title="Asset Performance">
-          <BarPerformanceChart data={analysisData.assetPerformance} />
-        </ChartContainer>
-        <ChartContainer title="Emotions vs Win Rate">
-          <EmotionsWinRateChart data={analysisData.emotionPerformance} />
-        </ChartContainer>
-        <ChartContainer title="Trade Type Performance">
-          <TradeTypePerformanceChart data={analysisData.tradeTypePerformance} />
-        </ChartContainer>
-        <ChartContainer title="Best Trading Hours">
-          <BestTradingHoursChart data={analysisData.tradesByHour} />
-        </ChartContainer>
+        {/* Trade Win % Pie/Donut Chart */}
+        <Card className="flex flex-col items-center justify-center p-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-semibold">Trade Win %</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center justify-center">
+            <TradeWinPieChart
+              winRate={typeof analysisData.metrics.winRate === 'number' ? analysisData.metrics.winRate : 0}
+              winCount={analysisData.metrics.profitableTrades}
+              lossCount={analysisData.metrics.lossTrades}
+              totalTrades={analysisData.metrics.totalTrades}
+            />
+          </CardContent>
+        </Card>
+        {/* Emotion Pie/Donut Chart (to be restyled) */}
+        <Card className="flex flex-col items-center justify-center p-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-semibold">Emotional Performance</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center justify-center">
+            <EmotionPieChart data={analysisData.emotionPerformance} />
+          </CardContent>
+        </Card>
+      </div>
+      {/* Trade Insights Section */}
+      <div className="mt-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Trade Insights</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* Insights content will be implemented here */}
+          </CardContent>
+        </Card>
       </div>
       
       {/* Trading Insights Card */}
