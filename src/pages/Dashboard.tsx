@@ -209,17 +209,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
-      {/* Trade Insights Section */}
-      <div className="mt-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Trade Insights</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {/* Insights content will be implemented here */}
-          </CardContent>
-        </Card>
-      </div>
       
       {/* Trading Insights Card */}
       <Card className="shadow-md hover:shadow-lg transition-shadow bg-gradient-to-r from-secondary/5 to-transparent mt-8">
