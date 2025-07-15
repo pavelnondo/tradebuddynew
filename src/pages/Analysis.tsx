@@ -193,24 +193,27 @@ export default function Analysis() {
           
           {/* Charts Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <ChartContainer title="Balance Over Time">
+            <div className="bg-card rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold text-left mb-4">Balance Over Time</h3>
               <BalanceChart balanceOverTime={analysisData.balanceOverTime || []} />
-            </ChartContainer>
-            <ChartContainer title="Win/Loss Ratio">
-              <WinLossChart data={winLossChartProps} />
-            </ChartContainer>
-            <ChartContainer title="Asset Performance">
+            </div>
+            {/* Removed Win/Loss Ratio chart */}
+            <div className="bg-card rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold text-left mb-4">Asset Performance</h3>
               <BarPerformanceChart data={analysisData.assetPerformance || []} />
-            </ChartContainer>
-            <ChartContainer title="Emotions vs Win Rate">
+            </div>
+            <div className="bg-card rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold text-left mb-4">Emotions vs Win Rate</h3>
               <EmotionsWinRateChart data={analysisData.emotionPerformance || []} />
-            </ChartContainer>
-            <ChartContainer title="Trade Type Performance">
+            </div>
+            <div className="bg-card rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold text-left mb-4">Trade Type Performance</h3>
               <TradeTypePerformanceChart data={analysisData.tradeTypePerformance || []} />
-            </ChartContainer>
-            <ChartContainer title="Best Trading Hours">
+            </div>
+            <div className="bg-card rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold text-left mb-4">Best Trading Hours</h3>
               <BestTradingHoursChart data={analysisData.tradesByHour || []} />
-            </ChartContainer>
+            </div>
           </div>
           {/* Insights Section */}
           <InsightsPanel 

@@ -44,6 +44,8 @@ export function BestTradingHoursChart({ data }: BestTradingHoursChartProps) {
         label: 'Win Rate (%)',
         data: data.map((d) => d.winRate),
         backgroundColor: barColor,
+        barThickness: 18,
+        maxBarThickness: 22,
       },
     ],
   };

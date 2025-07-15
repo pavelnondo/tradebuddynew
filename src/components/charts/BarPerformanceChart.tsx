@@ -48,6 +48,8 @@ export function BarPerformanceChart({ data }: BarPerformanceChartProps) {
         label: 'Profit/Loss',
         data: data.map((d) => d.profitLoss),
         backgroundColor: data.map((d) => d.profitLoss >= 0 ? positiveColor : negativeColor),
+        barThickness: 18,
+        maxBarThickness: 22,
       },
     ],
   };
