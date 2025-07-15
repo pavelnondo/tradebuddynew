@@ -16,11 +16,11 @@ import { getChartConfig, createGradient } from '../../lib/chartConfig';
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 export function BalanceChart({ balanceOverTime }: { balanceOverTime: { date: string; balance: number }[] }) {
+  const [isDark, setIsDark] = useState(false);
+  const chartRef = useRef<ChartJS>(null);
   if (!Array.isArray(balanceOverTime) || balanceOverTime.length === 0) {
     return <div className="text-center text-muted-foreground">No balance data available.</div>;
   }
-  const [isDark, setIsDark] = useState(false);
-  const chartRef = useRef<ChartJS>(null);
   
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));
