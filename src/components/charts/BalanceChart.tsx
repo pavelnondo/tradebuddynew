@@ -135,6 +135,7 @@ export function BalanceChart({ balanceOverTime }: { balanceOverTime: { date: str
             weight: 400, // Use number instead of string
           },
         },
+        grid: { color: isDark ? '#fff' : '#000' },
       },
       y: {
         ...config.chartJsDefaults.scales.y,
@@ -157,6 +158,7 @@ export function BalanceChart({ balanceOverTime }: { balanceOverTime: { date: str
             weight: 400, // Use number instead of string
           },
         },
+        grid: { color: isDark ? '#fff' : '#000' },
       },
     },
     elements: {

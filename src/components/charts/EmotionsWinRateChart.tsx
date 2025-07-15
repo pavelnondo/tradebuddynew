@@ -145,6 +145,7 @@ export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
             weight: 400, // Use number instead of string
           },
         },
+        grid: { color: isDark ? '#fff' : '#000' },
       },
       y: {
         ...config.chartJsDefaults.scales.y,
@@ -172,6 +173,7 @@ export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
             weight: 400, // Use number instead of string
           },
         },
+        grid: { color: isDark ? '#fff' : '#000' },
       },
     },
     elements: {
