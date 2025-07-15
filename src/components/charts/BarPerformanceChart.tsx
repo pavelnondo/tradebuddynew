@@ -26,6 +26,7 @@ interface BarPerformanceChartProps {
 }
 
 export function BarPerformanceChart({ data }: BarPerformanceChartProps) {
+  console.log('Rendering BarPerformanceChart');
   const [isDark, setIsDark] = useState(false);
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));
