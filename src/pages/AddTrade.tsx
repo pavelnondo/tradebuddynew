@@ -26,7 +26,7 @@ import { DateTimeInput } from '@/components/DateTimeInput';
 import { FeatureToggle } from '@/components/FeatureToggle';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { buildApiUrl, getAuthHeaders } from '@/lib/api';
-import { TradeForm } from '@/components/TradeForm';
+import TradeForm from '@/components/TradeForm';
 
 // Form validation schema using Zod
 const formSchema = z.object({
@@ -242,20 +242,6 @@ export default function AddTrade() {
       <TradeForm 
         mode="add" 
         onSubmit={onSubmit} 
-        isSubmitting={isSubmitting} 
-        isUploading={isUploading} 
-        screenshotFile={screenshotFile} 
-        previewUrl={previewUrl} 
-        handleScreenshotChange={handleScreenshotChange} 
-        clearScreenshot={clearScreenshot} 
-        selectedChecklist={selectedChecklist} 
-        checklistItems={checklistItems} 
-        handleChecklistChange={handleChecklistChange} 
-        handleChecklistItemToggle={handleChecklistItemToggle} 
-        showAdvancedFeatures={showAdvancedFeatures} 
-        setShowAdvancedFeatures={setShowAdvancedFeatures} 
-        form={form} 
-        checklists={checklists} 
         onCancel={() => navigate('/trades')} 
       />
     </div>
