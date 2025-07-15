@@ -23,9 +23,6 @@ interface BestTradingHoursChartProps {
 }
 
 export function BestTradingHoursChart({ data }: BestTradingHoursChartProps) {
-  if (!Array.isArray(data) || data.length === 0) {
-    return <div className="text-center text-muted-foreground">No trading hour data available.</div>;
-  }
   const [isDark, setIsDark] = useState(false);
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));
@@ -35,6 +32,9 @@ export function BestTradingHoursChart({ data }: BestTradingHoursChartProps) {
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     return () => observer.disconnect();
   }, []);
+  if (!Array.isArray(data) || data.length === 0) {
+    return <div className="text-center text-muted-foreground">No trading hour data available.</div>;
+  }
   const barColor = isDark ? '#22c55e' : '#4ade80';
   const chartData = {
     labels: data.map((d) => d.hourFormatted),

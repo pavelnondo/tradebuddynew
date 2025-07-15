@@ -27,11 +27,7 @@ interface EmotionsWinRateChartProps {
 }
 
 export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
-  if (!Array.isArray(data) || data.length === 0) {
-    return <div className="text-center text-muted-foreground">No emotion win rate data available.</div>;
-  }
   const [isDark, setIsDark] = useState(false);
-  
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));
     const observer = new MutationObserver(() => {
@@ -40,6 +36,9 @@ export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     return () => observer.disconnect();
   }, []);
+  if (!Array.isArray(data) || data.length === 0) {
+    return <div className="text-center text-muted-foreground">No emotion win rate data available.</div>;
+  }
 
   const config = getChartConfig(isDark);
   const { colors } = config;

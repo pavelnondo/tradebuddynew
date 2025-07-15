@@ -25,9 +25,6 @@ interface TradeTypePerformanceChartProps {
 }
 
 export function TradeTypePerformanceChart({ data }: TradeTypePerformanceChartProps) {
-  if (!Array.isArray(data) || data.length === 0) {
-    return <div className="text-center text-muted-foreground">No trade type performance data available.</div>;
-  }
   const [isDark, setIsDark] = useState(false);
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));
@@ -37,6 +34,9 @@ export function TradeTypePerformanceChart({ data }: TradeTypePerformanceChartPro
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     return () => observer.disconnect();
   }, []);
+  if (!Array.isArray(data) || data.length === 0) {
+    return <div className="text-center text-muted-foreground">No trade type performance data available.</div>;
+  }
   const positiveColor = isDark ? '#22c55e' : '#4ade80';
   const negativeColor = isDark ? '#ef4444' : '#f87171';
   const chartData = {
