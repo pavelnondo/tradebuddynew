@@ -298,18 +298,18 @@ export default function TradeHistory() {
                   </TableRow>
                 ) : (
                   filteredTrades.map((trade) => (
-                    <TableRow key={trade.id} className="cursor-pointer hover:bg-muted/50">
-                      <TableCell onClick={() => viewTrade(trade)}>{new Date(trade.date).toLocaleString()}</TableCell>
-                      <TableCell onClick={() => viewTrade(trade)} className="font-medium">{trade.asset}</TableCell>
-                      <TableCell onClick={() => viewTrade(trade)}>{trade.tradeType}</TableCell>
-                      <TableCell onClick={() => viewTrade(trade)}>${typeof trade.entryPrice === 'number' ? trade.entryPrice.toFixed(2) : '0.00'}</TableCell>
-                      <TableCell onClick={() => viewTrade(trade)}>${typeof trade.exitPrice === 'number' ? trade.exitPrice.toFixed(2) : '0.00'}</TableCell>
-                      <TableCell onClick={() => viewTrade(trade)}>{trade.positionSize}</TableCell>
-                      <TableCell onClick={() => viewTrade(trade)} className={typeof trade.profitLoss === 'number' ? (trade.profitLoss >= 0 ? "text-green-500" : "text-red-500") : "text-muted-foreground"}>
+                    <TableRow key={trade.id} onClick={() => viewTrade(trade)} className="cursor-pointer hover:bg-muted/50">
+                      <TableCell>{new Date(trade.date).toLocaleString()}</TableCell>
+                      <TableCell className="font-medium">{trade.asset}</TableCell>
+                      <TableCell>{trade.tradeType}</TableCell>
+                      <TableCell>${typeof trade.entryPrice === 'number' ? trade.entryPrice.toFixed(2) : '0.00'}</TableCell>
+                      <TableCell>${typeof trade.exitPrice === 'number' ? trade.exitPrice.toFixed(2) : '0.00'}</TableCell>
+                      <TableCell>{trade.positionSize}</TableCell>
+                      <TableCell className={typeof trade.profitLoss === 'number' ? (trade.profitLoss >= 0 ? "text-green-500" : "text-red-500") : "text-muted-foreground"}>
                         {typeof trade.profitLoss === 'number' ? (trade.profitLoss >= 0 ? "+" : "") + `$${trade.profitLoss.toFixed(2)}` : '$0.00'}
                       </TableCell>
-                      <TableCell onClick={() => viewTrade(trade)}>{trade.emotion}</TableCell>
-                      <TableCell onClick={() => viewTrade(trade)}>
+                      <TableCell>{trade.emotion}</TableCell>
+                      <TableCell>
                         {trade.checklist_completed && trade.checklist_completed.length > 0 ? (
                           <div className="flex items-center space-x-2">
                             <Progress 
@@ -324,7 +324,7 @@ export default function TradeHistory() {
                           <span className="text-muted-foreground">None</span>
                         )}
                       </TableCell>
-                      <TableCell onClick={() => viewTrade(trade)}>
+                      <TableCell>
                         {trade.screenshot ? (
                           <Dialog>
                             <DialogTrigger asChild>
@@ -352,14 +352,14 @@ export default function TradeHistory() {
                           <span className="text-muted-foreground">None</span>
                         )}
                       </TableCell>
-                      <TableCell onClick={() => viewTrade(trade)} className="max-w-[200px] truncate">{trade.notes}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{trade.notes}</TableCell>
                       <TableCell>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="text-red-500 hover:text-red-700 hover:bg-red-100"
-                          onClick={(e) => handleDeleteTrade(trade.id, e)}
-                        >
+                        <Button size="sm" variant="outline" onClick={e => { e.stopPropagation(); handleEditTrade(trade); }}>
+                          Edit
+                        </Button>
+                      </TableCell>
+                      <TableCell>
+                        <Button size="sm" variant="destructive" onClick={e => handleDeleteTrade(trade.id, e)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </TableCell>

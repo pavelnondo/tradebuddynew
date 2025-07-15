@@ -184,7 +184,7 @@ export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
   };
 
   return (
-    <div className="chart-container">
+    <div className="chart-container bg-card border shadow rounded-lg p-6">
       <div className="chart-header flex items-center justify-between">
         <div>
           <h3 className="chart-title">Emotional Performance</h3>

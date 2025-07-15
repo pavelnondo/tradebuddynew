@@ -65,7 +65,7 @@ export function TradeTypePerformanceChart({ data }: TradeTypePerformanceChartPro
     },
   };
   return (
-    <div className="chart-container">
+    <div className="chart-container bg-card border shadow rounded-lg p-6">
       <div className="chart-header">
         <h3 className="chart-title">Trade Type Performance</h3>
         <p className="chart-subtitle">Profit/Loss by trade type</p>

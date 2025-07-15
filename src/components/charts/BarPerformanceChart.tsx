@@ -66,7 +66,7 @@ export function BarPerformanceChart({ data }: BarPerformanceChartProps) {
     },
   };
   return (
-    <div className="chart-container">
+    <div className="chart-container bg-card border shadow rounded-lg p-6">
       <div className="chart-header">
         <h3 className="chart-title">Asset Performance</h3>
         <p className="chart-subtitle">Profit/Loss by asset</p>
