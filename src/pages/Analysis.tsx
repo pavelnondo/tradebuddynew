@@ -25,6 +25,10 @@ import { EmotionsWinRateChart } from '@/components/charts/EmotionsWinRateChart';
 import { TradeTypePerformanceChart } from '@/components/charts/TradeTypePerformanceChart';
 import { BestTradingHoursChart } from '@/components/charts/BestTradingHoursChart';
 import { ChartContainer } from '@/components/ChartContainer';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { TradeCalendar } from '@/components/charts/TradeCalendar';
+import { format } from 'date-fns';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 // Sample data
 const barData = {
@@ -78,6 +82,48 @@ export default function Analysis() {
     ? [...analysisData.tradesByHour].sort((a, b) => b.winRate - a.winRate)[0]
     : undefined;
 
+  // Prepare calendar data for the current month
+  const now = new Date();
+  const [calendarMonth, setCalendarMonth] = useState(now.getMonth());
+  const [calendarYear, setCalendarYear] = useState(now.getFullYear());
+  const handlePrevMonth = () => {
+    setCalendarMonth((prev) => {
+      if (prev === 0) {
+        setCalendarYear((y) => y - 1);
+        return 11;
+      }
+      return prev - 1;
+    });
+  };
+  const handleNextMonth = () => {
+    setCalendarMonth((prev) => {
+      if (prev === 11) {
+        setCalendarYear((y) => y + 1);
+        return 0;
+      }
+      return prev + 1;
+    });
+  };
+  // Group trades by day
+  const daysMap: Record<string, { pnl: number; tradeCount: number }> = {};
+  trades.forEach(trade => {
+    const date = trade.date ? format(new Date(trade.date), 'yyyy-MM-dd') : null;
+    if (date) {
+      if (!daysMap[date]) daysMap[date] = { pnl: 0, tradeCount: 0 };
+      daysMap[date].pnl += trade.profitLoss || 0;
+      daysMap[date].tradeCount += 1;
+    }
+  });
+  const days = Object.entries(daysMap)
+    .filter(([date]) => {
+      const d = new Date(date);
+      return d.getMonth() === calendarMonth && d.getFullYear() === calendarYear;
+    })
+    .map(([date, { pnl, tradeCount }]) => ({ date, pnl, tradeCount }));
+
+  const [selectedDay, setSelectedDay] = useState<{ date: string; pnl: number; tradeCount: number } | null>(null);
+  const dayTrades = selectedDay ? trades.filter(trade => trade.date && format(new Date(trade.date), 'yyyy-MM-dd') === selectedDay.date) : [];
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Performance Analysis</h1>
@@ -94,6 +140,12 @@ export default function Analysis() {
         </div>
       ) : (
         <>
+          <Tabs defaultValue="charts" className="w-full">
+            <TabsList className="mb-6">
+              <TabsTrigger value="charts">Charts</TabsTrigger>
+              <TabsTrigger value="calendar">Calendar</TabsTrigger>
+            </TabsList>
+            <TabsContent value="charts">
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <MetricsCard 
@@ -163,7 +215,12 @@ export default function Analysis() {
               <BalanceChart balanceOverTime={analysisData.balanceOverTime} />
             </ChartContainer>
             <ChartContainer title="Win/Loss Ratio">
-              <WinLossChart wins={analysisData.metrics.profitableTrades} losses={analysisData.metrics.lossTrades} />
+              <WinLossChart data={{
+                wins: analysisData.metrics.profitableTrades,
+                losses: analysisData.metrics.lossTrades,
+                totalTrades: analysisData.metrics.totalTrades,
+                winRate: typeof analysisData.metrics.winRate === 'number' ? analysisData.metrics.winRate : 0,
+              }} />
             </ChartContainer>
             <ChartContainer title="Asset Performance">
               <BarPerformanceChart data={analysisData.assetPerformance} />
@@ -187,6 +244,55 @@ export default function Analysis() {
             bestTradeType={bestTradeType}
             bestHour={bestHour}
           />
+            </TabsContent>
+            <TabsContent value="calendar">
+              {/* Monthly summary */}
+              <div className="flex flex-col items-center mb-2">
+                <div className="text-base font-semibold">
+                  Monthly P&L: <span className={days.reduce((sum, d) => sum + d.pnl, 0) >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    ${days.reduce((sum, d) => sum + d.pnl, 0).toFixed(2)}
+                  </span>
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Total Trades: {days.reduce((sum, d) => sum + d.tradeCount, 0)}
+                </div>
+              </div>
+              <div className="flex items-center justify-between mb-4">
+                <button onClick={handlePrevMonth} className="px-3 py-1 rounded bg-muted hover:bg-muted/80">&lt; Prev</button>
+                <span className="font-semibold text-lg">{new Date(calendarYear, calendarMonth).toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
+                <button onClick={handleNextMonth} className="px-3 py-1 rounded bg-muted hover:bg-muted/80">Next &gt;</button>
+              </div>
+              <TradeCalendar days={days} month={calendarMonth} year={calendarYear} onDayClick={setSelectedDay} />
+              {/* Day details modal */}
+              <Dialog open={!!selectedDay} onOpenChange={open => { if (!open) setSelectedDay(null); }}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Day Details</DialogTitle>
+                    <DialogDescription>
+                      {selectedDay && (
+                        <>
+                          <div className="font-semibold mb-2">{selectedDay.date}</div>
+                          <div className="mb-2">P&L: <span className={selectedDay.pnl >= 0 ? 'text-green-600' : 'text-red-600'}>${selectedDay.pnl.toFixed(2)}</span></div>
+                          <div className="mb-2">Trades: {selectedDay.tradeCount}</div>
+                          {dayTrades.length > 0 ? (
+                            <div className="space-y-2">
+                              {dayTrades.map((trade, i) => (
+                                <div key={i} className="border-b pb-1">
+                                  <div className="font-mono text-xs">{trade.asset} ({trade.tradeType})</div>
+                                  <div className="text-xs">P&L: <span className={trade.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}>${trade.profitLoss.toFixed(2)}</span></div>
+                                  {trade.notes && <div className="text-xs text-gray-500">{trade.notes}</div>}
+                                </div>
+                              ))}
+                            </div>
+                          ) : <div className="text-xs text-gray-500">No trades for this day.</div>}
+                        </>
+                      )}
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
+            </TabsContent>
+          </Tabs>
         </>
       )}
     </div>
