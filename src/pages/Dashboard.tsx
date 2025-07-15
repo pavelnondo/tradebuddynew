@@ -134,53 +134,29 @@ export default function Dashboard() {
       />
       
       {/* Quick Metrics cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-primary">
-          <CardHeader className="pb-2">
-            <CardDescription>Today's Trades</CardDescription>
-            <CardTitle className="text-2xl flex items-center">
-              <Timer className="mr-2 h-5 w-5 text-primary" />
-              {analysisData.metrics.totalTrades}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        
-        <Card className="border-l-4 border-l-primary">
-          <CardHeader className="pb-2">
-            <CardDescription>Win Rate</CardDescription>
-            <CardTitle className="text-2xl flex items-center">
-              <CandlestickChart className="mr-2 h-5 w-5 text-primary" />
-              {analysisData.metrics.totalTrades ? (typeof analysisData.metrics.winRate === 'number' ? analysisData.metrics.winRate.toFixed(1) : '0.0') : 0}%
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        
-        <Card className="border-l-4 border-l-primary">
-          <CardHeader className="pb-2">
-            <CardDescription>Daily P&L</CardDescription>
-            <CardTitle className={`text-2xl flex items-center ${analysisData.metrics.totalProfitLoss > 0 ? 'text-green-500' : analysisData.metrics.totalProfitLoss < 0 ? 'text-red-500' : ''}`}>
-              <DollarSign className="mr-2 h-5 w-5" />
-              {analysisData.metrics.totalProfitLoss > 0 ? '+' : ''}
-              ${typeof analysisData.metrics.totalProfitLoss === 'number' ? analysisData.metrics.totalProfitLoss.toFixed(2) : '0.00'}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        
-        <Card className="border-l-4 border-l-primary">
-          <CardHeader className="pb-2">
-            <CardDescription>Avg. Trade P&L</CardDescription>
-            <CardTitle className={`text-2xl flex items-center ${analysisData.metrics.avgWin > 0 ? 'text-green-500' : analysisData.metrics.avgWin < 0 ? 'text-red-500' : ''}`}>
-              {analysisData.metrics.avgWin > 0 ? (
-                <ArrowUp className="mr-2 h-5 w-5" />
-              ) : analysisData.metrics.avgWin < 0 ? (
-                <ArrowDown className="mr-2 h-5 w-5" />
-              ) : (
-                <DollarSign className="mr-2 h-5 w-5" />
-              )}
-              ${typeof analysisData.metrics.avgWin === 'number' ? Math.abs(analysisData.metrics.avgWin).toFixed(2) : '0.00'}
-            </CardTitle>
-          </CardHeader>
-        </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <MetricsCard
+          title="Today's Trades"
+          value={analysisData.metrics.totalTrades}
+          icon={<Timer className="text-primary" />}
+        />
+        <MetricsCard
+          title="Win Rate"
+          value={analysisData.metrics.totalTrades ? (typeof analysisData.metrics.winRate === 'number' ? analysisData.metrics.winRate.toFixed(1) : '0.0') + '%' : '0%'}
+          icon={<CandlestickChart className="text-primary" />}
+        />
+        <MetricsCard
+          title="Daily P&L"
+          value={`${analysisData.metrics.totalProfitLoss > 0 ? '+' : ''}$${typeof analysisData.metrics.totalProfitLoss === 'number' ? analysisData.metrics.totalProfitLoss.toFixed(2) : '0.00'}`}
+          icon={<DollarSign />}
+          valueClassName={analysisData.metrics.totalProfitLoss > 0 ? 'text-green-500' : analysisData.metrics.totalProfitLoss < 0 ? 'text-red-500' : ''}
+        />
+        <MetricsCard
+          title="Avg. Trade P&L"
+          value={`$${typeof analysisData.metrics.avgWin === 'number' ? Math.abs(analysisData.metrics.avgWin).toFixed(2) : '0.00'}`}
+          icon={analysisData.metrics.avgWin > 0 ? <ArrowUp /> : analysisData.metrics.avgWin < 0 ? <ArrowDown /> : <DollarSign />}
+          valueClassName={analysisData.metrics.avgWin > 0 ? 'text-green-500' : analysisData.metrics.avgWin < 0 ? 'text-red-500' : ''}
+        />
       </div>
       
       {/* Chart Section */}
