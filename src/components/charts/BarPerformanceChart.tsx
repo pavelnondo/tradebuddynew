@@ -26,6 +26,9 @@ interface BarPerformanceChartProps {
 }
 
 export function BarPerformanceChart({ data }: BarPerformanceChartProps) {
+  if (!Array.isArray(data) || data.length === 0) {
+    return <div className="text-center text-muted-foreground">No asset performance data available.</div>;
+  }
   const [isDark, setIsDark] = useState(false);
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));

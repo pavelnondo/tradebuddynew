@@ -73,7 +73,7 @@ export function ChartWrapper({
   return (
     <Card className="h-full w-full flex flex-col">
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-base justify-start text-left">
+        <CardTitle className="flex items-center gap-2 text-base text-left !justify-start !items-start" style={{textAlign: 'left', justifyContent: 'flex-start', alignItems: 'flex-start'}}>
           {icon}
           {title}
         </CardTitle>

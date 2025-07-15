@@ -27,6 +27,9 @@ interface EmotionsWinRateChartProps {
 }
 
 export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
+  if (!Array.isArray(data) || data.length === 0) {
+    return <div className="text-center text-muted-foreground">No emotion win rate data available.</div>;
+  }
   const [isDark, setIsDark] = useState(false);
   
   useEffect(() => {

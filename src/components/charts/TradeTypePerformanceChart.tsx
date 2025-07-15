@@ -25,6 +25,9 @@ interface TradeTypePerformanceChartProps {
 }
 
 export function TradeTypePerformanceChart({ data }: TradeTypePerformanceChartProps) {
+  if (!Array.isArray(data) || data.length === 0) {
+    return <div className="text-center text-muted-foreground">No trade type performance data available.</div>;
+  }
   const [isDark, setIsDark] = useState(false);
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));
