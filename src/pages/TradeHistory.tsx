@@ -146,7 +146,7 @@ export default function TradeHistory() {
   };
 
   // Save edit
-  const handleSaveEdit = async () => {
+  const handleSaveEdit = async (tradeData) => {
     if (!editingTrade) return;
     try {
       const res = await fetch(buildApiUrl(`/trades/${editingTrade.id}`), {
@@ -155,24 +155,7 @@ export default function TradeHistory() {
           'Content-Type': 'application/json',
           ...getAuthHeaders()
         },
-        body: JSON.stringify({
-          symbol: editForm.asset,
-          type: editForm.tradeType,
-          entry_price: editForm.entryPrice,
-          exit_price: editForm.exitPrice,
-          quantity: editForm.positionSize,
-          entry_time: editForm.date,
-          exit_time: editForm.date,
-          pnl: editForm.profitLoss,
-          notes: editForm.notes,
-          emotion: editForm.emotion,
-          setup: editForm.setup,
-          execution_quality: editForm.executionQuality,
-          duration: editForm.duration,
-          checklist_id: editForm.checklist_id,
-          checklist_completed: editForm.checklist_completed,
-          screenshot: editForm.screenshot,
-        }),
+        body: JSON.stringify(tradeData),
       });
       if (res.ok) {
         await fetchTrades();
