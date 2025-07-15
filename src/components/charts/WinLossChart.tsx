@@ -23,6 +23,9 @@ interface WinLossChartProps {
 }
 
 export function WinLossChart({ data }: WinLossChartProps) {
+  if (!data || typeof data !== 'object' || data.totalTrades === 0) {
+    return <div className="text-center text-muted-foreground">No win/loss data available.</div>;
+  }
   const [isDark, setIsDark] = useState(false);
   
   useEffect(() => {
