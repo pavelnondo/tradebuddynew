@@ -22,6 +22,7 @@ export function ChartContainer({
   emptyMessage = "No data available",
   children
 }: ChartContainerProps) {
+  console.log('Rendering ChartContainer');
   return (
     <ChartWrapper
       title={title}
