@@ -173,11 +173,17 @@ app.get('/trades', optionalAuth, async (req, res) => {
 
 // Create a trade (now supports advanced fields)
 app.post('/trades', optionalAuth, async (req, res) => {
+  console.log('Received /trades POST:', req.body);
   const {
     symbol, type, entry_price, exit_price, quantity, entry_time, exit_time, pnl, notes,
     emotion, setup, execution_quality, duration, checklist_id, checklist_completed, screenshot
   } = req.body;
   
+  // User-friendly error if symbol is missing or empty
+  if (!symbol || typeof symbol !== 'string' || symbol.trim() === '') {
+    return res.status(400).json({ error: "The 'symbol' field is required and cannot be empty." });
+  }
+
   try {
     const checklistCompletedJson = checklist_completed ? JSON.stringify(checklist_completed) : null;
     const userId = req.user ? req.user.userId : null;
