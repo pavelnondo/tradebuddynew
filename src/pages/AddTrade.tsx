@@ -197,6 +197,8 @@ export default function AddTrade() {
           : null,
         screenshot: screenshotUrl,
       };
+      // Log the trade data being sent
+      console.log('Submitting tradeData:', tradeData);
       // POST to backend
       const res = await fetch(buildApiUrl('/trades'), {
         method: 'POST',
