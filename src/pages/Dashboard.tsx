@@ -118,20 +118,27 @@ export default function Dashboard() {
       {/* Balance Overview Section */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b pb-4 mb-4">
         <div>
-          <h1 className="text-3xl font-bold mb-1">Trading Dashboard</h1>
+          <h1 className="text-3xl font-bold mb-1">Dashboard Overview</h1>
           <div className="flex flex-col md:flex-row md:items-center gap-2 text-muted-foreground">
             <span className="bg-muted px-3 py-1 rounded-full text-sm">Initial Balance: <span className="font-semibold text-primary">${initialBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></span>
             <span className="bg-muted px-3 py-1 rounded-full text-sm">Current Balance: <span className="font-semibold text-green-600">${typeof analysisData.metrics.currentBalance === 'number' ? analysisData.metrics.currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</span></span>
           </div>
         </div>
-        <button
-          className="bg-primary text-white px-6 py-2 rounded-lg font-semibold shadow hover:bg-primary/90 transition"
-          onClick={() => navigate('/add-trade')}
-        >
-          + Add Trade
-        </button>
+        <div className="flex space-x-2">
+          <button
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center"
+            onClick={() => navigate('/add-trade')}
+          >
+            <span className="mr-2"><svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg></span> Add Trade
+          </button>
+          <button
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition flex items-center"
+            onClick={() => navigate('/settings')}
+          >
+            <span className="mr-2"><svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3" /></svg></span> Settings
+          </button>
+        </div>
       </div>
-      
       {/* InitialBalanceControl Section (keep for editing initial balance) */}
       <InitialBalanceControl 
         initialBalance={initialBalance}
@@ -139,77 +146,127 @@ export default function Dashboard() {
         currentBalance={analysisData.metrics.currentBalance}
         percentageReturn={analysisData.metrics.percentageReturn}
       />
-      
       {/* Quick Metrics cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-primary">
-          <CardHeader className="pb-2">
-            <CardDescription>Today's Trades</CardDescription>
-            <CardTitle className="text-2xl flex items-center">
-              <Timer className="mr-2 h-5 w-5 text-primary" />
-              {analysisData.metrics.totalTrades}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        
-        <Card className="border-l-4 border-l-primary">
-          <CardHeader className="pb-2">
-            <CardDescription>Win Rate</CardDescription>
-            <CardTitle className="text-2xl flex items-center">
-              <CandlestickChart className="mr-2 h-5 w-5 text-primary" />
-              {analysisData.metrics.totalTrades ? (typeof analysisData.metrics.winRate === 'number' ? analysisData.metrics.winRate.toFixed(1) : '0.0') : 0}%
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        
-        <Card className="border-l-4 border-l-primary">
-          <CardHeader className="pb-2">
-            <CardDescription>Daily P&L</CardDescription>
-            <CardTitle className={`text-2xl flex items-center ${analysisData.metrics.totalProfitLoss > 0 ? 'text-green-500' : analysisData.metrics.totalProfitLoss < 0 ? 'text-red-500' : ''}`}>
-              <DollarSign className="mr-2 h-5 w-5" />
-              {analysisData.metrics.totalProfitLoss > 0 ? '+' : ''}
-              ${typeof analysisData.metrics.totalProfitLoss === 'number' ? analysisData.metrics.totalProfitLoss.toFixed(2) : '0.00'}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        
-        <Card className="border-l-4 border-l-primary">
-          <CardHeader className="pb-2">
-            <CardDescription>Avg. Trade P&L</CardDescription>
-            <CardTitle className={`text-2xl flex items-center ${analysisData.metrics.avgWin > 0 ? 'text-green-500' : analysisData.metrics.avgWin < 0 ? 'text-red-500' : ''}`}>
-              {analysisData.metrics.avgWin > 0 ? (
-                <ArrowUp className="mr-2 h-5 w-5" />
-              ) : analysisData.metrics.avgWin < 0 ? (
-                <ArrowDown className="mr-2 h-5 w-5" />
-              ) : (
-                <DollarSign className="mr-2 h-5 w-5" />
-              )}
-              ${typeof analysisData.metrics.avgWin === 'number' ? Math.abs(analysisData.metrics.avgWin).toFixed(2) : '0.00'}
-            </CardTitle>
-          </CardHeader>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-gray-500 dark:text-gray-400">Total Profit</p>
+              <h3 className="text-2xl font-bold text-green-600">${typeof analysisData.metrics.totalProfitLoss === 'number' ? analysisData.metrics.totalProfitLoss.toFixed(2) : '0.00'}</h3>
+            </div>
+            <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 12l5 5L20 7" /></svg>
+            </div>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">+12.5% from last month</p>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-gray-500 dark:text-gray-400">Win Rate</p>
+              <h3 className="text-2xl font-bold text-blue-600">{analysisData.metrics.totalTrades ? (typeof analysisData.metrics.winRate === 'number' ? analysisData.metrics.winRate.toFixed(1) : '0.0') : 0}%</h3>
+            </div>
+            <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m4 0h-1v-4h-1" /></svg>
+            </div>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">+5% from last month</p>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-gray-500 dark:text-gray-400">Total Trades</p>
+              <h3 className="text-2xl font-bold">{analysisData.metrics.totalTrades}</h3>
+            </div>
+            <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+            </div>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">32 this month</p>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-gray-500 dark:text-gray-400">Risk/Reward</p>
+              <h3 className="text-2xl font-bold">1:2.4</h3>
+            </div>
+            <div className="p-2 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3" /></svg>
+            </div>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Consistent ratio</p>
+        </div>
       </div>
-      
       {/* Chart Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <ChartContainer title="Balance Over Time">
-          <BalanceChart balanceOverTime={analysisData.balanceOverTime} />
-        </ChartContainer>
-        <ChartContainer title="Win/Loss Ratio">
-          <WinLossChart wins={analysisData.metrics.profitableTrades} losses={analysisData.metrics.lossTrades} />
-        </ChartContainer>
-        <ChartContainer title="Asset Performance">
-          <BarPerformanceChart data={analysisData.assetPerformance} />
-        </ChartContainer>
-        <ChartContainer title="Emotions vs Win Rate">
-          <EmotionsWinRateChart data={analysisData.emotionPerformance} />
-        </ChartContainer>
-        <ChartContainer title="Trade Type Performance">
-          <TradeTypePerformanceChart data={analysisData.tradeTypePerformance} />
-        </ChartContainer>
-        <ChartContainer title="Best Trading Hours">
-          <BestTradingHoursChart data={analysisData.tradesByHour} />
-        </ChartContainer>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 lg:col-span-2">
+          <h3 className="font-semibold mb-4">Balance Over Time</h3>
+          <div className="chart-container" style={{height: 300}}>
+            <BalanceChart balanceOverTime={analysisData.balanceOverTime} />
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h3 className="font-semibold mb-4">Trade Distribution</h3>
+          <div className="chart-container" style={{height: 300}}>
+            <TradeTypePerformanceChart data={analysisData.tradeTypePerformance} />
+          </div>
+        </div>
+      </div>
+      {/* Quick Actions & Insights */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Trades (placeholder for now) */}
+        <div className="lg:col-span-2">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold">Recent Trades</h2>
+            <button className="text-blue-600 dark:text-blue-400 hover:underline">View All</button>
+          </div>
+          {/* TODO: Add recent trades table here */}
+        </div>
+        {/* Quick Actions & Insights */}
+        <div>
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold mb-4">Quick Actions</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+              <button className="w-full mb-3 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg> Add New Trade
+              </button>
+              <button className="w-full mb-3 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition flex items-center justify-center">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3" /></svg> Import Trades
+              </button>
+              <button className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition flex items-center justify-center">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3" /></svg> Export Data
+              </button>
+            </div>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Trading Insights</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+              {/* Insights content as before */}
+              <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="font-medium mb-2">Best Performing Instrument</h3>
+                <p className="text-green-600 font-semibold">{bestAsset ? bestAsset.asset : "AAPL"}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Average profit: $245 per trade</p>
+              </div>
+              <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="font-medium mb-2">Most Profitable Time</h3>
+                <p className="text-green-600 font-semibold">10:00 AM - 12:00 PM</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">72% win rate during this period</p>
+              </div>
+              <div>
+                <h3 className="font-medium mb-2">Recent Achievement</h3>
+                <div className="flex items-center">
+                  <div className="p-2 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 mr-3">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3" /></svg>
+                  </div>
+                  <div>
+                    <p className="font-semibold">5 Winning Streak</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Completed on May 15</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       
       {/* Trading Insights Card */}

@@ -13,6 +13,8 @@ import Settings from "./pages/Settings";
 import Checklists from "./pages/Checklists";
 import Strategy from "./pages/Strategy";
 import ErrorBoundary from "./components/ErrorBoundary";
+import Calendar from "./pages/Calendar";
+import Login from "./pages/Login";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,6 +35,8 @@ const AppRoutes = () => {
       <Route path="/checklists" element={<ErrorBoundary><Layout><Checklists /></Layout></ErrorBoundary>} />
       <Route path="/strategy" element={<ErrorBoundary><Layout><Strategy /></Layout></ErrorBoundary>} />
       <Route path="/settings" element={<ErrorBoundary><Layout><Settings /></Layout></ErrorBoundary>} />
+      <Route path="/calendar" element={<ErrorBoundary><Layout><Calendar /></Layout></ErrorBoundary>} />
+      <Route path="/login" element={<Login />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

@@ -27,11 +27,9 @@ import { BestTradingHoursChart } from '@/components/charts/BestTradingHoursChart
 
 function ChartContainer({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div style={{ height: 320, minWidth: 0, flex: 1, border: '2px solid #e0e0e0', borderRadius: 8, padding: 10, background: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
-      <h3 style={{ marginBottom: 8, fontSize: 16 }}>{title}</h3>
-      <div style={{ flex: 1, minHeight: 0 }}>
-        {children}
-      </div>
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex flex-col mb-4">
+      <h3 className="font-semibold mb-4">{title}</h3>
+      <div className="flex-1 min-h-0">{children}</div>
     </div>
   );
 }
@@ -90,22 +88,20 @@ export default function Analysis() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Performance Analysis</h1>
+      <h1 className="text-3xl font-bold mb-4">Performance Analysis</h1>
       
       {/* Empty state when no trades exist */}
       {trades.length === 0 ? (
-        <div className="p-8 border rounded-lg">
-          <div className="text-center space-y-4">
-            <h2 className="text-xl font-semibold">No Trading Data Available</h2>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              Add your trading history to see detailed performance analysis, metrics, and insights to improve your trading strategy.
-            </p>
-          </div>
+        <div className="p-8 border rounded-lg bg-white dark:bg-gray-800 shadow text-center space-y-4">
+          <h2 className="text-xl font-semibold">No Trading Data Available</h2>
+          <p className="text-muted-foreground max-w-md mx-auto">
+            Add your trading history to see detailed performance analysis, metrics, and insights to improve your trading strategy.
+          </p>
         </div>
       ) : (
         <>
           {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <MetricsCard 
               title="Win Rate" 
               value={`${typeof analysisData.metrics.winRate === 'number' ? analysisData.metrics.winRate.toFixed(1) : '0.0'}%`} 
@@ -121,15 +117,13 @@ export default function Analysis() {
             <MetricsCard 
               title="Avg. Win" 
               value={`$${typeof analysisData.metrics.avgWin === 'number' ? analysisData.metrics.avgWin.toFixed(2) : '0.00'}`} 
-              icon={<TrendingUp />}
-              valueClassName="text-green-500"
+              icon={<TrendingUp />} valueClassName="text-green-500"
             />
             
             <MetricsCard 
               title="Avg. Loss" 
               value={`$${typeof analysisData.metrics.avgLoss === 'number' ? analysisData.metrics.avgLoss.toFixed(2) : '0.00'}`} 
-              icon={<TrendingDown />}
-              valueClassName="text-red-500"
+              icon={<TrendingDown />} valueClassName="text-red-500"
             />
             
             <MetricsCard 
@@ -141,34 +135,30 @@ export default function Analysis() {
             <MetricsCard 
               title="Max Drawdown" 
               value={`${typeof analysisData.metrics.maxDrawdown === 'number' ? analysisData.metrics.maxDrawdown.toFixed(2) : '0.00'}%`} 
-              icon={<TrendingDown />}
-              valueClassName="text-red-500"
+              icon={<TrendingDown />} valueClassName="text-red-500"
             />
             
             <MetricsCard 
               title="Total Profit" 
               value={`$${typeof analysisData.metrics.totalProfit === 'number' ? analysisData.metrics.totalProfit.toFixed(2) : '0.00'}`} 
-              icon={<DollarSign />}
-              valueClassName="text-green-500"
+              icon={<DollarSign />} valueClassName="text-green-500"
             />
             
             <MetricsCard 
               title="Total Loss" 
               value={`$${typeof analysisData.metrics.totalLoss === 'number' ? Math.abs(analysisData.metrics.totalLoss).toFixed(2) : '0.00'}`} 
-              icon={<DollarSign />}
-              valueClassName="text-red-500"
+              icon={<DollarSign />} valueClassName="text-red-500"
             />
             
             <MetricsCard 
               title="Net P&L" 
               value={`$${typeof analysisData.metrics.totalProfitLoss === 'number' ? analysisData.metrics.totalProfitLoss.toFixed(2) : '0.00'}`} 
-              icon={<Coins />}
-              valueClassName={analysisData.metrics.totalProfitLoss >= 0 ? "text-green-500" : "text-red-500"}
+              icon={<Coins />} valueClassName={analysisData.metrics.totalProfitLoss >= 0 ? "text-green-500" : "text-red-500"}
             />
           </div>
           
           {/* Charts Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
             <ChartContainer title="Balance Over Time">
               <BalanceChart balanceOverTime={analysisData.balanceOverTime} />
             </ChartContainer>
