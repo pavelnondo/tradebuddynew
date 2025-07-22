@@ -28,11 +28,18 @@ import { BarPerformanceChart } from '@/components/charts/BarPerformanceChart';
 import { EmotionsWinRateChart } from '@/components/charts/EmotionsWinRateChart';
 import { TradeTypePerformanceChart } from '@/components/charts/TradeTypePerformanceChart';
 import { BestTradingHoursChart } from '@/components/charts/BestTradingHoursChart';
-import { ChartContainer } from '@/components/ChartContainer';
-import { TradeWinPieChart } from '@/components/charts/TradeWinPieChart';
-import { EmotionPieChart } from '@/components/charts/EmotionPieChart';
-
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
+
+function ChartContainer({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ height: 320, minWidth: 0, flex: 1, border: '2px solid #e0e0e0', borderRadius: 8, padding: 10, background: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
+      <h3 style={{ marginBottom: 8, fontSize: 16 }}>{title}</h3>
+      <div style={{ flex: 1, minHeight: 0 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 // Sample data
 const barData = {
@@ -134,56 +141,79 @@ export default function Dashboard() {
       />
       
       {/* Quick Metrics cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        <MetricsCard
-          title="Today's Trades"
-          value={analysisData.metrics.totalTrades}
-          icon={<Timer className="text-primary" />}
-        />
-        <MetricsCard
-          title="Win Rate"
-          value={analysisData.metrics.totalTrades ? (typeof analysisData.metrics.winRate === 'number' ? analysisData.metrics.winRate.toFixed(1) : '0.0') + '%' : '0%'}
-          icon={<CandlestickChart className="text-primary" />}
-        />
-        <MetricsCard
-          title="Daily P&L"
-          value={`${analysisData.metrics.totalProfitLoss > 0 ? '+' : ''}$${typeof analysisData.metrics.totalProfitLoss === 'number' ? analysisData.metrics.totalProfitLoss.toFixed(2) : '0.00'}`}
-          icon={<DollarSign />}
-          valueClassName={analysisData.metrics.totalProfitLoss > 0 ? 'text-green-500' : analysisData.metrics.totalProfitLoss < 0 ? 'text-red-500' : ''}
-        />
-        <MetricsCard
-          title="Avg. Trade P&L"
-          value={`$${typeof analysisData.metrics.avgWin === 'number' ? Math.abs(analysisData.metrics.avgWin).toFixed(2) : '0.00'}`}
-          icon={analysisData.metrics.avgWin > 0 ? <ArrowUp /> : analysisData.metrics.avgWin < 0 ? <ArrowDown /> : <DollarSign />}
-          valueClassName={analysisData.metrics.avgWin > 0 ? 'text-green-500' : analysisData.metrics.avgWin < 0 ? 'text-red-500' : ''}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-l-4 border-l-primary">
+          <CardHeader className="pb-2">
+            <CardDescription>Today's Trades</CardDescription>
+            <CardTitle className="text-2xl flex items-center">
+              <Timer className="mr-2 h-5 w-5 text-primary" />
+              {analysisData.metrics.totalTrades}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        
+        <Card className="border-l-4 border-l-primary">
+          <CardHeader className="pb-2">
+            <CardDescription>Win Rate</CardDescription>
+            <CardTitle className="text-2xl flex items-center">
+              <CandlestickChart className="mr-2 h-5 w-5 text-primary" />
+              {analysisData.metrics.totalTrades ? (typeof analysisData.metrics.winRate === 'number' ? analysisData.metrics.winRate.toFixed(1) : '0.0') : 0}%
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        
+        <Card className="border-l-4 border-l-primary">
+          <CardHeader className="pb-2">
+            <CardDescription>Daily P&L</CardDescription>
+            <CardTitle className={`text-2xl flex items-center ${analysisData.metrics.totalProfitLoss > 0 ? 'text-green-500' : analysisData.metrics.totalProfitLoss < 0 ? 'text-red-500' : ''}`}>
+              <DollarSign className="mr-2 h-5 w-5" />
+              {analysisData.metrics.totalProfitLoss > 0 ? '+' : ''}
+              ${typeof analysisData.metrics.totalProfitLoss === 'number' ? analysisData.metrics.totalProfitLoss.toFixed(2) : '0.00'}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        
+        <Card className="border-l-4 border-l-primary">
+          <CardHeader className="pb-2">
+            <CardDescription>Avg. Trade P&L</CardDescription>
+            <CardTitle className={`text-2xl flex items-center ${analysisData.metrics.avgWin > 0 ? 'text-green-500' : analysisData.metrics.avgWin < 0 ? 'text-red-500' : ''}`}>
+              {analysisData.metrics.avgWin > 0 ? (
+                <ArrowUp className="mr-2 h-5 w-5" />
+              ) : analysisData.metrics.avgWin < 0 ? (
+                <ArrowDown className="mr-2 h-5 w-5" />
+              ) : (
+                <DollarSign className="mr-2 h-5 w-5" />
+              )}
+              ${typeof analysisData.metrics.avgWin === 'number' ? Math.abs(analysisData.metrics.avgWin).toFixed(2) : '0.00'}
+            </CardTitle>
+          </CardHeader>
+        </Card>
       </div>
       
       {/* Chart Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Trade Win % Pie/Donut Chart */}
-        <Card className="flex flex-col p-6">
-          <h3 className="text-lg font-semibold text-left mb-4">Trade Win %</h3>
-          <CardContent className="flex flex-col items-center justify-center flex-1">
-            <TradeWinPieChart
-              winRate={typeof analysisData.metrics.winRate === 'number' ? analysisData.metrics.winRate : 0}
-              winCount={analysisData.metrics.profitableTrades}
-              lossCount={analysisData.metrics.lossTrades}
-              totalTrades={analysisData.metrics.totalTrades}
-            />
-          </CardContent>
-        </Card>
-        {/* Emotion Pie/Donut Chart (to be restyled) */}
-        <Card className="flex flex-col p-6">
-          <h3 className="text-lg font-semibold text-left mb-4">Emotional Performance</h3>
-          <CardContent className="flex flex-col items-center justify-center flex-1">
-            <EmotionPieChart data={analysisData.emotionPerformance} />
-          </CardContent>
-        </Card>
+        <ChartContainer title="Balance Over Time">
+          <BalanceChart balanceOverTime={analysisData.balanceOverTime} />
+        </ChartContainer>
+        <ChartContainer title="Win/Loss Ratio">
+          <WinLossChart wins={analysisData.metrics.profitableTrades} losses={analysisData.metrics.lossTrades} />
+        </ChartContainer>
+        <ChartContainer title="Asset Performance">
+          <BarPerformanceChart data={analysisData.assetPerformance} />
+        </ChartContainer>
+        <ChartContainer title="Emotions vs Win Rate">
+          <EmotionsWinRateChart data={analysisData.emotionPerformance} />
+        </ChartContainer>
+        <ChartContainer title="Trade Type Performance">
+          <TradeTypePerformanceChart data={analysisData.tradeTypePerformance} />
+        </ChartContainer>
+        <ChartContainer title="Best Trading Hours">
+          <BestTradingHoursChart data={analysisData.tradesByHour} />
+        </ChartContainer>
       </div>
       
       {/* Trading Insights Card */}
-      <Card className="shadow-md hover:shadow-lg transition-shadow bg-gradient-to-r from-secondary/5 to-transparent mt-8">
+      <Card className="shadow-md hover:shadow-lg transition-shadow bg-gradient-to-r from-secondary/5 to-transparent mt-8 mb-10">
         <CardHeader>
           <CardTitle className="flex items-center">
             <Bolt className="mr-2 h-5 w-5 text-primary" />

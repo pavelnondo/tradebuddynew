@@ -3,12 +3,6 @@ import { Trade } from '@/types';
 
 export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
   return useMemo(() => {
-    // Debug: Log all trade dates and flag invalid ones
-    trades.forEach((trade, i) => {
-      if (!trade.date || isNaN(new Date(trade.date).getTime())) {
-        console.warn(`Trade at index ${i} has invalid or missing date:`, trade);
-      }
-    });
     // Basic metrics
     const totalTrades = trades.length;
     const profitableTrades = trades.filter((trade) => trade.profitLoss > 0).length;
@@ -47,12 +41,7 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
     const balanceOverTime = trades
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .reduce((acc, trade, index) => {
-        const parsedDate = new Date(trade.date);
-        if (isNaN(parsedDate.getTime())) {
-          // Skip trades with invalid or missing dates
-          return acc;
-        }
-        const date = parsedDate.toLocaleDateString();
+        const date = new Date(trade.date).toLocaleDateString();
         const prevBalance = index > 0 ? acc[index - 1].balance : initialBalance;
         const currentBalance = prevBalance + trade.profitLoss;
         
