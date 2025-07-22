@@ -21,7 +21,7 @@ export default function Checklists() {
   const [newChecklistName, setNewChecklistName] = useState("");
   const [newChecklistDescription, setNewChecklistDescription] = useState("");
   const [newChecklistItems, setNewChecklistItems] = useState<ChecklistItem[]>([
-    { id: crypto.randomUUID(), text: "" }
+    { id: safeUUID(), text: "" }
   ]);
   
   const navigate = useNavigate();
@@ -47,7 +47,7 @@ export default function Checklists() {
   const addChecklistItem = () => {
     setNewChecklistItems([
       ...newChecklistItems,
-      { id: crypto.randomUUID(), text: "" }
+      { id: safeUUID(), text: "" }
     ]);
   };
   
@@ -165,7 +165,7 @@ export default function Checklists() {
   const resetChecklistForm = () => {
     setNewChecklistName("");
     setNewChecklistDescription("");
-    setNewChecklistItems([{ id: crypto.randomUUID(), text: "" }]);
+    setNewChecklistItems([{ id: safeUUID(), text: "" }]);
     setSelectedChecklist(null);
   };
   
@@ -217,7 +217,7 @@ export default function Checklists() {
           <p className="text-muted-foreground">Loading checklists...</p>
         </div>
       ) : checklists.length === 0 ? (
-        <Card className="text-center py-12">
+        <Card className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
           <CardContent>
             <p className="text-muted-foreground mb-4">You don't have any trading checklists yet.</p>
             <Button onClick={() => setIsNewChecklistOpen(true)}>
@@ -229,7 +229,7 @@ export default function Checklists() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {checklists.map((checklist) => (
-            <Card key={checklist.id}>
+            <Card key={checklist.id} className="bg-white dark:bg-gray-800 rounded-lg shadow">
               <CardHeader>
                 <CardTitle>{checklist.name}</CardTitle>
                 {checklist.description && (
@@ -449,4 +449,10 @@ export default function Checklists() {
       </Dialog>
     </div>
   );
+}
+
+// Helper for UUID
+function safeUUID() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 }

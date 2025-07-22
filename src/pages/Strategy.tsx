@@ -174,7 +174,7 @@ export default function Strategy() {
 
   // Calculate strategy adherence metrics
   const calculateAdherenceMetrics = () => {
-    if (trades.length === 0) {
+    if (!trades || trades.length === 0) {
       return {
         totalTrades: 0,
         tradesWithChecklist: 0,
@@ -184,11 +184,11 @@ export default function Strategy() {
       };
     }
     
-    const tradesWithChecklist = trades.filter(
+    const tradesWithChecklist = (trades || []).filter(
       trade => trade.checklist_completed && trade.checklist_completed.length > 0
     );
     
-    if (tradesWithChecklist.length === 0) {
+    if (!tradesWithChecklist || tradesWithChecklist.length === 0) {
       return {
         totalTrades: trades.length,
         tradesWithChecklist: 0,
@@ -199,10 +199,9 @@ export default function Strategy() {
     }
     
     // Calculate average adherence for all trades with checklists
-    const adherenceScores = tradesWithChecklist.map(trade => {
+    const adherenceScores = (tradesWithChecklist || []).map(trade => {
       const total = trade.checklist_completed?.length || 0;
       if (total === 0) return 0;
-      
       const completed = trade.checklist_completed?.filter(item => item.completed).length || 0;
       return (completed / total) * 100;
     });
@@ -210,21 +209,18 @@ export default function Strategy() {
     const averageAdherence = adherenceScores.reduce((sum, score) => sum + score, 0) / adherenceScores.length;
     
     // Calculate adherence for profitable vs unprofitable trades
-    const profitableTrades = tradesWithChecklist.filter(trade => trade.profitLoss > 0);
-    const unprofitableTrades = tradesWithChecklist.filter(trade => trade.profitLoss <= 0);
+    const profitableTrades = (tradesWithChecklist || []).filter(trade => trade.profitLoss > 0);
+    const unprofitableTrades = (tradesWithChecklist || []).filter(trade => trade.profitLoss <= 0);
     
-    const profitableAdherenceScores = profitableTrades.map(trade => {
+    const profitableAdherenceScores = (profitableTrades || []).map(trade => {
       const total = trade.checklist_completed?.length || 0;
       if (total === 0) return 0;
-      
       const completed = trade.checklist_completed?.filter(item => item.completed).length || 0;
       return (completed / total) * 100;
     });
-    
-    const unprofitableAdherenceScores = unprofitableTrades.map(trade => {
+    const unprofitableAdherenceScores = (unprofitableTrades || []).map(trade => {
       const total = trade.checklist_completed?.length || 0;
       if (total === 0) return 0;
-      
       const completed = trade.checklist_completed?.filter(item => item.completed).length || 0;
       return (completed / total) * 100;
     });
@@ -279,10 +275,9 @@ export default function Strategy() {
               Insights
             </TabsTrigger>
           </TabsList>
-          
           {/* Checklist Tab */}
           <TabsContent value="checklist" className="space-y-6">
-            <Card>
+            <Card className="bg-white dark:bg-gray-800 rounded-lg shadow">
               <CardHeader>
                 <CardTitle>Trading Checklist</CardTitle>
                 <CardDescription>
@@ -306,7 +301,7 @@ export default function Strategy() {
                       {checklists.map(checklist => (
                         <Card 
                           key={checklist.id} 
-                          className={`cursor-pointer hover:bg-accent transition-colors ${
+                          className={`bg-white dark:bg-gray-800 rounded-lg shadow cursor-pointer hover:bg-accent transition-colors ${
                             selectedChecklistId === checklist.id ? 'border-primary' : ''
                           }`}
                           onClick={() => handleChecklistChange(checklist.id)}
@@ -322,7 +317,6 @@ export default function Strategy() {
                         </Card>
                       ))}
                     </div>
-                    
                     {selectedChecklist && (
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
@@ -334,7 +328,6 @@ export default function Strategy() {
                             <Progress value={checklistProgress} className="w-[100px]" />
                           </div>
                         </div>
-                        
                         <div className="space-y-2 mt-4">
                           {completedItems.map(item => (
                             <div key={item.id} className="flex items-start space-x-2">
@@ -359,10 +352,9 @@ export default function Strategy() {
               </CardContent>
             </Card>
           </TabsContent>
-          
           {/* Notes & Visuals Tab */}
           <TabsContent value="notes" className="space-y-6">
-            <Card>
+            <Card className="bg-white dark:bg-gray-800 rounded-lg shadow">
               <CardHeader>
                 <CardTitle>Strategy Notes</CardTitle>
                 <CardDescription>
@@ -381,7 +373,6 @@ export default function Strategy() {
                       onChange={handleNotesChange}
                     />
                   </div>
-                  
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <Label>Strategy Visuals</Label>
@@ -395,7 +386,6 @@ export default function Strategy() {
                         Add Image
                       </Button>
                     </div>
-                    
                     {showImageUpload && (
                       <div className="border rounded-md p-4 space-y-4">
                         <div className="flex justify-between items-center">
@@ -422,7 +412,6 @@ export default function Strategy() {
                         )}
                       </div>
                     )}
-                    
                     {strategyImages.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {strategyImages.map((image, index) => (
@@ -480,10 +469,9 @@ export default function Strategy() {
               </CardContent>
             </Card>
           </TabsContent>
-          
           {/* Insights Tab */}
           <TabsContent value="insights" className="space-y-6">
-            <Card>
+            <Card className="bg-white dark:bg-gray-800 rounded-lg shadow">
               <CardHeader>
                 <CardTitle>Strategy Adherence Insights</CardTitle>
                 <CardDescription>
@@ -521,7 +509,7 @@ export default function Strategy() {
                 ) : (
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Card>
+                      <Card className="bg-white dark:bg-gray-800 rounded-lg shadow">
                         <CardHeader className="p-4">
                           <CardTitle className="text-base">Overall Adherence</CardTitle>
                         </CardHeader>
@@ -536,7 +524,7 @@ export default function Strategy() {
                         </CardContent>
                       </Card>
                       
-                      <Card>
+                      <Card className="bg-white dark:bg-gray-800 rounded-lg shadow">
                         <CardHeader className="p-4">
                           <CardTitle className="text-base">Profitable Trades Adherence</CardTitle>
                         </CardHeader>
@@ -551,7 +539,7 @@ export default function Strategy() {
                         </CardContent>
                       </Card>
                       
-                      <Card>
+                      <Card className="bg-white dark:bg-gray-800 rounded-lg shadow">
                         <CardHeader className="p-4">
                           <CardTitle className="text-base">Unprofitable Trades Adherence</CardTitle>
                         </CardHeader>
