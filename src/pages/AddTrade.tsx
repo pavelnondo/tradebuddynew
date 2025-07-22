@@ -25,6 +25,7 @@ import { useChecklists } from '@/hooks/useChecklists';
 import { DateTimeInput } from '@/components/DateTimeInput';
 import { FeatureToggle } from '@/components/FeatureToggle';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
+import { API_BASE_URL } from '@/config';
 
 // Form validation schema using Zod
 const formSchema = z.object({
@@ -158,7 +159,7 @@ export default function AddTrade() {
       if (screenshotFile) {
         const formData = new FormData();
         formData.append('screenshot', screenshotFile);
-        const uploadRes = await fetch('http://localhost:4000/upload', {
+        const uploadRes = await fetch(`${API_BASE_URL}/upload`, {
           method: 'POST',
           body: formData,
         });
@@ -188,7 +189,7 @@ export default function AddTrade() {
         screenshot: screenshotUrl,
       };
       // POST to backend
-      const res = await fetch('http://localhost:4000/trades', {
+      const res = await fetch(`${API_BASE_URL}/trades`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(tradeData),

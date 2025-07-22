@@ -1,16 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Trade } from '@/types';
-
-// Get the API base URL dynamically
-const getApiBaseUrl = () => {
-  // If we're in development, use the current hostname with port 4000
-  if (import.meta.env.DEV) {
-    const hostname = window.location.hostname;
-    return `http://${hostname}:4000`;
-  }
-  // For production, you might want to use a different URL
-  return import.meta.env.VITE_API_URL || 'http://localhost:4000';
-};
+import { API_BASE_URL } from '@/config';
 
 export function useApiTrades() {
   const [trades, setTrades] = useState<Trade[]>([]);
@@ -21,7 +11,7 @@ export function useApiTrades() {
     setIsLoading(true);
     setError(null);
     try {
-      const apiBaseUrl = getApiBaseUrl();
+      const apiBaseUrl = API_BASE_URL;
       const res = await fetch(`${apiBaseUrl}/trades`);
       if (!res.ok) throw new Error('Failed to fetch trades');
       const data = await res.json();
