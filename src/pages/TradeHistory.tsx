@@ -11,8 +11,6 @@ import { useEffect, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { useApiTrades } from '@/hooks/useApiTrades';
-import { buildApiUrl, getAuthHeaders } from '@/lib/api';
-import TradeForm from "@/components/TradeForm";
 
 export default function TradeHistory() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -51,10 +49,7 @@ export default function TradeHistory() {
   const handleDeleteTrade = async (id: string, event: React.MouseEvent) => {
     event.stopPropagation();
     try {
-      const res = await fetch(buildApiUrl(`/trades/${id}`), { 
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      });
+      const res = await fetch(`http://localhost:4000/trades/${id}`, { method: 'DELETE' });
       if (res.ok) {
         await fetchTrades();
         if (selectedTrade && selectedTrade.id === id) setSelectedTrade(null);
@@ -146,16 +141,30 @@ export default function TradeHistory() {
   };
 
   // Save edit
-  const handleSaveEdit = async (tradeData) => {
+  const handleSaveEdit = async () => {
     if (!editingTrade) return;
     try {
-      const res = await fetch(buildApiUrl(`/trades/${editingTrade.id}`), {
+      const res = await fetch(`http://localhost:4000/trades/${editingTrade.id}`, {
         method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        },
-        body: JSON.stringify(tradeData),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symbol: editForm.asset,
+          type: editForm.tradeType,
+          entry_price: editForm.entryPrice,
+          exit_price: editForm.exitPrice,
+          quantity: editForm.positionSize,
+          entry_time: editForm.date,
+          exit_time: editForm.date,
+          pnl: editForm.profitLoss,
+          notes: editForm.notes,
+          emotion: editForm.emotion,
+          setup: editForm.setup,
+          execution_quality: editForm.executionQuality,
+          duration: editForm.duration,
+          checklist_id: editForm.checklist_id,
+          checklist_completed: editForm.checklist_completed,
+          screenshot: editForm.screenshot,
+        }),
       });
       if (res.ok) {
         await fetchTrades();
@@ -282,18 +291,18 @@ export default function TradeHistory() {
                   </TableRow>
                 ) : (
                   filteredTrades.map((trade) => (
-                    <TableRow key={trade.id} onClick={() => viewTrade(trade)} className="cursor-pointer hover:bg-muted/50">
-                      <TableCell>{new Date(trade.date).toLocaleString()}</TableCell>
-                      <TableCell className="font-medium">{trade.asset}</TableCell>
-                      <TableCell>{trade.tradeType}</TableCell>
-                      <TableCell>${typeof trade.entryPrice === 'number' ? trade.entryPrice.toFixed(2) : '0.00'}</TableCell>
-                      <TableCell>${typeof trade.exitPrice === 'number' ? trade.exitPrice.toFixed(2) : '0.00'}</TableCell>
-                      <TableCell>{trade.positionSize}</TableCell>
-                      <TableCell className={typeof trade.profitLoss === 'number' ? (trade.profitLoss >= 0 ? "text-green-500" : "text-red-500") : "text-muted-foreground"}>
+                    <TableRow key={trade.id} className="cursor-pointer hover:bg-muted/50">
+                      <TableCell onClick={() => viewTrade(trade)}>{new Date(trade.date).toLocaleString()}</TableCell>
+                      <TableCell onClick={() => viewTrade(trade)} className="font-medium">{trade.asset}</TableCell>
+                      <TableCell onClick={() => viewTrade(trade)}>{trade.tradeType}</TableCell>
+                      <TableCell onClick={() => viewTrade(trade)}>${typeof trade.entryPrice === 'number' ? trade.entryPrice.toFixed(2) : '0.00'}</TableCell>
+                      <TableCell onClick={() => viewTrade(trade)}>${typeof trade.exitPrice === 'number' ? trade.exitPrice.toFixed(2) : '0.00'}</TableCell>
+                      <TableCell onClick={() => viewTrade(trade)}>{trade.positionSize}</TableCell>
+                      <TableCell onClick={() => viewTrade(trade)} className={typeof trade.profitLoss === 'number' ? (trade.profitLoss >= 0 ? "text-green-500" : "text-red-500") : "text-muted-foreground"}>
                         {typeof trade.profitLoss === 'number' ? (trade.profitLoss >= 0 ? "+" : "") + `$${trade.profitLoss.toFixed(2)}` : '$0.00'}
                       </TableCell>
-                      <TableCell>{trade.emotion}</TableCell>
-                      <TableCell>
+                      <TableCell onClick={() => viewTrade(trade)}>{trade.emotion}</TableCell>
+                      <TableCell onClick={() => viewTrade(trade)}>
                         {trade.checklist_completed && trade.checklist_completed.length > 0 ? (
                           <div className="flex items-center space-x-2">
                             <Progress 
@@ -308,7 +317,7 @@ export default function TradeHistory() {
                           <span className="text-muted-foreground">None</span>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell onClick={() => viewTrade(trade)}>
                         {trade.screenshot ? (
                           <Dialog>
                             <DialogTrigger asChild>
@@ -336,14 +345,14 @@ export default function TradeHistory() {
                           <span className="text-muted-foreground">None</span>
                         )}
                       </TableCell>
-                      <TableCell className="max-w-[200px] truncate">{trade.notes}</TableCell>
+                      <TableCell onClick={() => viewTrade(trade)} className="max-w-[200px] truncate">{trade.notes}</TableCell>
                       <TableCell>
-                        <Button size="sm" variant="outline" onClick={e => { e.stopPropagation(); handleEditTrade(trade); }}>
-                          Edit
-                        </Button>
-                      </TableCell>
-                      <TableCell>
-                        <Button size="sm" variant="destructive" onClick={e => handleDeleteTrade(trade.id, e)}>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                          onClick={(e) => handleDeleteTrade(trade.id, e)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </TableCell>
@@ -480,12 +489,26 @@ export default function TradeHistory() {
 
       {/* Render edit form if editingTrade is set */}
       {editingTrade && (
-        <TradeForm
-          mode="edit"
-          initialValues={editingTrade}
-          onSubmit={handleSaveEdit}
-          onCancel={handleCancelEdit}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow-lg w-full max-w-lg">
+            <h2 className="text-xl font-bold mb-4">Edit Trade</h2>
+            <div className="space-y-4">
+              <input className="w-full border p-2" value={editForm.asset} onChange={e => setEditForm({ ...editForm, asset: e.target.value })} placeholder="Asset" />
+              <input className="w-full border p-2" value={editForm.tradeType} onChange={e => setEditForm({ ...editForm, tradeType: e.target.value })} placeholder="Trade Type" />
+              <input className="w-full border p-2" type="number" value={editForm.entryPrice} onChange={e => setEditForm({ ...editForm, entryPrice: Number(e.target.value) })} placeholder="Entry Price" />
+              <input className="w-full border p-2" type="number" value={editForm.exitPrice} onChange={e => setEditForm({ ...editForm, exitPrice: Number(e.target.value) })} placeholder="Exit Price" />
+              <input className="w-full border p-2" type="number" value={editForm.positionSize} onChange={e => setEditForm({ ...editForm, positionSize: Number(e.target.value) })} placeholder="Position Size" />
+              <input className="w-full border p-2" type="number" value={editForm.profitLoss} onChange={e => setEditForm({ ...editForm, profitLoss: Number(e.target.value) })} placeholder="Profit/Loss" />
+              <input className="w-full border p-2" value={editForm.notes} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} placeholder="Notes" />
+              <input className="w-full border p-2" value={editForm.emotion} onChange={e => setEditForm({ ...editForm, emotion: e.target.value })} placeholder="Emotion" />
+              <input className="w-full border p-2" value={editForm.setup} onChange={e => setEditForm({ ...editForm, setup: e.target.value })} placeholder="Setup" />
+              <input className="w-full border p-2" value={editForm.executionQuality} onChange={e => setEditForm({ ...editForm, executionQuality: e.target.value })} placeholder="Execution Quality" />
+              <input className="w-full border p-2" value={editForm.duration} onChange={e => setEditForm({ ...editForm, duration: e.target.value })} placeholder="Duration" />
+              <button className="bg-blue-600 text-white px-4 py-2 rounded" onClick={handleSaveEdit}>Save</button>
+              <button className="bg-gray-300 px-4 py-2 rounded ml-2" onClick={handleCancelEdit}>Cancel</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

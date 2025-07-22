@@ -24,11 +24,17 @@ import { BarPerformanceChart } from '@/components/charts/BarPerformanceChart';
 import { EmotionsWinRateChart } from '@/components/charts/EmotionsWinRateChart';
 import { TradeTypePerformanceChart } from '@/components/charts/TradeTypePerformanceChart';
 import { BestTradingHoursChart } from '@/components/charts/BestTradingHoursChart';
-import { ChartContainer } from '@/components/ChartContainer';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { TradeCalendar } from '@/components/charts/TradeCalendar';
-import { format } from 'date-fns';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+
+function ChartContainer({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ height: 320, minWidth: 0, flex: 1, border: '2px solid #e0e0e0', borderRadius: 8, padding: 10, background: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
+      <h3 style={{ marginBottom: 8, fontSize: 16 }}>{title}</h3>
+      <div style={{ flex: 1, minHeight: 0 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 // Sample data
 const barData = {
@@ -41,7 +47,6 @@ const doughnutData = {
 };
 
 export default function Analysis() {
-  console.log('Rendering Analysis page');
   const [initialBalance] = useState<number>(() => {
     const savedBalance = localStorage.getItem('initialTradingBalance');
     return savedBalance ? parseFloat(savedBalance) : 10000; // Default to 10,000 if not set
@@ -49,7 +54,6 @@ export default function Analysis() {
   
   const { trades, isLoading, error, fetchTrades } = useApiTrades();
   
-  console.log('Calling useTradeAnalysis');
   // Calculate analysis data using our new hook
   const analysisData = useTradeAnalysis(trades, initialBalance);
   
@@ -63,29 +67,6 @@ export default function Analysis() {
     );
   }
   
-  // Debug logging for analysisData and chart props
-  console.log('analysisData:', analysisData);
-  console.log('balanceOverTime:', analysisData.balanceOverTime);
-  console.log('metrics:', analysisData.metrics);
-  console.log('assetPerformance:', analysisData.assetPerformance);
-  console.log('emotionPerformance:', analysisData.emotionPerformance);
-  console.log('tradeTypePerformance:', analysisData.tradeTypePerformance);
-  console.log('tradesByHour:', analysisData.tradesByHour);
-
-  // Prepare chart props for logging
-  const winLossChartProps = {
-    wins: analysisData.metrics?.profitableTrades ?? 0,
-    losses: analysisData.metrics?.lossTrades ?? 0,
-    totalTrades: analysisData.metrics?.totalTrades ?? 0,
-    winRate: typeof analysisData.metrics?.winRate === 'number' ? analysisData.metrics.winRate : 0,
-  };
-  console.log('BalanceChart props:', analysisData.balanceOverTime);
-  console.log('WinLossChart props:', winLossChartProps);
-  console.log('BarPerformanceChart props:', analysisData.assetPerformance);
-  console.log('EmotionsWinRateChart props:', analysisData.emotionPerformance);
-  console.log('TradeTypePerformanceChart props:', analysisData.tradeTypePerformance);
-  console.log('BestTradingHoursChart props:', analysisData.tradesByHour);
-
   // Find best performing assets and insights
   const bestAsset = analysisData.assetPerformance.length > 0
     ? [...analysisData.assetPerformance].sort((a, b) => b.profitLoss - a.profitLoss)[0]
@@ -123,11 +104,6 @@ export default function Analysis() {
         </div>
       ) : (
         <>
-          <Tabs defaultValue="charts" className="w-full">
-            <TabsList className="mb-6">
-              <TabsTrigger value="charts">Charts</TabsTrigger>
-            </TabsList>
-            <TabsContent value="charts">
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <MetricsCard 
@@ -193,28 +169,26 @@ export default function Analysis() {
           
           {/* Charts Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-card rounded-lg shadow-md p-6 h-[400px]">
-              <h3 className="text-lg font-semibold text-left mb-4">Balance Over Time</h3>
-              <BalanceChart balanceOverTime={analysisData.balanceOverTime || []} />
-            </div>
-            {/* Removed Win/Loss Ratio chart */}
-            <div className="bg-card rounded-lg shadow-md p-6 h-[400px]">
-              <h3 className="text-lg font-semibold text-left mb-4">Asset Performance</h3>
-              <BarPerformanceChart data={analysisData.assetPerformance || []} />
-            </div>
-            <div className="bg-card rounded-lg shadow-md p-6 h-[400px]">
-              <h3 className="text-lg font-semibold text-left mb-4">Emotions vs Win Rate</h3>
-              <EmotionsWinRateChart data={analysisData.emotionPerformance || []} />
-            </div>
-            <div className="bg-card rounded-lg shadow-md p-6 h-[400px]">
-              <h3 className="text-lg font-semibold text-left mb-4">Trade Type Performance</h3>
-              <TradeTypePerformanceChart data={analysisData.tradeTypePerformance || []} />
-            </div>
-            <div className="bg-card rounded-lg shadow-md p-6 h-[400px]">
-              <h3 className="text-lg font-semibold text-left mb-4">Best Trading Hours</h3>
-              <BestTradingHoursChart data={analysisData.tradesByHour || []} />
-            </div>
+            <ChartContainer title="Balance Over Time">
+              <BalanceChart balanceOverTime={analysisData.balanceOverTime} />
+            </ChartContainer>
+            <ChartContainer title="Win/Loss Ratio">
+              <WinLossChart wins={analysisData.metrics.profitableTrades} losses={analysisData.metrics.lossTrades} />
+            </ChartContainer>
+            <ChartContainer title="Asset Performance">
+              <BarPerformanceChart data={analysisData.assetPerformance} />
+            </ChartContainer>
+            <ChartContainer title="Emotions vs Win Rate">
+              <EmotionsWinRateChart data={analysisData.emotionPerformance} />
+            </ChartContainer>
+            <ChartContainer title="Trade Type Performance">
+              <TradeTypePerformanceChart data={analysisData.tradeTypePerformance} />
+            </ChartContainer>
+            <ChartContainer title="Best Trading Hours">
+              <BestTradingHoursChart data={analysisData.tradesByHour} />
+            </ChartContainer>
           </div>
+          
           {/* Insights Section */}
           <InsightsPanel 
             bestAsset={bestAsset}
@@ -223,8 +197,6 @@ export default function Analysis() {
             bestTradeType={bestTradeType}
             bestHour={bestHour}
           />
-            </TabsContent>
-          </Tabs>
         </>
       )}
     </div>

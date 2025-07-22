@@ -12,13 +12,13 @@ interface MetricsCardProps {
 
 export function MetricsCard({ title, value, icon, description, valueClassName }: MetricsCardProps) {
   return (
-    <Card className="h-full flex flex-col justify-between p-4 rounded-lg shadow-md bg-background">
+    <Card>
       <CardHeader className="pb-2">
-        <CardDescription className="text-sm font-medium text-muted-foreground">{title}</CardDescription>
-        <div className="flex items-center mt-2">
-          {icon && <div className="mr-2 h-6 w-6 flex items-center justify-center">{icon}</div>}
-          <CardTitle className={`text-2xl font-bold ${valueClassName || ''}`}>{value}</CardTitle>
-        </div>
+        <CardDescription>{title}</CardDescription>
+        <CardTitle className={`text-2xl flex items-center ${valueClassName || ''}`}>
+          {icon && <div className="mr-2 h-5 w-5">{icon}</div>}
+          {value}
+        </CardTitle>
         {description && (
           <p className="text-xs text-muted-foreground mt-1">{description}</p>
         )}
