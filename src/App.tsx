@@ -2,7 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import NotFound from "./pages/NotFound";
 import { Layout } from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
@@ -11,7 +12,6 @@ import AddTrade from "./pages/AddTrade";
 import Analysis from "./pages/Analysis";
 import Settings from "./pages/Settings";
 import Checklists from "./pages/Checklists";
-import Strategy from "./pages/Strategy";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Calendar from "./pages/Calendar";
 import Login from "./pages/Login";
@@ -25,18 +25,60 @@ const queryClient = new QueryClient({
   },
 });
 
+// Simple Protected Route Component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const token = localStorage.getItem('token');
+  
+  // If no token, redirect to login immediately
+  if (!token) {
+    console.log('No token found, redirecting to login');
+    return <Navigate to="/" replace />;
+  }
+  
+  // If token exists, allow access
+  console.log('Token found, allowing access');
+  return <>{children}</>;
+};
+
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<ErrorBoundary><Layout><Dashboard /></Layout></ErrorBoundary>} />
-      <Route path="/trades" element={<ErrorBoundary><Layout><TradeHistory /></Layout></ErrorBoundary>} />
-      <Route path="/add-trade" element={<ErrorBoundary><Layout><AddTrade /></Layout></ErrorBoundary>} />
-      <Route path="/analysis" element={<ErrorBoundary><Layout><Analysis /></Layout></ErrorBoundary>} />
-      <Route path="/checklists" element={<ErrorBoundary><Layout><Checklists /></Layout></ErrorBoundary>} />
-      <Route path="/strategy" element={<ErrorBoundary><Layout><Strategy /></Layout></ErrorBoundary>} />
-      <Route path="/settings" element={<ErrorBoundary><Layout><Settings /></Layout></ErrorBoundary>} />
-      <Route path="/calendar" element={<ErrorBoundary><Layout><Calendar /></Layout></ErrorBoundary>} />
-      <Route path="/login" element={<Login />} />
+      <Route path="/" element={<Login />} />
+      <Route path="/dashboard" element={
+        <ProtectedRoute>
+          <ErrorBoundary><Layout><Dashboard /></Layout></ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      <Route path="/trades" element={
+        <ProtectedRoute>
+          <ErrorBoundary><Layout><TradeHistory /></Layout></ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      <Route path="/add-trade" element={
+        <ProtectedRoute>
+          <ErrorBoundary><Layout><AddTrade /></Layout></ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      <Route path="/analysis" element={
+        <ProtectedRoute>
+          <ErrorBoundary><Layout><Analysis /></Layout></ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      <Route path="/checklists" element={
+        <ProtectedRoute>
+          <ErrorBoundary><Layout><Checklists /></Layout></ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      <Route path="/settings" element={
+        <ProtectedRoute>
+          <ErrorBoundary><Layout><Settings /></Layout></ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      <Route path="/calendar" element={
+        <ProtectedRoute>
+          <ErrorBoundary><Layout><Calendar /></Layout></ErrorBoundary>
+        </ProtectedRoute>
+      } />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
