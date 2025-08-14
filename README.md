@@ -62,7 +62,7 @@ This project is built with .
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/6071e3b2-ba3e-4c18-adaa-bfb8957e2754) and click on Share -> Publish.
+For production with Nginx on port 8091 and backend on 4004, see `DEPLOYMENT.md` for Docker-based instructions.
 
 ## I want to use a custom domain - is that possible?
 

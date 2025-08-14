@@ -1,3 +1,26 @@
+## Dockerized Deployment (Non-conflicting ports)
+
+This project can be deployed with Nginx as a reverse proxy on 8091, a Node.js backend on 4004 (internal), and PostgreSQL on 5440.
+
+Exposed ports used by this stack:
+- 8091/tcp: Public entry via Nginx (serves frontend; proxies /api and /public to backend)
+- 4004/tcp: Backend service (internal; not exposed publicly)
+- 5440/tcp: PostgreSQL (optional external access)
+
+Optional and not exposed by default:
+- 5173/tcp: Frontend dev server
+- 5679/tcp: Direct backend exposure (debug)
+- 5433/tcp: Previous Postgres mapping
+
+### Steps
+1. Create `.env` files:
+   - `backend/.env` based on `backend/config.env.example`
+   - set `PORT=4004`, `PGPORT=5440`, `JWT_SECRET`, DB creds
+2. Build frontend: `npm ci && npm run build`
+3. Start services via Docker Compose (see `docker-compose.yml`).
+4. Access app at http://your-server:8091
+
+Nginx proxies `/api/*` to backend and serves the SPA. Uploads under `/public/lovable-uploads` are also proxied from backend.
 # TradeBuddy Deployment Guide
 
 This guide explains how to deploy updates to your VPS from GitHub.

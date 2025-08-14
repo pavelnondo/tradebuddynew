@@ -7,7 +7,7 @@ const pool = new Pool({
   user: process.env.PGUSER || 'tradebuddy_user',
   password: process.env.PGPASSWORD || 'your_db_password_here',
   database: process.env.PGDATABASE || 'tradebuddy',
-  port: process.env.PGPORT || 5432,
+  port: process.env.PGPORT ? Number(process.env.PGPORT) : 5440,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 

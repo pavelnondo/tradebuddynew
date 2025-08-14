@@ -8,7 +8,7 @@
     "dev": "nodemon index.js",
     "telegram": "node telegram-webhook.js",
     "telegram-dev": "nodemon telegram-webhook.js",
-    "setup-db": "psql -d your_database_name -f database-schema.sql",
+    "setup-db": "psql -h ${PGHOST:-localhost} -U ${PGUSER:-tradebuddy_user} -p ${PGPORT:-5440} -d ${PGDATABASE:-tradebuddy} -f database-schema.sql",
     "dev:all": "concurrently \"node index.js\" \"node telegram-webhook.js\""
   },
   "dependencies": {

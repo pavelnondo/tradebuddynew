@@ -1,5 +1,5 @@
--- Add processing_id column to existing trades table
-ALTER TABLE trades ADD COLUMN IF NOT EXISTS processing_id VARCHAR(255);
+-- Trade Buddy Database Schema
+-- This file contains all the necessary tables for the Trade Buddy application
 
 -- Create users table for authentication
 CREATE TABLE IF NOT EXISTS users (
@@ -24,100 +24,96 @@ CREATE TABLE IF NOT EXISTS user_sessions (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Add user_id to existing tables
-ALTER TABLE trades ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
-ALTER TABLE ai_analysis ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
-ALTER TABLE processing_logs ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
-ALTER TABLE voice_messages ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
-ALTER TABLE document_uploads ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
-ALTER TABLE checklists ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
-ALTER TABLE screenshots ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
+-- Create telegram_users table for Telegram integration
+CREATE TABLE IF NOT EXISTS telegram_users (
+    id SERIAL PRIMARY KEY,
+    chat_id BIGINT UNIQUE NOT NULL,
+    user_id INTEGER REFERENCES users(id),
+    telegram_username VARCHAR(255),
+    first_name VARCHAR(255),
+    last_name VARCHAR(255),
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create trades table (main trading data)
+CREATE TABLE IF NOT EXISTS trades (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    symbol VARCHAR(20) NOT NULL,
+    type VARCHAR(10) NOT NULL CHECK (type IN ('buy', 'sell')),
+    entry_price DECIMAL(10, 2),
+    exit_price DECIMAL(10, 2),
+    quantity DECIMAL(10, 4),
+    pnl DECIMAL(10, 2),
+    entry_time TIMESTAMP,
+    exit_time TIMESTAMP,
+    notes TEXT,
+    emotion VARCHAR(50),
+    screenshot VARCHAR(255),
+    duration INTEGER, -- in minutes
+    setup VARCHAR(100),
+    execution_quality INTEGER CHECK (execution_quality >= 1 AND execution_quality <= 5),
+    checklist_id INTEGER,
+    checklist_completed BOOLEAN DEFAULT false,
+    processing_id VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- Create AI analysis table
 CREATE TABLE IF NOT EXISTS ai_analysis (
     id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     trade_id INTEGER REFERENCES trades(id) ON DELETE CASCADE,
-    processing_id VARCHAR(255) NOT NULL,
-    sentiment VARCHAR(50),
-    confidence VARCHAR(50),
-    suggested_rating VARCHAR(10),
-    recommendations JSONB,
-    voice_transcript TEXT,
-    analysis_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    analysis_type VARCHAR(50) NOT NULL,
+    content TEXT NOT NULL,
+    sentiment VARCHAR(20),
+    confidence_score DECIMAL(3, 2),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create processing logs table for tracking
+-- Create processing logs table
 CREATE TABLE IF NOT EXISTS processing_logs (
     id SERIAL PRIMARY KEY,
-    processing_id VARCHAR(255) UNIQUE NOT NULL,
-    message_type VARCHAR(50) NOT NULL,
-    chat_id BIGINT NOT NULL,
-    user_id BIGINT NOT NULL,
-    username VARCHAR(100),
-    raw_message TEXT,
-    status VARCHAR(50) DEFAULT 'pending',
-    n8n_response JSONB,
-    error_message TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    processing_id VARCHAR(255) NOT NULL,
+    log_level VARCHAR(20) NOT NULL,
+    message TEXT NOT NULL,
+    metadata JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create voice messages table for storing voice data
+-- Create voice messages table
 CREATE TABLE IF NOT EXISTS voice_messages (
     id SERIAL PRIMARY KEY,
-    processing_id VARCHAR(255) UNIQUE NOT NULL,
-    file_id VARCHAR(255),
-    file_path VARCHAR(500),
-    duration INTEGER,
-    mime_type VARCHAR(100),
-    file_size INTEGER,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    file_path VARCHAR(255) NOT NULL,
     transcription TEXT,
+    processing_status VARCHAR(20) DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create document uploads table for CSV files
+-- Create document uploads table
 CREATE TABLE IF NOT EXISTS document_uploads (
     id SERIAL PRIMARY KEY,
-    processing_id VARCHAR(255) UNIQUE NOT NULL,
-    file_id VARCHAR(255),
-    file_name VARCHAR(255),
-    file_path VARCHAR(500),
-    mime_type VARCHAR(100),
-    file_size INTEGER,
-    upload_status VARCHAR(50) DEFAULT 'pending',
-    processed_trades INTEGER DEFAULT 0,
-    error_count INTEGER DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Create dialogs table for storing Telegram messages
-CREATE TABLE IF NOT EXISTS dialogs (
-    id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    telegram_user_id BIGINT NOT NULL,
-    telegram_username VARCHAR(100),
-    message_id BIGINT NOT NULL,
-    chat_id BIGINT NOT NULL,
-    message_text TEXT,
-    message_type VARCHAR(50) DEFAULT 'text',
-    is_from_bot BOOLEAN DEFAULT false,
-    is_from_user BOOLEAN DEFAULT true,
-    processing_id VARCHAR(255),
-    status VARCHAR(50) DEFAULT 'received',
-    raw_message JSONB,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    file_path VARCHAR(255) NOT NULL,
+    file_type VARCHAR(50),
+    file_size INTEGER,
+    processing_status VARCHAR(20) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create checklists table
 CREATE TABLE IF NOT EXISTS checklists (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    title VARCHAR(255) NOT NULL,
+    name VARCHAR(100) NOT NULL,
     description TEXT,
-    items JSONB NOT NULL,
-    is_completed BOOLEAN DEFAULT false,
+    items JSONB NOT NULL, -- Array of checklist items
+    is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -126,42 +122,32 @@ CREATE TABLE IF NOT EXISTS checklists (
 CREATE TABLE IF NOT EXISTS screenshots (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    file_path VARCHAR(500) NOT NULL,
+    trade_id INTEGER REFERENCES trades(id) ON DELETE CASCADE,
+    file_path VARCHAR(255) NOT NULL,
     file_name VARCHAR(255),
     file_size INTEGER,
-    mime_type VARCHAR(100),
-    description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_trades_processing_id ON trades(processing_id);
+-- Add indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id);
-CREATE INDEX IF NOT EXISTS idx_ai_analysis_trade_id ON ai_analysis(trade_id);
-CREATE INDEX IF NOT EXISTS idx_ai_analysis_processing_id ON ai_analysis(processing_id);
+CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol);
+CREATE INDEX IF NOT EXISTS idx_trades_entry_time ON trades(entry_time);
 CREATE INDEX IF NOT EXISTS idx_ai_analysis_user_id ON ai_analysis(user_id);
-CREATE INDEX IF NOT EXISTS idx_processing_logs_processing_id ON processing_logs(processing_id);
-CREATE INDEX IF NOT EXISTS idx_processing_logs_chat_id ON processing_logs(chat_id);
-CREATE INDEX IF NOT EXISTS idx_processing_logs_status ON processing_logs(status);
+CREATE INDEX IF NOT EXISTS idx_ai_analysis_trade_id ON ai_analysis(trade_id);
 CREATE INDEX IF NOT EXISTS idx_processing_logs_user_id ON processing_logs(user_id);
-CREATE INDEX IF NOT EXISTS idx_voice_messages_processing_id ON voice_messages(processing_id);
+CREATE INDEX IF NOT EXISTS idx_processing_logs_processing_id ON processing_logs(processing_id);
 CREATE INDEX IF NOT EXISTS idx_voice_messages_user_id ON voice_messages(user_id);
-CREATE INDEX IF NOT EXISTS idx_document_uploads_processing_id ON document_uploads(processing_id);
 CREATE INDEX IF NOT EXISTS idx_document_uploads_user_id ON document_uploads(user_id);
 CREATE INDEX IF NOT EXISTS idx_checklists_user_id ON checklists(user_id);
 CREATE INDEX IF NOT EXISTS idx_screenshots_user_id ON screenshots(user_id);
-CREATE INDEX IF NOT EXISTS idx_dialogs_user_id ON dialogs(user_id);
-CREATE INDEX IF NOT EXISTS idx_dialogs_telegram_user_id ON dialogs(telegram_user_id);
-CREATE INDEX IF NOT EXISTS idx_dialogs_chat_id ON dialogs(chat_id);
-CREATE INDEX IF NOT EXISTS idx_dialogs_message_id ON dialogs(message_id);
-CREATE INDEX IF NOT EXISTS idx_dialogs_processing_id ON dialogs(processing_id);
-CREATE INDEX IF NOT EXISTS idx_dialogs_created_at ON dialogs(created_at);
-CREATE INDEX IF NOT EXISTS idx_users_telegram_id ON users(telegram_id);
+CREATE INDEX IF NOT EXISTS idx_screenshots_trade_id ON screenshots(trade_id);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token);
-CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_users_telegram_id ON users(telegram_id);
+CREATE INDEX IF NOT EXISTS idx_telegram_users_chat_id ON telegram_users(chat_id);
+CREATE INDEX IF NOT EXISTS idx_telegram_users_user_id ON telegram_users(user_id);
 
--- Create function to update updated_at timestamp
+-- Add triggers for updated_at timestamps
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -170,21 +156,16 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Create trigger for processing_logs
-CREATE TRIGGER update_processing_logs_updated_at 
-    BEFORE UPDATE ON processing_logs 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_trades_updated_at BEFORE UPDATE ON trades FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_checklists_updated_at BEFORE UPDATE ON checklists FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_telegram_users_updated_at BEFORE UPDATE ON telegram_users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Create trigger for users
-CREATE TRIGGER update_users_updated_at 
-    BEFORE UPDATE ON users 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- Insert default admin user (password: admin123)
+INSERT INTO users (username, email, password_hash, role) 
+VALUES ('admin', 'admin@tradebuddy.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/HS.iK2.', 'admin')
+ON CONFLICT (username) DO NOTHING;
 
--- Create trigger for dialogs
-CREATE TRIGGER update_dialogs_updated_at 
-    BEFORE UPDATE ON dialogs 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- Insert sample data for testing (optional)
--- INSERT INTO processing_logs (processing_id, message_type, chat_id, user_id, username, raw_message, status)
--- VALUES ('test-123', 'text_message', 123456, 789, 'testuser', 'Test message', 'completed'); 
+-- Grant necessary permissions
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO tradebuddy_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO tradebuddy_user; 
