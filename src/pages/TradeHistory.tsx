@@ -1,514 +1,401 @@
+import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { 
+  Plus, 
+  Search, 
+  Filter, 
+  Download, 
+  Calendar,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  Clock,
+  MoreHorizontal
+} from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
-import { ChecklistItem, Trade } from "@/types";
-import { Download, Filter, Image, Search, Trash2, Loader2, CheckSquare } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 import { useApiTrades } from '@/hooks/useApiTrades';
-import { API_BASE_URL } from '@/config';
+import { cn } from "@/lib/utils";
+
+// Trade card component
+const TradeCard = ({ trade, onEdit }: { trade: any; onEdit: (trade: any) => void }) => {
+  const isProfit = trade.profitLoss >= 0;
+  
+  return (
+    <Card className="card-modern hover:shadow-lg transition-smooth group">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className={cn(
+              "w-3 h-3 rounded-full",
+              isProfit ? "bg-green-500" : "bg-red-500"
+            )} />
+            <div>
+              <h3 className="font-semibold text-lg">{trade.asset}</h3>
+              <p className="text-sm text-muted-foreground">{trade.tradeType}</p>
+            </div>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onEdit(trade)}>
+                Edit Trade
+              </DropdownMenuItem>
+              <DropdownMenuItem className="text-destructive">
+                Delete Trade
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Entry Price</p>
+            <p className="font-semibold">${trade.entryPrice?.toFixed(2) || '0.00'}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Exit Price</p>
+            <p className="font-semibold">${trade.exitPrice?.toFixed(2) || '0.00'}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Position Size</p>
+            <p className="font-semibold">{trade.positionSize?.toLocaleString() || '0'}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">P&L</p>
+            <p className={cn(
+              "font-semibold",
+              isProfit ? "text-green-600" : "text-red-600"
+            )}>
+              {isProfit ? "+" : ""}${trade.profitLoss?.toFixed(2) || '0.00'}
+            </p>
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-between pt-4 border-t border-border/50">
+          <div className="flex items-center space-x-2">
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              {trade.date ? new Date(trade.date).toLocaleDateString() : 'N/A'}
+            </span>
+          </div>
+          {trade.emotion && (
+            <Badge variant="secondary" className="text-xs">
+              {trade.emotion}
+            </Badge>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Filter component
+const FilterBar = ({ 
+  searchTerm, 
+  setSearchTerm, 
+  selectedType, 
+  setSelectedType,
+  selectedEmotion,
+  setSelectedEmotion 
+}: {
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  selectedType: string;
+  setSelectedType: (type: string) => void;
+  selectedEmotion: string;
+  setSelectedEmotion: (emotion: string) => void;
+}) => {
+  const tradeTypes = ["All", "Long", "Short", "Scalp", "Swing"];
+  const emotions = ["All", "Confident", "Calm", "Nervous", "Excited", "Fearful", "Greedy", "Frustrated"];
+
+  return (
+    <Card className="card-modern mb-6">
+      <CardContent className="p-6">
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Search */}
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search trades by asset, notes..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 input-modern"
+              />
+            </div>
+          </div>
+
+          {/* Trade Type Filter */}
+          <div className="flex flex-wrap gap-2">
+            {tradeTypes.map((type) => (
+              <Button
+                key={type}
+                variant={selectedType === type ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedType(type)}
+                className="text-xs"
+              >
+                {type}
+              </Button>
+            ))}
+          </div>
+
+          {/* Emotion Filter */}
+          <div className="flex flex-wrap gap-2">
+            {emotions.map((emotion) => (
+              <Button
+                key={emotion}
+                variant={selectedEmotion === emotion ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedEmotion(emotion)}
+                className="text-xs"
+              >
+                {emotion}
+              </Button>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Stats component
+const TradeStats = ({ trades }: { trades: any[] }) => {
+  const stats = useMemo(() => {
+    const totalTrades = trades.length;
+    const winningTrades = trades.filter(t => t.profitLoss > 0).length;
+    const totalProfit = trades.reduce((sum, t) => sum + (t.profitLoss || 0), 0);
+    const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
+    const avgProfit = totalTrades > 0 ? totalProfit / totalTrades : 0;
+
+    return { totalTrades, winningTrades, totalProfit, winRate, avgProfit };
+  }, [trades]);
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <Card className="card-modern">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Total Trades</p>
+              <p className="text-2xl font-bold">{stats.totalTrades}</p>
+            </div>
+            <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-900/30">
+              <TrendingUp className="w-5 h-5 text-blue-600" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="card-modern">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Win Rate</p>
+              <p className="text-2xl font-bold">{stats.winRate.toFixed(1)}%</p>
+            </div>
+            <div className="p-2 rounded-xl bg-green-100 dark:bg-green-900/30">
+              <TrendingUp className="w-5 h-5 text-green-600" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="card-modern">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Total P&L</p>
+              <p className={cn(
+                "text-2xl font-bold",
+                stats.totalProfit >= 0 ? "text-green-600" : "text-red-600"
+              )}>
+                {stats.totalProfit >= 0 ? "+" : ""}${stats.totalProfit.toFixed(2)}
+              </p>
+            </div>
+            <div className="p-2 rounded-xl bg-purple-100 dark:bg-purple-900/30">
+              <DollarSign className="w-5 h-5 text-purple-600" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="card-modern">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Avg P&L</p>
+              <p className={cn(
+                "text-2xl font-bold",
+                stats.avgProfit >= 0 ? "text-green-600" : "text-red-600"
+              )}>
+                {stats.avgProfit >= 0 ? "+" : ""}${stats.avgProfit.toFixed(2)}
+              </p>
+            </div>
+            <div className="p-2 rounded-xl bg-yellow-100 dark:bg-yellow-900/30">
+              <Clock className="w-5 h-5 text-yellow-600" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 
 export default function TradeHistory() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [tradeTypeFilter, setTradeTypeFilter] = useState<string>("all");
-  const [emotionFilter, setEmotionFilter] = useState<string>("all");
-  const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
-  const { trades, isLoading, error, fetchTrades } = useApiTrades();
-  
-  const { toast } = useToast();
-  
-  // Apply filters to trades
-  const filteredTrades = trades.filter((trade) => {
-    // Search term filter
-    if (
-      searchTerm &&
-      !trade.asset.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      !trade.notes.toLowerCase().includes(searchTerm.toLowerCase())
-    ) {
-      return false;
-    }
-    
-    // Trade type filter
-    if (tradeTypeFilter !== "all" && trade.tradeType !== tradeTypeFilter) {
-      return false;
-    }
-    
-    // Emotion filter
-    if (emotionFilter !== "all" && trade.emotion !== emotionFilter) {
-      return false;
-    }
-    
-    return true;
-  });
-  
-  // Delete trade
-  const handleDeleteTrade = async (id: string, event: React.MouseEvent) => {
-    event.stopPropagation();
-    try {
-      const res = await fetch(`${API_BASE_URL}/trades/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        await fetchTrades();
-        if (selectedTrade && selectedTrade.id === id) setSelectedTrade(null);
-        toast({
-          title: "Trade Deleted",
-          description: "The trade has been removed from your history.",
-        });
-      } else {
-        throw new Error("Failed to delete trade");
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "Failed to delete trade. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  // Download trade data as CSV
-  const downloadCsv = () => {
-    // Convert trades to CSV format
-    const headers = ["Date", "Asset", "Trade Type", "Entry Price", "Exit Price", "Position Size", "Profit/Loss", "Emotion", "Notes"];
-    const rows = filteredTrades.map((trade) => [
-      new Date(trade.date).toLocaleString(),
-      trade.asset,
-      trade.tradeType,
-      typeof trade.entryPrice === 'number' ? trade.entryPrice.toFixed(2) : '0.00',
-      typeof trade.exitPrice === 'number' ? trade.exitPrice.toFixed(2) : '0.00',
-      trade.positionSize,
-      typeof trade.profitLoss === 'number' ? (trade.profitLoss >= 0 ? "+" : "") + `$${trade.profitLoss.toFixed(2)}` : '$0.00',
-      trade.emotion,
-      `"${trade.notes.replace(/"/g, '""')}"`, // Handle quotes in notes
-    ]);
-    
-    const csv = [
-      headers.join(","),
-      ...rows.map((row) => row.join(",")),
-    ].join("\n");
-    
-    // Create download link
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", "trade_history.csv");
-    link.style.display = "none";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-  
-  // View trade details
-  const viewTrade = (trade: Trade) => {
-    setSelectedTrade(trade);
-  };
+  const [selectedType, setSelectedType] = useState("All");
+  const [selectedEmotion, setSelectedEmotion] = useState("All");
+  const { trades, isLoading, error } = useApiTrades();
+  const navigate = useNavigate();
 
-  // Calculate checklist completion percentage
-  const calculateCompletionPercentage = (items: ChecklistItem[] = []) => {
-    if (items.length === 0) return 0;
-    const completedItems = items.filter(item => item.completed).length;
-    return Math.round((completedItems / items.length) * 100);
-  };
-
-  // Add state for editing
-  const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
-  const [editForm, setEditForm] = useState<any>({});
-
-  // Edit trade handler
-  const handleEditTrade = (trade: Trade) => {
-    setEditingTrade(trade);
-    setEditForm({
-      asset: trade.asset,
-      tradeType: trade.tradeType,
-      entryPrice: trade.entryPrice,
-      exitPrice: trade.exitPrice,
-      positionSize: trade.positionSize,
-      profitLoss: trade.profitLoss,
-      notes: trade.notes,
-      emotion: trade.emotion,
-      setup: trade.setup,
-      executionQuality: trade.executionQuality,
-      duration: trade.duration,
-      checklist_id: trade.checklist_id,
-      checklist_completed: trade.checklist_completed,
-      screenshot: trade.screenshot,
-      date: trade.date,
+  // Filter trades based on search and filters
+  const filteredTrades = useMemo(() => {
+    return trades.filter(trade => {
+      const matchesSearch = searchTerm === "" || 
+        trade.asset?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        trade.notes?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesType = selectedType === "All" || trade.tradeType === selectedType;
+      const matchesEmotion = selectedEmotion === "All" || trade.emotion === selectedEmotion;
+      
+      return matchesSearch && matchesType && matchesEmotion;
     });
+  }, [trades, searchTerm, selectedType, selectedEmotion]);
+
+  const handleEditTrade = (trade: any) => {
+    // Navigate to edit trade page or open modal
+    console.log("Edit trade:", trade);
   };
 
-  // Save edit
-  const handleSaveEdit = async () => {
-    if (!editingTrade) return;
-    try {
-      const res = await fetch(`${API_BASE_URL}/trades/${editingTrade.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          symbol: editForm.asset,
-          type: editForm.tradeType,
-          entry_price: editForm.entryPrice,
-          exit_price: editForm.exitPrice,
-          quantity: editForm.positionSize,
-          entry_time: editForm.date,
-          exit_time: editForm.date,
-          pnl: editForm.profitLoss,
-          notes: editForm.notes,
-          emotion: editForm.emotion,
-          setup: editForm.setup,
-          execution_quality: editForm.executionQuality,
-          duration: editForm.duration,
-          checklist_id: editForm.checklist_id,
-          checklist_completed: editForm.checklist_completed,
-          screenshot: editForm.screenshot,
-        }),
-      });
-      if (res.ok) {
-        await fetchTrades();
-        setEditingTrade(null);
-        toast({ title: 'Trade Updated', description: 'The trade has been updated.' });
-      } else {
-        throw new Error('Failed to update trade');
-      }
-    } catch (err) {
-      toast({ title: 'Error', description: 'Failed to update trade. Please try again.', variant: 'destructive' });
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Trade History</h1>
+            <p className="text-muted-foreground">Your trading activity</p>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="card-modern p-6">
+              <div className="h-4 w-24 bg-muted rounded shimmer mb-2"></div>
+              <div className="h-8 w-16 bg-muted rounded shimmer"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-  // Cancel edit
-  const handleCancelEdit = () => {
-    setEditingTrade(null);
-  };
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <Card className="card-modern max-w-md">
+          <CardContent className="p-8 text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <TrendingDown className="w-8 h-8 text-red-600" />
+            </div>
+            <h2 className="text-xl font-bold mb-2">Error Loading Trades</h2>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <Button onClick={() => window.location.reload()} className="btn-apple">
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Trade History</h1>
-        <Button variant="outline" onClick={downloadCsv} disabled={filteredTrades.length === 0}>
-          <Download className="mr-2 h-4 w-4" />
-          Export CSV
-        </Button>
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Trade History</h1>
+          <p className="text-muted-foreground">
+            View and manage your trading activity
+          </p>
+        </div>
+        <div className="flex items-center space-x-3">
+          <Button 
+            variant="outline" 
+            onClick={() => {/* Export functionality */}}
+            className="btn-apple-secondary"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
+          <Button 
+            onClick={() => navigate('/add-trade')}
+            className="btn-apple"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Trade
+          </Button>
+        </div>
       </div>
-      
-      {/* Filters */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-medium flex items-center">
-            <Filter className="mr-2 h-4 w-4" />
-            Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search assets or notes..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            
-            <Select value={tradeTypeFilter} onValueChange={setTradeTypeFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Trade Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Trade Types</SelectItem>
-                <SelectItem value="Buy">Buy</SelectItem>
-                <SelectItem value="Sell">Sell</SelectItem>
-                <SelectItem value="Long">Long</SelectItem>
-                <SelectItem value="Short">Short</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <Select value={emotionFilter} onValueChange={setEmotionFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Emotion" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Emotions</SelectItem>
-                <SelectItem value="Confident">Confident</SelectItem>
-                <SelectItem value="Nervous">Nervous</SelectItem>
-                <SelectItem value="Greedy">Greedy</SelectItem>
-                <SelectItem value="Fearful">Fearful</SelectItem>
-                <SelectItem value="Calm">Calm</SelectItem>
-                <SelectItem value="Excited">Excited</SelectItem>
-                <SelectItem value="Frustrated">Frustrated</SelectItem>
-                <SelectItem value="Satisfied">Satisfied</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Trades Table */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Asset</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Entry</TableHead>
-                  <TableHead>Exit</TableHead>
-                  <TableHead>Size</TableHead>
-                  <TableHead>P/L</TableHead>
-                  <TableHead>Emotion</TableHead>
-                  <TableHead>Checklist</TableHead>
-                  <TableHead>Screenshot</TableHead>
-                  <TableHead>Notes</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={12} className="text-center py-8">
-                      <div className="flex justify-center">
-                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                      </div>
-                      <p className="mt-2 text-muted-foreground">Loading trades...</p>
-                    </TableCell>
-                  </TableRow>
-                ) : error ? (
-                  <TableRow>
-                    <TableCell colSpan={12} className="text-center py-4 text-red-500">
-                      Error loading trades: {error}
-                    </TableCell>
-                  </TableRow>
-                ) : filteredTrades.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={12} className="text-center py-4">
-                      No trades found. Try adjusting your filters or add new trades.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredTrades.map((trade) => (
-                    <TableRow key={trade.id} className="cursor-pointer hover:bg-muted/50">
-                      <TableCell onClick={() => viewTrade(trade)}>{new Date(trade.date).toLocaleString()}</TableCell>
-                      <TableCell onClick={() => viewTrade(trade)} className="font-medium">{trade.asset}</TableCell>
-                      <TableCell onClick={() => viewTrade(trade)}>{trade.tradeType}</TableCell>
-                      <TableCell onClick={() => viewTrade(trade)}>${typeof trade.entryPrice === 'number' ? trade.entryPrice.toFixed(2) : '0.00'}</TableCell>
-                      <TableCell onClick={() => viewTrade(trade)}>${typeof trade.exitPrice === 'number' ? trade.exitPrice.toFixed(2) : '0.00'}</TableCell>
-                      <TableCell onClick={() => viewTrade(trade)}>{trade.positionSize}</TableCell>
-                      <TableCell onClick={() => viewTrade(trade)} className={typeof trade.profitLoss === 'number' ? (trade.profitLoss >= 0 ? "text-green-500" : "text-red-500") : "text-muted-foreground"}>
-                        {typeof trade.profitLoss === 'number' ? (trade.profitLoss >= 0 ? "+" : "") + `$${trade.profitLoss.toFixed(2)}` : '$0.00'}
-                      </TableCell>
-                      <TableCell onClick={() => viewTrade(trade)}>{trade.emotion}</TableCell>
-                      <TableCell onClick={() => viewTrade(trade)}>
-                        {trade.checklist_completed && trade.checklist_completed.length > 0 ? (
-                          <div className="flex items-center space-x-2">
-                            <Progress 
-                              value={calculateCompletionPercentage(trade.checklist_completed)} 
-                              className="h-2 w-12" 
-                            />
-                            <span className="text-xs">
-                              {calculateCompletionPercentage(trade.checklist_completed)}%
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">None</span>
-                        )}
-                      </TableCell>
-                      <TableCell onClick={() => viewTrade(trade)}>
-                        {trade.screenshot ? (
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <Image className="h-4 w-4" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-3xl">
-                              <DialogHeader>
-                                <DialogTitle>Trade Screenshot</DialogTitle>
-                                <DialogDescription>
-                                  {trade.asset} {trade.tradeType} on {new Date(trade.date).toLocaleString()}
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="mt-4">
-                                <img
-                                  src={trade.screenshot}
-                                  alt={`${trade.asset} ${trade.tradeType} screenshot`}
-                                  className="w-full rounded-md"
-                                />
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                        ) : (
-                          <span className="text-muted-foreground">None</span>
-                        )}
-                      </TableCell>
-                      <TableCell onClick={() => viewTrade(trade)} className="max-w-[200px] truncate">{trade.notes}</TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="text-red-500 hover:text-red-700 hover:bg-red-100"
-                          onClick={(e) => handleDeleteTrade(trade.id, e)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Trade Details Dialog */}
-      {selectedTrade && (
-        <Dialog open={!!selectedTrade} onOpenChange={(open) => !open && setSelectedTrade(null)}>
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>
-                {selectedTrade.asset} {selectedTrade.tradeType} Trade
-              </DialogTitle>
-              <DialogDescription>
-                {new Date(selectedTrade.date).toLocaleString()}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-              <div>
-                <h3 className="font-semibold mb-2">Trade Details</h3>
-                <dl className="space-y-2">
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Asset:</dt>
-                    <dd className="font-medium">{selectedTrade.asset}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Trade Type:</dt>
-                    <dd>{selectedTrade.tradeType}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Entry Price:</dt>
-                    <dd>${typeof selectedTrade.entryPrice === 'number' ? selectedTrade.entryPrice.toFixed(2) : '0.00'}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Exit Price:</dt>
-                    <dd>${typeof selectedTrade.exitPrice === 'number' ? selectedTrade.exitPrice.toFixed(2) : '0.00'}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Position Size:</dt>
-                    <dd>{selectedTrade.positionSize}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Profit/Loss:</dt>
-                    <dd className={typeof selectedTrade.profitLoss === 'number' ? (selectedTrade.profitLoss >= 0 ? "text-green-500 font-bold" : "text-red-500 font-bold") : "text-muted-foreground"}>
-                      {typeof selectedTrade.profitLoss === 'number' ? (selectedTrade.profitLoss >= 0 ? "+" : "") + `$${selectedTrade.profitLoss.toFixed(2)}` : '$0.00'}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Emotion:</dt>
-                    <dd>{selectedTrade.emotion}</dd>
-                  </div>
-                </dl>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">Notes</h3>
-                <p className="text-sm whitespace-pre-wrap">{selectedTrade.notes}</p>
-              </div>
-            </div>
-            
-            {/* Display Checklist if available */}
-            {selectedTrade.checklist_completed && selectedTrade.checklist_completed.length > 0 && (
-              <div className="mt-4">
-                <h3 className="font-semibold mb-2 flex items-center">
-                  <CheckSquare className="mr-2 h-4 w-4" />
-                  Trading Checklist Completion
-                </h3>
-                <div className="mb-2">
-                  <Progress 
-                    value={calculateCompletionPercentage(selectedTrade.checklist_completed)} 
-                    className="h-2 mb-1" 
-                  />
-                  <p className="text-xs text-muted-foreground text-right">
-                    {calculateCompletionPercentage(selectedTrade.checklist_completed)}% completed
-                  </p>
-                </div>
-                <Card className="border-dashed">
-                  <CardContent className="py-4">
-                    <div className="space-y-2">
-                      {selectedTrade.checklist_completed.map((item) => (
-                        <div key={item.id} className="flex items-start space-x-2">
-                          <Checkbox
-                            id={`view-checklist-item-${item.id}`}
-                            checked={item.completed}
-                            disabled
-                          />
-                          <label
-                            htmlFor={`view-checklist-item-${item.id}`}
-                            className={`text-sm ${
-                              item.completed ? "line-through text-muted-foreground" : ""
-                            }`}
-                          >
-                            {item.text}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-            
-            {selectedTrade.screenshot && (
-              <div className="mt-4">
-                <h3 className="font-semibold mb-2">Screenshot</h3>
-                <img
-                  src={selectedTrade.screenshot}
-                  alt={`${selectedTrade.asset} ${selectedTrade.tradeType} screenshot`}
-                  className="w-full rounded-md"
-                />
-              </div>
-            )}
-            <div className="mt-4 flex justify-end">
-              <Button 
-                variant="destructive" 
-                onClick={(e) => {
-                  handleDeleteTrade(selectedTrade.id, e);
-                  setSelectedTrade(null);
-                }}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Trade
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
 
-      {/* Render edit form if editingTrade is set */}
-      {editingTrade && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow-lg w-full max-w-lg">
-            <h2 className="text-xl font-bold mb-4">Edit Trade</h2>
-            <div className="space-y-4">
-              <input className="w-full border p-2" value={editForm.asset} onChange={e => setEditForm({ ...editForm, asset: e.target.value })} placeholder="Asset" />
-              <input className="w-full border p-2" value={editForm.tradeType} onChange={e => setEditForm({ ...editForm, tradeType: e.target.value })} placeholder="Trade Type" />
-              <input className="w-full border p-2" type="number" value={editForm.entryPrice} onChange={e => setEditForm({ ...editForm, entryPrice: Number(e.target.value) })} placeholder="Entry Price" />
-              <input className="w-full border p-2" type="number" value={editForm.exitPrice} onChange={e => setEditForm({ ...editForm, exitPrice: Number(e.target.value) })} placeholder="Exit Price" />
-              <input className="w-full border p-2" type="number" value={editForm.positionSize} onChange={e => setEditForm({ ...editForm, positionSize: Number(e.target.value) })} placeholder="Position Size" />
-              <input className="w-full border p-2" type="number" value={editForm.profitLoss} onChange={e => setEditForm({ ...editForm, profitLoss: Number(e.target.value) })} placeholder="Profit/Loss" />
-              <input className="w-full border p-2" value={editForm.notes} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} placeholder="Notes" />
-              <input className="w-full border p-2" value={editForm.emotion} onChange={e => setEditForm({ ...editForm, emotion: e.target.value })} placeholder="Emotion" />
-              <input className="w-full border p-2" value={editForm.setup} onChange={e => setEditForm({ ...editForm, setup: e.target.value })} placeholder="Setup" />
-              <input className="w-full border p-2" value={editForm.executionQuality} onChange={e => setEditForm({ ...editForm, executionQuality: e.target.value })} placeholder="Execution Quality" />
-              <input className="w-full border p-2" value={editForm.duration} onChange={e => setEditForm({ ...editForm, duration: e.target.value })} placeholder="Duration" />
-              <button className="bg-blue-600 text-white px-4 py-2 rounded" onClick={handleSaveEdit}>Save</button>
-              <button className="bg-gray-300 px-4 py-2 rounded ml-2" onClick={handleCancelEdit}>Cancel</button>
+      {/* Stats */}
+      <TradeStats trades={trades} />
+
+      {/* Filters */}
+      <FilterBar
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        selectedType={selectedType}
+        setSelectedType={setSelectedType}
+        selectedEmotion={selectedEmotion}
+        setSelectedEmotion={setSelectedEmotion}
+      />
+
+      {/* Trades Grid */}
+      {filteredTrades.length === 0 ? (
+        <Card className="card-modern">
+          <CardContent className="p-12 text-center">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+              <TrendingUp className="w-8 h-8 text-muted-foreground" />
             </div>
-          </div>
+            <h3 className="text-xl font-semibold mb-2">No trades found</h3>
+            <p className="text-muted-foreground mb-6">
+              {trades.length === 0 
+                ? "Start by adding your first trade to see your trading history here."
+                : "Try adjusting your search or filters to find what you're looking for."
+              }
+            </p>
+            {trades.length === 0 && (
+              <Button onClick={() => navigate('/add-trade')} className="btn-apple">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Your First Trade
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredTrades.map((trade) => (
+            <TradeCard 
+              key={trade.id} 
+              trade={trade} 
+              onEdit={handleEditTrade}
+            />
+          ))}
         </div>
       )}
     </div>

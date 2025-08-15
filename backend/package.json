@@ -1,40 +1,62 @@
 {
-  "name": "trade-buddy-backend",
-  "version": "1.0.0",
-  "description": "Trade Buddy Backend with Telegram Integration",
-  "main": "index.js",
+  "name": "tradebuddy-backend",
+  "version": "2.0.0",
+  "description": "Apple-inspired trading journal backend API",
+  "main": "app.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
-    "telegram": "node telegram-webhook.js",
-    "telegram-dev": "nodemon telegram-webhook.js",
-    "setup-db": "psql -h ${PGHOST:-localhost} -U ${PGUSER:-tradebuddy_user} -p ${PGPORT:-5440} -d ${PGDATABASE:-tradebuddy} -f database-schema.sql",
-    "dev:all": "concurrently \"node index.js\" \"node telegram-webhook.js\""
-  },
-  "dependencies": {
-    "axios": "^1.6.0",
-    "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
-    "csv-parser": "^3.0.0",
-    "csv-writer": "^1.6.0",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "jsonwebtoken": "^9.0.2",
-    "multer": "^1.4.5-lts.1",
-    "pg": "^8.11.3",
-    "uuid": "^9.0.1"
-  },
-  "devDependencies": {
-    "concurrently": "^8.2.2",
-    "nodemon": "^3.0.1"
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "jest",
+    "lint": "eslint .",
+    "migrate": "psql $DATABASE_URL -f database-schema-apple.sql",
+    "seed": "node scripts/seed.js"
   },
   "keywords": [
     "trading",
-    "telegram",
-    "bot",
-    "ai",
-    "n8n"
+    "journal",
+    "api",
+    "postgresql",
+    "nodejs",
+    "express"
   ],
-  "author": "Trade Buddy",
-  "license": "MIT"
+  "author": "TradeBuddy Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.1.5",
+    "compression": "^1.7.4",
+    "morgan": "^1.10.0",
+    "pg": "^8.11.3",
+    "bcrypt": "^5.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "dotenv": "^16.3.1",
+    "uuid": "^9.0.1",
+    "joi": "^17.11.0",
+    "express-validator": "^7.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3",
+    "eslint": "^8.55.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.29.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^6.1.1"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tradebuddy/backend.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tradebuddy/backend/issues"
+  },
+  "homepage": "https://tradebuddy.app"
 }

@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { Suspense } from "react";
 import NotFound from "./pages/NotFound";
 import { Layout } from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
@@ -21,64 +21,124 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
     },
   },
 });
 
-// Simple Protected Route Component
+// Loading component
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="flex flex-col items-center space-y-4">
+      <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <p className="text-muted-foreground">Loading...</p>
+    </div>
+  </div>
+);
+
+// Protected Route Component with modern design
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('token');
   
-  // If no token, redirect to login immediately
   if (!token) {
-    console.log('No token found, redirecting to login');
     return <Navigate to="/" replace />;
   }
   
-  // If token exists, allow access
-  console.log('Token found, allowing access');
   return <>{children}</>;
 };
 
 const AppRoutes = () => {
   return (
     <Routes>
+      {/* Public routes */}
       <Route path="/" element={<Login />} />
+      
+      {/* Protected routes */}
       <Route path="/dashboard" element={
         <ProtectedRoute>
-          <ErrorBoundary><Layout><Dashboard /></Layout></ErrorBoundary>
+          <ErrorBoundary>
+            <Layout>
+              <Suspense fallback={<PageLoader />}>
+                <Dashboard />
+              </Suspense>
+            </Layout>
+          </ErrorBoundary>
         </ProtectedRoute>
       } />
+      
       <Route path="/trades" element={
         <ProtectedRoute>
-          <ErrorBoundary><Layout><TradeHistory /></Layout></ErrorBoundary>
+          <ErrorBoundary>
+            <Layout>
+              <Suspense fallback={<PageLoader />}>
+                <TradeHistory />
+              </Suspense>
+            </Layout>
+          </ErrorBoundary>
         </ProtectedRoute>
       } />
+      
       <Route path="/add-trade" element={
         <ProtectedRoute>
-          <ErrorBoundary><Layout><AddTrade /></Layout></ErrorBoundary>
+          <ErrorBoundary>
+            <Layout>
+              <Suspense fallback={<PageLoader />}>
+                <AddTrade />
+              </Suspense>
+            </Layout>
+          </ErrorBoundary>
         </ProtectedRoute>
       } />
+      
       <Route path="/analysis" element={
         <ProtectedRoute>
-          <ErrorBoundary><Layout><Analysis /></Layout></ErrorBoundary>
+          <ErrorBoundary>
+            <Layout>
+              <Suspense fallback={<PageLoader />}>
+                <Analysis />
+              </Suspense>
+            </Layout>
+          </ErrorBoundary>
         </ProtectedRoute>
       } />
+      
       <Route path="/checklists" element={
         <ProtectedRoute>
-          <ErrorBoundary><Layout><Checklists /></Layout></ErrorBoundary>
+          <ErrorBoundary>
+            <Layout>
+              <Suspense fallback={<PageLoader />}>
+                <Checklists />
+              </Suspense>
+            </Layout>
+          </ErrorBoundary>
         </ProtectedRoute>
       } />
+      
       <Route path="/settings" element={
         <ProtectedRoute>
-          <ErrorBoundary><Layout><Settings /></Layout></ErrorBoundary>
+          <ErrorBoundary>
+            <Layout>
+              <Suspense fallback={<PageLoader />}>
+                <Settings />
+              </Suspense>
+            </Layout>
+          </ErrorBoundary>
         </ProtectedRoute>
       } />
+      
       <Route path="/calendar" element={
         <ProtectedRoute>
-          <ErrorBoundary><Layout><Calendar /></Layout></ErrorBoundary>
+          <ErrorBoundary>
+            <Layout>
+              <Suspense fallback={<PageLoader />}>
+                <Calendar />
+              </Suspense>
+            </Layout>
+          </ErrorBoundary>
         </ProtectedRoute>
       } />
+      
+      {/* Catch all route */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
