@@ -14,13 +14,16 @@ interface WinLossChartProps {
 }
 
 export function WinLossChart({ data }: WinLossChartProps) {
+  // Ensure data is always an array to prevent map errors
+  const safeData = Array.isArray(data) ? data : [];
+  
   const chartData = {
-    labels: data.map(item => item.label),
+    labels: safeData.map(item => item.label),
     datasets: [
       {
-        data: data.map(item => item.value),
-        backgroundColor: data.map(item => item.color),
-        borderColor: data.map(item => item.color),
+        data: safeData.map(item => item.value),
+        backgroundColor: safeData.map(item => item.color),
+        borderColor: safeData.map(item => item.color),
         borderWidth: 0,
         hoverBorderWidth: 3,
         hoverBorderColor: '#ffffff',
@@ -69,10 +72,10 @@ export function WinLossChart({ data }: WinLossChartProps) {
     },
   };
 
-  const total = data.reduce((sum, item) => sum + item.value, 0);
-  const winPercentage = total > 0 ? ((data.find(item => item.label === 'Wins')?.value || 0) / total * 100).toFixed(1) : '0';
+  const total = safeData.reduce((sum, item) => sum + item.value, 0);
+  const winPercentage = total > 0 ? ((safeData.find(item => item.label === 'Wins')?.value || 0) / total * 100).toFixed(1) : '0';
 
-  if (data.length === 0 || total === 0) {
+  if (safeData.length === 0 || total === 0) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
@@ -89,26 +92,29 @@ export function WinLossChart({ data }: WinLossChartProps) {
   }
 
   return (
-    <div className="relative w-full h-full">
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-3xl font-bold text-foreground mb-1">{winPercentage}%</div>
-          <div className="text-sm text-muted-foreground">Win Rate</div>
-        </div>
-      </div>
-      <Doughnut data={chartData} options={options} />
-      
-      {/* Legend */}
-      <div className="flex justify-center space-x-4 mt-4">
-        {data.map((item, index) => (
-          <div key={index} className="flex items-center space-x-2">
+    <div className="w-full h-full flex flex-col">
+      {/* Legend - Moved to top */}
+      <div className="flex justify-center space-x-6 mb-4 px-6">
+        {safeData.map((item, index) => (
+          <div key={index} className="flex items-center space-x-2 min-w-0">
             <div 
-              className="w-3 h-3 rounded-full" 
+              className="w-3 h-3 rounded-full flex-shrink-0" 
               style={{ backgroundColor: item.color }}
             />
-            <span className="text-sm font-medium">{item.label}</span>
+            <span className="text-sm font-medium text-foreground whitespace-nowrap">{item.label}</span>
           </div>
         ))}
+      </div>
+      
+      {/* Chart Container */}
+      <div className="relative flex-1">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-foreground mb-1">{winPercentage}%</div>
+            <div className="text-sm text-muted-foreground">Win Rate</div>
+          </div>
+        </div>
+        <Doughnut data={chartData} options={options} />
       </div>
     </div>
   );

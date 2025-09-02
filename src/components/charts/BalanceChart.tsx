@@ -28,8 +28,11 @@ interface BalanceChartProps {
 }
 
 export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
+  // Ensure balanceOverTime is always an array to prevent map errors
+  const safeBalanceData = Array.isArray(balanceOverTime) ? balanceOverTime : [];
+  
   const data = {
-    labels: balanceOverTime.map(item => {
+    labels: safeBalanceData.map(item => {
       const date = new Date(item.date);
       return date.toLocaleDateString('en-US', { 
         month: 'short', 
@@ -39,7 +42,7 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
     datasets: [
       {
         label: 'Account Balance',
-        data: balanceOverTime.map(item => item.balance),
+        data: safeBalanceData.map(item => item.balance),
         borderColor: 'rgb(59, 130, 246)', // Blue
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         borderWidth: 2,

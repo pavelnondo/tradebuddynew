@@ -10,7 +10,9 @@ import {
   TrendingDown,
   DollarSign,
   Clock,
-  MoreHorizontal
+  MoreHorizontal,
+  Edit,
+  Trash2
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,11 +24,31 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useApiTrades } from '@/hooks/useApiTrades';
+import { useToast } from "@/hooks/use-toast";
+import { tradeApi } from '@/services/tradeApi';
 import { cn } from "@/lib/utils";
 
-// Trade card component
-const TradeCard = ({ trade, onEdit }: { trade: any; onEdit: (trade: any) => void }) => {
+// Trade card component  
+const TradeCard = ({ 
+  trade, 
+  onEdit, 
+  onDelete 
+}: { 
+  trade: any; 
+  onEdit: (trade: any) => void;
+  onDelete: (trade: any) => void;
+}) => {
   const isProfit = trade.profitLoss >= 0;
   
   return (
@@ -51,9 +73,14 @@ const TradeCard = ({ trade, onEdit }: { trade: any; onEdit: (trade: any) => void
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => onEdit(trade)}>
+                <Edit className="w-4 h-4 mr-2" />
                 Edit Trade
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive">
+              <DropdownMenuItem 
+                className="text-destructive" 
+                onClick={() => onDelete(trade)}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
                 Delete Trade
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -176,9 +203,11 @@ const FilterBar = ({
 // Stats component
 const TradeStats = ({ trades }: { trades: any[] }) => {
   const stats = useMemo(() => {
-    const totalTrades = trades.length;
-    const winningTrades = trades.filter(t => t.profitLoss > 0).length;
-    const totalProfit = trades.reduce((sum, t) => sum + (t.profitLoss || 0), 0);
+    // Ensure trades is always an array to prevent filter/reduce errors
+    const safeTrades = Array.isArray(trades) ? trades : [];
+    const totalTrades = safeTrades.length;
+    const winningTrades = safeTrades.filter(t => t.profitLoss > 0).length;
+    const totalProfit = safeTrades.reduce((sum, t) => sum + (t.profitLoss || 0), 0);
     const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
     const avgProfit = totalTrades > 0 ? totalProfit / totalTrades : 0;
 
@@ -260,12 +289,18 @@ export default function TradeHistory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("All");
   const [selectedEmotion, setSelectedEmotion] = useState("All");
-  const { trades, isLoading, error } = useApiTrades();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [tradeToDelete, setTradeToDelete] = useState<any>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { trades, isLoading, error, fetchTrades } = useApiTrades();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   // Filter trades based on search and filters
   const filteredTrades = useMemo(() => {
-    return trades.filter(trade => {
+    // Ensure trades is always an array to prevent filter errors
+    const safeTrades = Array.isArray(trades) ? trades : [];
+    return safeTrades.filter(trade => {
       const matchesSearch = searchTerm === "" || 
         trade.asset?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         trade.notes?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -278,8 +313,43 @@ export default function TradeHistory() {
   }, [trades, searchTerm, selectedType, selectedEmotion]);
 
   const handleEditTrade = (trade: any) => {
-    // Navigate to edit trade page or open modal
-    console.log("Edit trade:", trade);
+    // Navigate to edit trade page with trade data
+    navigate('/add-trade', { state: { editTrade: trade } });
+  };
+
+  const handleDeleteTrade = (trade: any) => {
+    setTradeToDelete(trade);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteTrade = async () => {
+    if (!tradeToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await tradeApi.deleteTrade(tradeToDelete.id);
+      
+      toast({
+        title: "🗑️ Trade Deleted Successfully!",
+        description: `Your ${tradeToDelete.asset} trade has been removed from your portfolio.`,
+        className: "bg-gradient-to-r from-red-500 to-rose-600 text-white border-0 shadow-lg",
+      });
+      
+      // Refresh the trades list
+      fetchTrades();
+      
+    } catch (error: any) {
+      toast({
+        title: "❌ Error Deleting Trade",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+        className: "bg-gradient-to-r from-red-500 to-rose-600 text-white border-0 shadow-lg",
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setTradeToDelete(null);
+    }
   };
 
   if (isLoading) {
@@ -394,10 +464,34 @@ export default function TradeHistory() {
               key={trade.id} 
               trade={trade} 
               onEdit={handleEditTrade}
+              onDelete={handleDeleteTrade}
             />
           ))}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Trade</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete your{" "}
+              <strong>{tradeToDelete?.asset}</strong> trade? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteTrade}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete Trade"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -25,12 +25,15 @@ interface EmotionsWinRateChartProps {
 }
 
 export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
+  // Ensure data is always an array to prevent map errors
+  const safeData = Array.isArray(data) ? data : [];
+  
   const chartData = {
-    labels: data.map((d) => d.emotion),
+    labels: safeData.map((d) => d.emotion),
     datasets: [
       {
         label: 'Win Rate (%)',
-        data: data.map((d) => d.winRate),
+        data: safeData.map((d) => d.winRate),
         backgroundColor: '#4ade80',
       },
     ],

@@ -25,13 +25,16 @@ interface TradeTypePerformanceChartProps {
 }
 
 export function TradeTypePerformanceChart({ data }: TradeTypePerformanceChartProps) {
+  // Ensure data is always an array to prevent map errors
+  const safeData = Array.isArray(data) ? data : [];
+  
   const chartData = {
-    labels: data.map((d) => d.type),
+    labels: safeData.map((d) => d.type),
     datasets: [
       {
         label: 'Profit/Loss',
-        data: data.map((d) => d.profitLoss),
-        backgroundColor: data.map((d) => d.profitLoss >= 0 ? '#4ade80' : '#f87171'),
+        data: safeData.map((d) => d.profitLoss),
+        backgroundColor: safeData.map((d) => d.profitLoss >= 0 ? '#4ade80' : '#f87171'),
       },
     ],
   };

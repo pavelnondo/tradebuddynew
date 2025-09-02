@@ -27,19 +27,22 @@ export function HourlyPerformanceChart({
   isEmpty = false,
   isLoading = false
 }: HourlyPerformanceProps) {
+  // Ensure data is always an array to prevent map errors
+  const safeData = Array.isArray(data) ? data : [];
+  
   const chartData = {
-    labels: data.map(d => d.hourFormatted),
+    labels: safeData.map(d => d.hourFormatted),
     datasets: [
       {
         label: 'P&L ($)',
-        data: data.map(d => d.profitLoss),
+        data: safeData.map(d => d.profitLoss),
         backgroundColor: '#60a5fa',
         yAxisID: 'y',
         borderRadius: 4,
       },
       {
         label: 'Win Rate (%)',
-        data: data.map(d => d.winRate),
+        data: safeData.map(d => d.winRate),
         backgroundColor: '#4ade80',
         yAxisID: 'y1',
         borderRadius: 4,

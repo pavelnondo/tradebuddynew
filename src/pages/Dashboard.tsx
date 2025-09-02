@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useApiTrades } from '@/hooks/useApiTrades';
 import { useTradeAnalysis } from '@/hooks/useTradeAnalysis';
+import { useUserSettings } from '@/hooks/useUserSettings';
 import { BalanceChart } from '@/components/charts/BalanceChart';
 import { WinLossChart } from '@/components/charts/WinLossChart';
 import { cn } from "@/lib/utils";
@@ -185,17 +186,25 @@ const InsightCard = ({
 };
 
 export default function Dashboard() {
-  const [initialBalance, setInitialBalance] = useState<number>(() => {
-    const savedBalance = localStorage.getItem('initialTradingBalance');
-    return savedBalance ? parseFloat(savedBalance) : 10000;
-  });
+  const { settings } = useUserSettings();
+  const [initialBalance, setInitialBalance] = useState<number>(10000);
+  
+  // Update initial balance when settings are loaded
+  useEffect(() => {
+    if (settings) {
+      setInitialBalance(Number(settings.initial_balance));
+    }
+  }, [settings]);
   
   const { trades, isLoading, error, fetchTrades } = useApiTrades();
+  // Ensure trades is always an array to prevent map errors
+  const safeTrades = Array.isArray(trades) ? trades : [];
   const navigate = useNavigate();
-  const analysisData = useTradeAnalysis(trades, initialBalance);
+  const analysisData = useTradeAnalysis(safeTrades, initialBalance);
 
   const handleInitialBalanceChange = (newBalance: number) => {
     setInitialBalance(newBalance);
+    // Note: This will be handled by the Settings page now
     localStorage.setItem('initialTradingBalance', newBalance.toString());
   };
 
@@ -440,7 +449,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {trades.slice(0, 5).map((trade) => (
+              {safeTrades.slice(0, 5).map((trade) => (
                 <div key={trade.id} className="flex items-center justify-between p-4 rounded-xl bg-muted/30">
                   <div className="flex items-center space-x-4">
                     <div className={cn(

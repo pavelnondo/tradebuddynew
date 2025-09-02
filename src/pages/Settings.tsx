@@ -10,11 +10,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Save } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { useUserSettings } from "@/hooks/useUserSettings";
+import { useEffect } from "react";
 
 // Define settings schema with validation
 const settingsFormSchema = z.object({
   currency: z.string(),
   dateFormat: z.enum(["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD"]),
+  initialBalance: z.number().min(0, "Initial balance must be positive"),
   enableNotifications: z.boolean(),
   emailNotifications: z.boolean(),
   emailAddress: z.string().email().optional().or(z.literal("")),
@@ -25,30 +28,78 @@ const settingsFormSchema = z.object({
 type SettingsFormValues = z.infer<typeof settingsFormSchema>;
 
 export default function Settings() {
-  // Initialize form with default values
+  const { settings, loading, updateSettings } = useUserSettings();
+  
+  // Get local settings for notification preferences (not stored in backend yet)
+  const savedSettings = localStorage.getItem('tradingSettings');
+  const parsedSettings = savedSettings ? JSON.parse(savedSettings) : {};
+
+  // Initialize form with backend settings or defaults
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsFormSchema),
     defaultValues: {
       currency: "USD",
       dateFormat: "MM/DD/YYYY",
-      enableNotifications: true,
-      emailNotifications: false,
-      emailAddress: "",
-      googleSheetUrl: "",
-      syncWithSheets: false,
+      initialBalance: 10000,
+      enableNotifications: parsedSettings.enableNotifications ?? true,
+      emailNotifications: parsedSettings.emailNotifications ?? false,
+      emailAddress: parsedSettings.emailAddress || "",
+      googleSheetUrl: parsedSettings.googleSheetUrl || "",
+      syncWithSheets: parsedSettings.syncWithSheets ?? false,
     },
   });
 
+  // Update form when settings are loaded from backend
+  useEffect(() => {
+    if (settings) {
+      form.reset({
+        currency: settings.currency,
+        dateFormat: settings.date_format as "MM/DD/YYYY" | "DD/MM/YYYY" | "YYYY-MM-DD",
+        initialBalance: Number(settings.initial_balance),
+        enableNotifications: parsedSettings.enableNotifications ?? true,
+        emailNotifications: parsedSettings.emailNotifications ?? false,
+        emailAddress: parsedSettings.emailAddress || "",
+        googleSheetUrl: parsedSettings.googleSheetUrl || "",
+        syncWithSheets: parsedSettings.syncWithSheets ?? false,
+      });
+    }
+  }, [settings, parsedSettings]);
+
   // Form submission handler
-  const onSubmit = (data: SettingsFormValues) => {
-    // In a real app, save settings to localStorage or backend
-    console.log("Saving settings:", data);
-    
-    // Show success toast
-    toast({
-      title: "Settings Saved",
-      description: "Your preferences have been updated successfully.",
-    });
+  const onSubmit = async (data: SettingsFormValues) => {
+    try {
+      console.log("Saving settings:", data);
+      
+      // Save core settings to backend
+      await updateSettings({
+        initial_balance: data.initialBalance,
+        currency: data.currency,
+        date_format: data.dateFormat,
+      });
+      
+      // Save notification preferences to localStorage (not in backend yet)
+      localStorage.setItem('tradingSettings', JSON.stringify({
+        enableNotifications: data.enableNotifications,
+        emailNotifications: data.emailNotifications,
+        emailAddress: data.emailAddress,
+        googleSheetUrl: data.googleSheetUrl,
+        syncWithSheets: data.syncWithSheets,
+      }));
+      
+      // Show success toast
+      toast({
+        title: "Settings Saved",
+        description: "Your preferences have been updated successfully.",
+        className: "bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 shadow-lg",
+      });
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save settings. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -114,6 +165,30 @@ export default function Settings() {
                     </Select>
                     <FormDescription>
                       Format used for displaying dates throughout the app.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="initialBalance"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Initial Trading Balance</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="10000"
+                        {...field}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Your starting balance for calculating performance metrics and returns.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

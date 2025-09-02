@@ -22,12 +22,15 @@ interface BestTradingHoursChartProps {
 }
 
 export function BestTradingHoursChart({ data }: BestTradingHoursChartProps) {
+  // Ensure data is always an array to prevent map errors
+  const safeData = Array.isArray(data) ? data : [];
+  
   const chartData = {
-    labels: data.map((d) => d.hourFormatted),
+    labels: safeData.map((d) => d.hourFormatted),
     datasets: [
       {
         label: 'Win Rate (%)',
-        data: data.map((d) => d.winRate),
+        data: safeData.map((d) => d.winRate),
         backgroundColor: '#4ade80',
       },
     ],
