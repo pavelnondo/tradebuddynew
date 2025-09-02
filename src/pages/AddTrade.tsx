@@ -171,9 +171,9 @@ export default function AddTrade() {
         if (!res.ok) return;
         const t = await res.json();
         
-        // Fix time zone handling - convert UTC to local time for datetime-local inputs
-        const entryIso = t.entry_time ? new Date(t.entry_time).toISOString().slice(0, 16) : "";
-        const exitIso = t.exit_time ? new Date(t.exit_time).toISOString().slice(0, 16) : "";
+        // Convert database times to local datetime-local format
+        const entryIso = t.entry_time ? new Date(t.entry_time).toLocaleString('sv-SE').slice(0, 16) : "";
+        const exitIso = t.exit_time ? new Date(t.exit_time).toLocaleString('sv-SE').slice(0, 16) : "";
         
         setFormData(prev => ({
           ...prev,

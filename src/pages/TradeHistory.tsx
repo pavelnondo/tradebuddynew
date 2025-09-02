@@ -113,6 +113,22 @@ const TradeCard = ({
           </div>
         </div>
         
+        {/* Duration display */}
+        {trade.duration && (
+          <div className="mb-4">
+            <div className="flex items-center space-x-2">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Duration:</span>
+              <span className="text-sm font-medium">
+                {trade.duration >= 60 
+                  ? `${Math.floor(trade.duration / 60)}h ${trade.duration % 60}m`
+                  : `${trade.duration}m`
+                }
+              </span>
+            </div>
+          </div>
+        )}
+        
         <div className="flex items-center justify-between pt-4 border-t border-border/50">
           <div className="flex items-center space-x-2">
             <Calendar className="w-4 h-4 text-muted-foreground" />
@@ -317,7 +333,7 @@ export default function TradeHistory() {
       // Date filtering from calendar
       let matchesDate = true;
       if (dateFilter && trade.date) {
-        const tradeDate = new Date(trade.date).toISOString().split('T')[0];
+        const tradeDate = new Date(trade.date).toLocaleDateString('sv-SE');
         matchesDate = tradeDate === dateFilter;
       }
       

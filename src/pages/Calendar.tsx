@@ -157,7 +157,7 @@ const TradeDetailsModal = ({
                     onClose();
                     navigate('/trades', { 
                       state: { 
-                        filterDate: date.toISOString().split('T')[0] 
+                        filterDate: date.toLocaleDateString('sv-SE') 
                       } 
                     });
                   }}
