@@ -296,6 +296,28 @@ app.post('/api/accounts', authenticateToken, async (req, res) => {
 });
 
 // Trades API
+app.get('/api/trades/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await db.query(
+      `SELECT * FROM trades WHERE id = $1 AND user_id = $2`,
+      [id, req.user.id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Trade not found' });
+    }
+    const trade = result.rows[0];
+    // Normalize checklist_items to array
+    if (!Array.isArray(trade.checklist_items) && trade.checklist_items) {
+      try { trade.checklist_items = JSON.parse(trade.checklist_items); } catch (_) {}
+    }
+    return res.json(trade);
+  } catch (error) {
+    console.error('Get trade error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.get('/api/trades', authenticateToken, async (req, res) => {
   try {
     const { 
@@ -492,9 +514,10 @@ app.put('/api/trades/:id', authenticateToken, async (req, res) => {
     // Map frontend fields to database fields
     const updateData = {
       symbol,
-      type,
-      trade_type: tradeType,
-      direction,
+      // only include type/direction if provided
+      ...(type ? { type } : {}),
+      ...(tradeType ? { trade_type: tradeType } : {}),
+      ...(direction ? { direction } : {}),
       entry_price: entryPrice,
       exit_price: exitPrice,
       quantity,
@@ -511,8 +534,9 @@ app.put('/api/trades/:id', authenticateToken, async (req, res) => {
       pnl,
       duration,
       checklist_id: checklistId,
-      checklist_items: checklistItems ? JSON.stringify(checklistItems) : null,
-      screenshot_url: screenshot || null
+      checklist_items: checklistItems ? JSON.stringify(checklistItems) : undefined,
+      // only update screenshot if client sent it
+      ...(screenshot !== undefined ? { screenshot_url: screenshot || null } : {})
     };
 
     // Remove undefined/null values

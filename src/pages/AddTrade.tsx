@@ -218,6 +218,11 @@ export default function AddTrade() {
   const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     setScreenshotFile(file);
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => setScreenshotUrl(reader.result as string);
+      reader.readAsDataURL(file);
+    }
   };
 
   const uploadScreenshotIfNeeded = async (): Promise<string> => {
@@ -259,45 +264,62 @@ export default function AddTrade() {
         }
       }
 
-      const tradeData = {
+      const baseData: any = {
         symbol: formData.asset,
-        tradeType: formData.tradeType, // Preserve Long/Short
-        type: '',
-        direction: '',
-        entryPrice: parseFloat(formData.entryPrice),
-        exitPrice: parseFloat(formData.exitPrice),
-        quantity: parseFloat(formData.positionSize),
-        positionSize: parseFloat(formData.positionSize),
-        entryTime: formData.entryTime,
-        exitTime: formData.exitTime,
-        emotion: formData.emotion,
-        notes: formData.notes,
-        setupType: formData.setup,
-        executionQuality: formData.executionQuality,
+        tradeType: formData.tradeType || undefined, // Preserve Long/Short if provided
+        entryPrice: formData.entryPrice ? parseFloat(formData.entryPrice) : undefined,
+        exitPrice: formData.exitPrice ? parseFloat(formData.exitPrice) : undefined,
+        quantity: formData.positionSize ? parseFloat(formData.positionSize) : undefined,
+        positionSize: formData.positionSize ? parseFloat(formData.positionSize) : undefined,
+        entryTime: formData.entryTime || undefined,
+        exitTime: formData.exitTime || undefined,
+        emotion: formData.emotion || undefined,
+        notes: formData.notes || undefined,
+        setupType: formData.setup || undefined,
+        executionQuality: formData.executionQuality || undefined,
         confidenceLevel: 5,
         marketCondition: 'normal',
         tags: [],
         pnl: isValidPnL ? manualPnL : 0,
         duration: durationToSend,
-        checklistId: formData.checklistId !== 'none' ? parseInt(formData.checklistId, 10) : null,
+        checklistId: formData.checklistId !== 'none' ? parseInt(formData.checklistId, 10) : undefined,
         checklistItems: formData.checklistId !== 'none'
           ? selectedChecklistItems.map(i => ({ id: i.id, text: i.text, completed: !!checkedItems[i.id] }))
-          : null,
-        screenshot: uploadedUrl || undefined,
-      } as any;
+          : undefined,
+      };
+
+      // Only include screenshot if newly uploaded or already present
+      if (uploadedUrl) {
+        baseData.screenshot = uploadedUrl;
+      } else if (screenshotUrl) {
+        // keep existing on update by not sending anything; backend leaves as-is
+      }
 
       if (isEditing) {
-        await tradeApi.updateTrade(editTrade.id, tradeData);
-        toast({ title: "✏️ Trade Updated Successfully!", description: `Your ${formData.asset} trade has been updated.`, className: "bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0 shadow-lg" });
+        await tradeApi.updateTrade(editTrade.id, baseData);
+        toast({
+          title: "✏️ Trade Updated Successfully!",
+          description: `Your ${formData.asset} trade has been updated.`,
+          className: "bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0 shadow-lg",
+        });
       } else {
-        await tradeApi.addTrade(tradeData);
-        toast({ title: "🎉 Trade Added Successfully!", description: `Your ${formData.asset} trade has been added to your portfolio.`, className: "bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 shadow-lg" });
+        await tradeApi.addTrade(baseData);
+        toast({
+          title: "🎉 Trade Added Successfully!",
+          description: `Your ${formData.asset} trade has been added to your portfolio.`,
+          className: "bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 shadow-lg",
+        });
       }
       
       navigate('/trades');
     } catch (error: any) {
       console.error(`Error ${isEditing ? 'updating' : 'adding'} trade:`, error);
-      toast({ title: `❌ Error ${isEditing ? 'Updating' : 'Adding'} Trade`, description: error.message || "Something went wrong. Please try again.", variant: "destructive", className: "bg-gradient-to-r from-red-500 to-rose-600 text-white border-0 shadow-lg" });
+      toast({
+        title: `❌ Error ${isEditing ? 'Updating' : 'Adding'} Trade`,
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+        className: "bg-gradient-to-r from-red-500 to-rose-600 text-white border-0 shadow-lg",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -529,7 +551,9 @@ export default function AddTrade() {
               <Label htmlFor="screenshot">Screenshot</Label>
               <Input id="screenshot" type="file" accept="image/*" onChange={handleScreenshotChange} />
               {screenshotUrl && (
-                <div className="mt-2 text-sm text-muted-foreground">Current: {screenshotUrl}</div>
+                <div className="mt-2">
+                  <img src={screenshotUrl} alt="Preview" className="max-h-40 rounded border" />
+                </div>
               )}
             </div>
           </CardContent>

@@ -48,12 +48,13 @@ export function useApiTrades() {
         profitLoss: trade.pnl !== undefined && trade.pnl !== null ? Number(trade.pnl) : 0,
         notes: trade.notes || '',
         emotion: trade.emotion || '',
-        screenshot: trade.screenshot || '',
+        screenshot: trade.screenshot_url || trade.screenshot || '',
         duration: trade.duration,
         setup: trade.setup_type || trade.setup,
         executionQuality: trade.execution_quality,
         checklist_id: trade.checklist_id,
         checklist_completed: trade.checklist_completed,
+        checklistItems: Array.isArray(trade.checklist_items) ? trade.checklist_items : undefined,
       }));
       setTrades(mappedTrades);
     } catch (err: any) {
