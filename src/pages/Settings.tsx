@@ -11,7 +11,7 @@ import { Save } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useUserSettings } from "@/hooks/useUserSettings";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 // Define settings schema with validation
 const settingsFormSchema = z.object({
@@ -31,8 +31,8 @@ export default function Settings() {
   const { settings, loading, updateSettings } = useUserSettings();
   
   // Get local settings for notification preferences (not stored in backend yet)
-  const savedSettings = localStorage.getItem('tradingSettings');
-  const parsedSettings = savedSettings ? JSON.parse(savedSettings) : {};
+  const savedSettings = typeof window !== 'undefined' ? localStorage.getItem('tradingSettings') : null;
+  const parsedSettings = useMemo(() => savedSettings ? JSON.parse(savedSettings) : {}, [savedSettings]);
 
   // Initialize form with backend settings or defaults
   const form = useForm<SettingsFormValues>({
@@ -63,7 +63,7 @@ export default function Settings() {
         syncWithSheets: parsedSettings.syncWithSheets ?? false,
       });
     }
-  }, [settings, parsedSettings]);
+  }, [settings]);
 
   // Form submission handler
   const onSubmit = async (data: SettingsFormValues) => {
