@@ -10,10 +10,13 @@ export function useChecklists() {
   // Helper function to get auth headers
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
-    return {
-      'Authorization': `Bearer ${token}`,
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
   };
 
   const fetchChecklists = useCallback(async (): Promise<Checklist[]> => {
