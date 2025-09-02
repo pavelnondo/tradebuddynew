@@ -415,21 +415,21 @@ export default function Dashboard() {
             />
             <InsightCard
               title="Peak Trading Hours"
-              value="10:00 AM"
+              value={analysisData.tradesByHour.length > 0 ? `${analysisData.tradesByHour[0]?.hourFormatted || "N/A"}` : "N/A"}
               description="Your most successful trading time"
               icon={Clock}
               color="blue"
             />
             <InsightCard
-              title="Current Streak"
-              value="5 Wins"
-              description="Your consecutive winning trades"
+              title="Profit Factor"
+              value={analysisData.metrics.profitFactor ? analysisData.metrics.profitFactor.toFixed(2) : "N/A"}
+              description="Your profit to loss ratio"
               icon={Award}
               color="yellow"
             />
             <InsightCard
               title="Risk Level"
-              value="Medium"
+              value={analysisData.metrics.maxDrawdown > 10 ? "High" : analysisData.metrics.maxDrawdown > 5 ? "Medium" : "Low"}
               description="Your current risk exposure"
               icon={Zap}
               color="purple"

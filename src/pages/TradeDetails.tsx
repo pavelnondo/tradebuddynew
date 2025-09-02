@@ -35,10 +35,11 @@ export default function TradeDetails() {
             profitLoss: t.pnl != null ? Number(t.pnl) : 0,
             notes: t.notes || '',
             emotion: t.emotion || '',
-            screenshot: t.screenshot_url || '',
+            screenshot: t.screenshot_url ? `${API_BASE_URL}${t.screenshot_url}` : '',
             checklistItems: Array.isArray(t.checklist_items) ? t.checklist_items : [],
             entryTime: t.entry_time,
             exitTime: t.exit_time,
+            duration: t.duration,
           });
         }
       } finally {
