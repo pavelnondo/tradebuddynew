@@ -30,6 +30,8 @@ import { useApiTrades } from '@/hooks/useApiTrades';
 import { useTradeAnalysis } from '@/hooks/useTradeAnalysis';
 import { cn } from "@/lib/utils";
 import { BalanceChart } from "@/components/charts/BalanceChart";
+import { HourlyPerformanceChart } from "@/components/charts/HourlyPerformanceChart";
+import { EmotionsWinRateChart } from "@/components/charts/EmotionsWinRateChart";
 
 // Performance metric card
 const MetricCard = ({ 
@@ -269,7 +271,7 @@ export default function Analysis() {
     );
   }
 
-  const { metrics, balanceOverTime, winLossData } = analysisHook;
+  const { metrics, balanceOverTime, winLossData, tradesByHour, emotionPerformance } = analysisHook as any;
 
   return (
     <div className="space-y-6">
@@ -375,6 +377,29 @@ export default function Analysis() {
           <BalanceChart balanceOverTime={balanceOverTime} />
         </CardContent>
       </Card>
+
+      {/* Additional Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="card-modern">
+          <CardHeader>
+            <CardTitle className="flex items-center"><Clock className="w-5 h-5 mr-2" /> Hourly Performance</CardTitle>
+            <CardDescription>Profit/Loss and win rate by hour</CardDescription>
+          </CardHeader>
+          <CardContent className="h-72">
+            <HourlyPerformanceChart data={tradesByHour} />
+          </CardContent>
+        </Card>
+
+        <Card className="card-modern">
+          <CardHeader>
+            <CardTitle className="flex items-center"><Award className="w-5 h-5 mr-2" /> Emotion Impact</CardTitle>
+            <CardDescription>How emotions correlate with win rate</CardDescription>
+          </CardHeader>
+          <CardContent className="h-72">
+            <EmotionsWinRateChart data={emotionPerformance} />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
