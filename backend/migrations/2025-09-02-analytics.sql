@@ -31,6 +31,13 @@ BEGIN
   ) THEN
     ALTER TABLE trades ADD COLUMN duration_minutes INTEGER;
   END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name='trades' AND column_name='screenshot_url'
+  ) THEN
+    ALTER TABLE trades ADD COLUMN screenshot_url TEXT;
+  END IF;
 END $$;
 
 -- Indexes to speed up analytics queries

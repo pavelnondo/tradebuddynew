@@ -12,6 +12,7 @@ import AddTrade from "./pages/AddTrade";
 import Analysis from "./pages/Analysis";
 import Settings from "./pages/Settings";
 import Checklists from "./pages/Checklists";
+import TradeDetails from "./pages/TradeDetails";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Calendar from "./pages/Calendar";
 import Login from "./pages/Login";
@@ -73,6 +74,17 @@ const AppRoutes = () => {
             <Layout>
               <Suspense fallback={<PageLoader />}>
                 <TradeHistory />
+              </Suspense>
+            </Layout>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      <Route path="/trade/:id" element={
+        <ProtectedRoute>
+          <ErrorBoundary>
+            <Layout>
+              <Suspense fallback={<PageLoader />}>
+                <TradeDetails />
               </Suspense>
             </Layout>
           </ErrorBoundary>

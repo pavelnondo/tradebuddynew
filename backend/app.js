@@ -418,7 +418,8 @@ app.post('/api/trades', authenticateToken, async (req, res) => {
       pnl,
       duration,
       checklistId,
-      checklistItems
+      checklistItems,
+      screenshot
     } = req.body;
 
     // Get default account if not provided
@@ -440,14 +441,14 @@ app.post('/api/trades', authenticateToken, async (req, res) => {
       `INSERT INTO trades (
         user_id, account_id, symbol, type, trade_type, direction, entry_price, exit_price, 
         quantity, position_size, entry_time, exit_time, emotion, confidence_level, 
-        execution_quality, setup_type, market_condition, notes, tags, pnl, duration, checklist_id, checklist_items
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23) 
+        execution_quality, setup_type, market_condition, notes, tags, pnl, duration, checklist_id, checklist_items, screenshot_url
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24) 
       RETURNING *`,
       [
         req.user.id, finalAccountId, symbol, type, tradeType, direction, entryPrice, exitPrice,
         quantity, positionSize, entryTime, exitTime, emotion, confidenceLevel,
         executionQuality, setupType, marketCondition, notes, tags, calculatedPnL, duration, checklistId,
-        checklistItems ? JSON.stringify(checklistItems) : null
+        checklistItems ? JSON.stringify(checklistItems) : null, screenshot || null
       ]
     );
 
@@ -482,7 +483,8 @@ app.put('/api/trades/:id', authenticateToken, async (req, res) => {
       pnl,
       duration,
       checklistId,
-      checklistItems
+      checklistItems,
+      screenshot
     } = req.body;
 
     console.log('✏️ Backend UPDATE received P&L:', pnl);
@@ -509,7 +511,8 @@ app.put('/api/trades/:id', authenticateToken, async (req, res) => {
       pnl,
       duration,
       checklist_id: checklistId,
-      checklist_items: checklistItems ? JSON.stringify(checklistItems) : null
+      checklist_items: checklistItems ? JSON.stringify(checklistItems) : null,
+      screenshot_url: screenshot || null
     };
 
     // Remove undefined/null values

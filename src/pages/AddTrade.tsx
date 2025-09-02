@@ -129,6 +129,8 @@ export default function AddTrade() {
   const [selectedChecklistItems, setSelectedChecklistItems] = useState<Array<{ id: string; text: string }>>([]);
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
   const [useAutoDuration, setUseAutoDuration] = useState(true);
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [screenshotUrl, setScreenshotUrl] = useState<string>("");
   
   // Check if we're editing an existing trade
   const editTrade = location.state?.editTrade;
@@ -180,6 +182,7 @@ export default function AddTrade() {
         profitLoss: (editTrade.profitLoss ?? editTrade.pnl ?? "").toString(),
         checklistId: editTrade.checklist_id ? String(editTrade.checklist_id) : "none",
       }));
+      setScreenshotUrl(editTrade.screenshot || editTrade.screenshot_url || "");
     }
   }, [isEditing, editTrade]);
 
@@ -212,6 +215,26 @@ export default function AddTrade() {
     setCheckedItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
   };
 
+  const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setScreenshotFile(file);
+  };
+
+  const uploadScreenshotIfNeeded = async (): Promise<string> => {
+    if (!screenshotFile) return screenshotUrl;
+    const token = localStorage.getItem('token');
+    const formData = new FormData();
+    formData.append('file', screenshotFile);
+    const res = await fetch(`${API_BASE_URL}/upload`, {
+      method: 'POST',
+      headers: token ? { 'Authorization': `Bearer ${token}` } as any : undefined,
+      body: formData,
+    });
+    if (!res.ok) throw new Error('Screenshot upload failed');
+    const data = await res.json();
+    return data.url;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -219,6 +242,7 @@ export default function AddTrade() {
     try {
       const manualPnL = parseFloat(formData.profitLoss);
       const isValidPnL = !Number.isNaN(manualPnL);
+      const uploadedUrl = await uploadScreenshotIfNeeded();
 
       // duration calculation
       let durationToSend: number | undefined = undefined;
@@ -259,6 +283,7 @@ export default function AddTrade() {
         checklistItems: formData.checklistId !== 'none'
           ? selectedChecklistItems.map(i => ({ id: i.id, text: i.text, completed: !!checkedItems[i.id] }))
           : null,
+        screenshot: uploadedUrl || undefined,
       } as any;
 
       if (isEditing) {
@@ -498,6 +523,14 @@ export default function AddTrade() {
                 onChange={(e) => handleInputChange('notes', e.target.value)}
                 className="input-modern min-h-[100px]"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="screenshot">Screenshot</Label>
+              <Input id="screenshot" type="file" accept="image/*" onChange={handleScreenshotChange} />
+              {screenshotUrl && (
+                <div className="mt-2 text-sm text-muted-foreground">Current: {screenshotUrl}</div>
+              )}
             </div>
           </CardContent>
         </Card>
