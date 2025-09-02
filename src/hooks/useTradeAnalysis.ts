@@ -28,6 +28,14 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
     
     const profitFactor = Math.abs(totalLoss) > 0 ? totalProfit / Math.abs(totalLoss) : totalProfit;
     
+    // Debug logging
+    console.log('🔍 Profit Factor Debug:', {
+      totalProfit,
+      totalLoss,
+      profitFactor,
+      tradesCount: safeTrades.length
+    });
+    
     const avgWin = profitableTrades > 0
       ? totalProfit / profitableTrades
       : 0;
