@@ -30,7 +30,9 @@ const CalendarDay = ({
   trades: any[];
   onClick: (date: Date) => void;
 }) => {
-  const dayTrades = trades.filter(trade => {
+  // Ensure trades is always an array to prevent filter/reduce errors
+  const safeTrades = Array.isArray(trades) ? trades : [];
+  const dayTrades = safeTrades.filter(trade => {
     const tradeDate = new Date(trade.date);
     return tradeDate.toDateString() === date.toDateString();
   });
@@ -109,7 +111,9 @@ const TradeDetailsModal = ({
 }) => {
   if (!isOpen) return null;
 
-  const dayTrades = trades.filter(trade => {
+  // Ensure trades is always an array to prevent filter/reduce errors
+  const safeTrades = Array.isArray(trades) ? trades : [];
+  const dayTrades = safeTrades.filter(trade => {
     const tradeDate = new Date(trade.date);
     return tradeDate.toDateString() === date.toDateString();
   });
@@ -266,7 +270,9 @@ export default function Calendar() {
 
   // Calendar stats
   const calendarStats = useMemo(() => {
-    const currentMonthTrades = trades.filter(trade => {
+    // Ensure trades is always an array to prevent filter/reduce errors
+    const safeTrades = Array.isArray(trades) ? trades : [];
+    const currentMonthTrades = safeTrades.filter(trade => {
       const tradeDate = new Date(trade.date);
       return tradeDate.getMonth() === currentDate.getMonth() && 
              tradeDate.getFullYear() === currentDate.getFullYear();

@@ -7,30 +7,32 @@ export function useChecklists() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper function to get auth headers
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    };
+  };
+
   const fetchChecklists = useCallback(async (): Promise<Checklist[]> => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/checklists`);
+      const res = await fetch(`${API_BASE_URL}/checklists`, {
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) throw new Error('Failed to fetch checklists');
       const data = await res.json();
-      // Fetch items for each checklist in parallel
-      const checklistsWithItems = await Promise.all(
-        data.map(async (checklist: any) => {
-          const itemsRes = await fetch(`${API_BASE_URL}/checklists/${checklist.id}/items`);
-          let items = [];
-          if (itemsRes.ok) {
-            const rawItems = await itemsRes.json();
-            // Map DB fields to frontend fields
-            items = rawItems.map((item: any) => ({
-              id: item.id,
-              text: item.content,
-              completed: item.checked,
-            }));
-          }
-          return { ...checklist, items };
-        })
-      );
+      
+      // Process checklists to ensure items are properly formatted
+      const checklistsWithItems = data.map((checklist: any) => ({
+        ...checklist,
+        items: Array.isArray(checklist.items) ? checklist.items : []
+      }));
+      
+      console.log('📋 Fetched checklists:', checklistsWithItems);
       return checklistsWithItems;
     } catch (err: any) {
       setError(err.message || 'Failed to fetch checklists');
@@ -44,23 +46,21 @@ export function useChecklists() {
     setIsLoading(true);
     setError(null);
     try {
-      // Fetch all checklists and find the one with the given id
-      const checklistRes = await fetch(`${API_BASE_URL}/checklists`);
+      // Fetch specific checklist by id (items are included in the main response now)
+      const checklistRes = await fetch(`${API_BASE_URL}/checklists/${id}`, {
+        headers: getAuthHeaders(),
+      });
       if (!checklistRes.ok) throw new Error('Failed to fetch checklist');
-      const checklists = await checklistRes.json();
-      const checklist = checklists.find((c: any) => c.id == id);
-      if (!checklist) throw new Error('Checklist not found');
-      // Fetch the items for this checklist
-      const itemsRes = await fetch(`${API_BASE_URL}/checklists/${id}/items`);
-      if (!itemsRes.ok) throw new Error('Failed to fetch checklist items');
-      const items = await itemsRes.json();
-      // Map DB fields to frontend fields
-      const mappedItems = items.map((item: any) => ({
-        id: item.id,
-        text: item.content,
-        completed: item.checked,
-      }));
-      return { ...checklist, items: mappedItems };
+      const checklist = await checklistRes.json();
+      
+      // Process checklist to ensure items are properly formatted
+      const processedChecklist = {
+        ...checklist,
+        items: Array.isArray(checklist.items) ? checklist.items : []
+      };
+      
+      console.log('📋 Fetched single checklist:', processedChecklist);
+      return processedChecklist;
     } catch (err: any) {
       setError(err.message || 'Failed to fetch checklist');
       return null;
@@ -74,39 +74,40 @@ export function useChecklists() {
     setIsLoading(true);
     setError(null);
     try {
-      // Create the checklist
+      console.log('🔄 Frontend creating checklist:', checklist);
+      
+      // Create the checklist with items in a single call
       const res = await fetch(`${API_BASE_URL}/checklists`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: checklist.name, description: checklist.description }),
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          name: checklist.name,
+          description: checklist.description,
+          items: Array.isArray(checklist.items) ? checklist.items : []
+        }),
       });
-      if (!res.ok) throw new Error('Failed to create checklist');
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Create checklist failed:', errorText);
+        throw new Error('Failed to create checklist');
+      }
+      
       const createdChecklist = await res.json();
-      // Add items if any
-      if (checklist.items && checklist.items.length > 0) {
-        for (const item of checklist.items) {
-          await fetch(`${API_BASE_URL}/checklists/${parseInt(createdChecklist.id, 10)}/items`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: item.text, checked: item.completed || false }),
-          });
-        }
-      }
-      // Fetch items to return a complete checklist object
-      const itemsRes = await fetch(`${API_BASE_URL}/checklists/${createdChecklist.id}/items`);
-      let items = [];
-      if (itemsRes.ok) {
-        const rawItems = await itemsRes.json();
-        items = rawItems.map((item: any) => ({
-          id: item.id,
-          text: item.content,
-          completed: item.checked,
-        }));
-      }
-      const fullChecklist = { ...createdChecklist, items };
+      console.log('✅ Checklist created successfully:', createdChecklist);
+      
+      // Return the checklist with properly formatted items
+      const fullChecklist = {
+        id: createdChecklist.id,
+        name: createdChecklist.name,
+        description: createdChecklist.description,
+        items: Array.isArray(createdChecklist.items) ? createdChecklist.items : []
+      };
+      
       toast({ title: 'Checklist Created', description: 'Your checklist was created successfully.' });
       return fullChecklist;
     } catch (err: any) {
+      console.error('Frontend create error:', err);
       setError(err.message || 'Failed to create checklist');
       toast({ title: 'Error', description: err.message || 'Failed to create checklist', variant: 'destructive' });
       return null;
@@ -120,42 +121,40 @@ export function useChecklists() {
     setIsLoading(true);
     setError(null);
     try {
-      // Update checklist name/description
+      console.log('🔄 Frontend updating checklist:', { id, updates });
+      
+      // Update checklist with name, description, and items in a single call
       const res = await fetch(`${API_BASE_URL}/checklists/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: updates.name, description: updates.description }),
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          name: updates.name,
+          description: updates.description,
+          items: Array.isArray(updates.items) ? updates.items : []
+        }),
       });
-      if (!res.ok) throw new Error('Failed to update checklist');
-      // Update items: naive approach (delete all, re-add)
-      await fetch(`${API_BASE_URL}/checklists/${id}/items`, { method: 'DELETE' });
-      for (const item of updates.items) {
-        await fetch(`${API_BASE_URL}/checklists/${parseInt(id, 10)}/items`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: item.text, checked: item.completed || false }),
-        });
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Update checklist failed:', errorText);
+        throw new Error('Failed to update checklist');
       }
-      // Fetch items to return a complete checklist object
-      const checklistRes = await fetch(`${API_BASE_URL}/checklists/${id}`);
-      let updatedChecklist = { id, name: updates.name, description: updates.description };
-      if (checklistRes.ok) {
-        updatedChecklist = await checklistRes.json();
-      }
-      const itemsRes = await fetch(`${API_BASE_URL}/checklists/${id}/items`);
-      let items = [];
-      if (itemsRes.ok) {
-        const rawItems = await itemsRes.json();
-        items = rawItems.map((item: any) => ({
-          id: item.id,
-          text: item.content,
-          completed: item.checked,
-        }));
-      }
-      const fullChecklist = { ...updatedChecklist, items };
+      
+      const updatedChecklist = await res.json();
+      console.log('✅ Checklist updated successfully:', updatedChecklist);
+      
+      // Return the checklist with properly formatted items
+      const fullChecklist = {
+        id: updatedChecklist.id,
+        name: updatedChecklist.name,
+        description: updatedChecklist.description,
+        items: Array.isArray(updatedChecklist.items) ? updatedChecklist.items : []
+      };
+      
       toast({ title: 'Checklist Updated', description: 'Your checklist was updated successfully.' });
       return fullChecklist;
     } catch (err: any) {
+      console.error('Frontend update error:', err);
       setError(err.message || 'Failed to update checklist');
       toast({ title: 'Error', description: err.message || 'Failed to update checklist', variant: 'destructive' });
       return false;
@@ -171,6 +170,7 @@ export function useChecklists() {
     try {
       const res = await fetch(`${API_BASE_URL}/checklists/${id}`, {
         method: 'DELETE',
+        headers: getAuthHeaders(),
       });
       if (!res.ok) throw new Error('Failed to delete checklist');
       toast({ title: 'Checklist Deleted', description: 'Your checklist was deleted.' });

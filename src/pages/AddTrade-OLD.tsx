@@ -31,6 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { tradeApi } from "@/services/tradeApi";
 import { API_BASE_URL } from "@/config";
 import { cn } from "@/lib/utils";
+import { useChecklists } from "@/hooks/useChecklists";
 
 // Emotion selector component
 const EmotionSelector = ({ 
@@ -41,13 +42,13 @@ const EmotionSelector = ({
   onEmotionSelect: (emotion: string) => void;
 }) => {
   const emotions = [
-    { value: "Confident", label: "Confident", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
-    { value: "Calm", label: "Calm", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
-    { value: "Excited", label: "Excited", color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" },
-    { value: "Nervous", label: "Nervous", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" },
-    { value: "Fearful", label: "Fearful", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" },
-    { value: "Greedy", label: "Greedy", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
-    { value: "Frustrated", label: "Frustrated", color: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400" },
+    { value: "Confident", label: "Confident", dotColor: "bg-green-500", bgColor: "bg-green-100 dark:bg-green-900/20" },
+    { value: "Calm", label: "Calm", dotColor: "bg-blue-500", bgColor: "bg-blue-100 dark:bg-blue-900/20" },
+    { value: "Excited", label: "Excited", dotColor: "bg-yellow-500", bgColor: "bg-yellow-100 dark:bg-yellow-900/20" },
+    { value: "Nervous", label: "Nervous", dotColor: "bg-orange-500", bgColor: "bg-orange-100 dark:bg-orange-900/20" },
+    { value: "Fearful", label: "Fearful", dotColor: "bg-purple-500", bgColor: "bg-purple-100 dark:bg-purple-900/20" },
+    { value: "Greedy", label: "Greedy", dotColor: "bg-red-500", bgColor: "bg-red-100 dark:bg-red-900/20" },
+    { value: "Frustrated", label: "Frustrated", dotColor: "bg-gray-500", bgColor: "bg-gray-100 dark:bg-gray-900/20" },
   ];
 
   return (
@@ -60,14 +61,17 @@ const EmotionSelector = ({
             type="button"
             onClick={() => onEmotionSelect(emotion.value)}
             className={cn(
-              "p-3 rounded-xl border-2 transition-smooth text-sm font-medium",
+              "p-3 rounded-xl border-2 transition-smooth text-sm font-medium relative overflow-hidden",
               selectedEmotion === emotion.value
                 ? "border-primary bg-primary/10"
                 : "border-border hover:border-primary/50"
             )}
           >
-            <div className={cn("w-2 h-2 rounded-full mx-auto mb-2", emotion.color)} />
-            {emotion.label}
+            <div className={cn("absolute inset-0 opacity-10", emotion.bgColor)} />
+            <div className="relative z-10">
+              <div className={cn("w-3 h-3 rounded-full mx-auto mb-2", emotion.dotColor)} />
+              {emotion.label}
+            </div>
           </button>
         ))}
       </div>
@@ -84,10 +88,10 @@ const TradeTypeSelector = ({
   onTypeSelect: (type: string) => void;
 }) => {
   const types = [
-    { value: "Long", label: "Long", icon: TrendingUp, color: "text-green-600" },
-    { value: "Short", label: "Short", icon: TrendingDown, color: "text-red-600" },
-    { value: "Scalp", label: "Scalp", icon: Clock, color: "text-blue-600" },
-    { value: "Swing", label: "Swing", icon: Calendar, color: "text-purple-600" },
+    { value: "Long", label: "Long", icon: TrendingUp, color: "text-green-600 dark:text-green-400" },
+    { value: "Short", label: "Short", icon: TrendingDown, color: "text-red-600 dark:text-red-400" },
+    { value: "Scalp", label: "Scalp", icon: Clock, color: "text-blue-600 dark:text-blue-400" },
+    { value: "Swing", label: "Swing", icon: Calendar, color: "text-purple-600 dark:text-purple-400" },
   ];
 
   return (
@@ -123,6 +127,10 @@ export default function AddTrade() {
   const location = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { fetchChecklists, getChecklist } = useChecklists();
+  const [checklists, setChecklists] = useState<any[]>([]);
+  const [selectedChecklistItems, setSelectedChecklistItems] = useState<any[]>([]);
+  const [checkedItems, setCheckedItems] = useState<{[key: string]: boolean}>({});
   
   // Check if we're editing an existing trade
   const editTrade = location.state?.editTrade;
@@ -133,6 +141,7 @@ export default function AddTrade() {
     entryPrice: "",
     exitPrice: "",
     positionSize: "",
+    profitLoss: "",
     entryTime: "",
     exitTime: "",
     emotion: "",
@@ -140,6 +149,7 @@ export default function AddTrade() {
     setup: "",
     executionQuality: "",
     duration: "",
+    checklistId: "",
   });
 
   // Populate form data when editing
@@ -152,6 +162,7 @@ export default function AddTrade() {
         entryPrice: editTrade.entryPrice?.toString() || editTrade.entry_price?.toString() || "",
         exitPrice: editTrade.exitPrice?.toString() || editTrade.exit_price?.toString() || "",
         positionSize: editTrade.positionSize?.toString() || editTrade.quantity?.toString() || "",
+        profitLoss: editTrade.profitLoss?.toString() || editTrade.pnl?.toString() || "",
         entryTime: editTrade.date ? new Date(editTrade.date).toISOString().slice(0, 16) : 
                   editTrade.entry_time ? new Date(editTrade.entry_time).toISOString().slice(0, 16) : "",
         exitTime: editTrade.exitTime ? new Date(editTrade.exitTime).toISOString().slice(0, 16) : 
@@ -161,50 +172,88 @@ export default function AddTrade() {
         setup: editTrade.setup || editTrade.setup_type || "",
         executionQuality: editTrade.executionQuality || editTrade.execution_quality || "",
         duration: editTrade.duration || "",
+        checklistId: editTrade.checklist_id?.toString() || "",
       });
     }
   }, [isEditing, editTrade]);
 
+  // Fetch checklists on mount
+  useEffect(() => {
+    const loadChecklists = async () => {
+      try {
+        const checklistsData = await fetchChecklists();
+        setChecklists(checklistsData);
+      } catch (error) {
+        console.error('Failed to fetch checklists:', error);
+      }
+    };
+    loadChecklists();
+  }, [fetchChecklists]);
+
   const handleInputChange = (field: string, value: string) => {
+    if (field === 'profitLoss') {
+      console.log('💰 P&L field changed:', value);
+    }
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const calculatePnL = () => {
-    const entry = parseFloat(formData.entryPrice) || 0;
-    const exit = parseFloat(formData.exitPrice) || 0;
-    const size = parseFloat(formData.positionSize) || 0;
+  // Handle checklist selection and load items
+  const handleChecklistChange = async (checklistId: string) => {
+    console.log('📋 Checklist selected:', checklistId);
+    handleInputChange('checklistId', checklistId);
     
-    if (entry && exit && size) {
-      // Calculate P&L based on trade type
-      let pnl = 0;
-      if (formData.tradeType === 'Long' || formData.tradeType === 'buy') {
-        pnl = (exit - entry) * size;
-      } else if (formData.tradeType === 'Short' || formData.tradeType === 'sell') {
-        pnl = (entry - exit) * size;
-      } else {
-        // Default to long calculation
-        pnl = (exit - entry) * size;
+    if (checklistId && checklistId !== "none") {
+      try {
+        console.log('🔄 Fetching checklist data...');
+        const checklist = await getChecklist(checklistId);
+        console.log('📋 Received checklist:', checklist);
+        
+        if (checklist && checklist.items) {
+          console.log('✅ Setting checklist items:', checklist.items);
+          setSelectedChecklistItems(checklist.items);
+          // Initialize all items as unchecked
+          const initialChecked: {[key: string]: boolean} = {};
+          checklist.items.forEach((item: any) => {
+            initialChecked[item.id] = false;
+          });
+          setCheckedItems(initialChecked);
+          console.log('📝 Initialized checked items:', initialChecked);
+        } else {
+          console.warn('⚠️ No items found in checklist');
+        }
+      } catch (error) {
+        console.error('❌ Failed to load checklist items:', error);
       }
-      return pnl;
+    } else {
+      console.log('🔄 Clearing checklist items');
+      setSelectedChecklistItems([]);
+      setCheckedItems({});
     }
-    return 0;
   };
 
-  const pnl = calculatePnL();
-  const isProfit = pnl >= 0;
+  // Handle checking/unchecking individual items
+  const handleItemCheck = (itemId: string, checked: boolean) => {
+    setCheckedItems(prev => ({
+      ...prev,
+      [itemId]: checked
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
+    console.log('🔍 Form submission started');
+    console.log('📊 Raw P&L value from form:', formData.profitLoss);
+    console.log('🔢 Parsed P&L value:', parseFloat(formData.profitLoss));
+
     try {
-      const calculatedPnL = calculatePnL();
-      
       const tradeData = {
         symbol: formData.asset,
-        tradeType: formData.tradeType.toLowerCase() === 'long' ? 'buy' : 
-                  formData.tradeType.toLowerCase() === 'short' ? 'sell' : 
-                  formData.tradeType.toLowerCase(),
+        tradeType: formData.tradeType, // Keep original trade type (Long/Short/Scalp/Swing)
+        type: formData.tradeType.toLowerCase() === 'long' ? 'buy' : 
+              formData.tradeType.toLowerCase() === 'short' ? 'sell' : 
+              formData.tradeType.toLowerCase(),
         direction: formData.tradeType.toLowerCase() === 'long' ? 'long' : 
                   formData.tradeType.toLowerCase() === 'short' ? 'short' : 
                   formData.tradeType.toLowerCase(),
@@ -221,9 +270,16 @@ export default function AddTrade() {
         confidenceLevel: 5,
         marketCondition: 'normal',
         tags: [],
-        pnl: calculatedPnL,
-        duration: formData.duration
+        pnl: parseFloat(formData.profitLoss),
+        duration: formData.duration,
+        checklistId: (formData.checklistId && formData.checklistId !== "none") ? parseInt(formData.checklistId) : null,
+        checklistItems: selectedChecklistItems.length > 0 ? selectedChecklistItems.map(item => ({
+          ...item,
+          completed: checkedItems[item.id] || false
+        })) : null
       };
+
+      console.log('📤 Trade data being sent:', tradeData);
 
       if (isEditing) {
         await tradeApi.updateTrade(editTrade.id, tradeData);
@@ -310,11 +366,11 @@ export default function AddTrade() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="entryPrice">Entry Price</Label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground dark:text-gray-400" />
                   <Input
                     id="entryPrice"
                     type="number"
@@ -331,7 +387,7 @@ export default function AddTrade() {
               <div className="space-y-2">
                 <Label htmlFor="exitPrice">Exit Price</Label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground dark:text-gray-400" />
                   <Input
                     id="exitPrice"
                     type="number"
@@ -357,34 +413,26 @@ export default function AddTrade() {
                   required
                 />
               </div>
-            </div>
 
-            {/* P&L Preview */}
-            {pnl !== 0 && (
-              <div className={cn(
-                "p-4 rounded-xl border-2",
-                isProfit 
-                  ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30" 
-                  : "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30"
-              )}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    {isProfit ? (
-                      <TrendingUp className="w-5 h-5 text-green-600" />
-                    ) : (
-                      <TrendingDown className="w-5 h-5 text-red-600" />
-                    )}
-                    <span className="font-medium">Estimated P&L:</span>
-                  </div>
-                  <span className={cn(
-                    "text-xl font-bold",
-                    isProfit ? "text-green-600" : "text-red-600"
-                  )}>
-                    {isProfit ? "+" : ""}${pnl.toFixed(2)}
-                  </span>
+              <div className="space-y-2">
+                <Label htmlFor="profitLoss">Profit/Loss</Label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground dark:text-gray-400" />
+                  <Input
+                    id="profitLoss"
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={formData.profitLoss}
+                    onChange={(e) => handleInputChange('profitLoss', e.target.value)}
+                    className="input-modern pl-10"
+                    required
+                  />
                 </div>
               </div>
-            )}
+            </div>
+
+
           </CardContent>
         </Card>
 
@@ -408,7 +456,7 @@ export default function AddTrade() {
                   type="datetime-local"
                   value={formData.entryTime}
                   onChange={(e) => handleInputChange('entryTime', e.target.value)}
-                  className="input-modern"
+                  className="input-modern [&::-webkit-calendar-picker-indicator]:dark:invert [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                   required
                 />
               </div>
@@ -420,7 +468,7 @@ export default function AddTrade() {
                   type="datetime-local"
                   value={formData.exitTime}
                   onChange={(e) => handleInputChange('exitTime', e.target.value)}
-                  className="input-modern"
+                  className="input-modern [&::-webkit-calendar-picker-indicator]:dark:invert [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                   required
                 />
               </div>
@@ -487,6 +535,62 @@ export default function AddTrade() {
                 className="input-modern"
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="checklistId">Trading Checklist (Optional)</Label>
+              <Select value={formData.checklistId} onValueChange={handleChecklistChange}>
+                <SelectTrigger className="input-modern">
+                  <SelectValue placeholder="Select a checklist..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Checklist</SelectItem>
+                  {checklists.map((checklist) => (
+                    <SelectItem key={checklist.id} value={checklist.id.toString()}>
+                      {checklist.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Checklist Items */}
+            {selectedChecklistItems.length > 0 && (
+              <div className="space-y-3">
+                <Label>Pre-Trade Checklist</Label>
+                <div className="bg-muted/50 p-4 rounded-lg border space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Check off each item you've completed before executing this trade:
+                  </p>
+                  <div className="space-y-2">
+                    {selectedChecklistItems.map((item) => (
+                      <div key={item.id} className="flex items-center space-x-3">
+                        <input
+                          type="checkbox"
+                          id={`item-${item.id}`}
+                          checked={checkedItems[item.id] || false}
+                          onChange={(e) => handleItemCheck(item.id, e.target.checked)}
+                          className="w-4 h-4 text-primary border-border rounded focus:ring-primary focus:ring-2"
+                        />
+                        <label 
+                          htmlFor={`item-${item.id}`} 
+                          className={cn(
+                            "text-sm cursor-pointer transition-colors",
+                            checkedItems[item.id] 
+                              ? "text-muted-foreground line-through" 
+                              : "text-foreground hover:text-primary"
+                          )}
+                        >
+                          {item.text}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 text-xs text-muted-foreground">
+                    Completed: {Object.values(checkedItems).filter(Boolean).length} / {selectedChecklistItems.length}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="notes">Notes & Observations</Label>

@@ -3,21 +3,26 @@ import { Trade } from '@/types';
 
 export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
   return useMemo(() => {
+    // Ensure trades is always an array to prevent map/filter errors
+    console.log('useTradeAnalysis received:', trades, 'isArray:', Array.isArray(trades));
+    const safeTrades = Array.isArray(trades) ? trades : [];
+    console.log('useTradeAnalysis safeTrades:', safeTrades, 'length:', safeTrades.length);
+    
     // Basic metrics
-    const totalTrades = trades.length;
-    const profitableTrades = trades.filter((trade) => trade.profitLoss > 0).length;
-    const lossTrades = trades.filter((trade) => trade.profitLoss < 0).length;
+    const totalTrades = safeTrades.length;
+    const profitableTrades = safeTrades.filter((trade) => trade.profitLoss > 0).length;
+    const lossTrades = safeTrades.filter((trade) => trade.profitLoss < 0).length;
     const winRate = totalTrades > 0 ? (profitableTrades / totalTrades) * 100 : 0;
-    const totalProfitLoss = trades.reduce((sum, trade) => sum + trade.profitLoss, 0);
+    const totalProfitLoss = safeTrades.reduce((sum, trade) => sum + trade.profitLoss, 0);
     const currentBalance = initialBalance + totalProfitLoss;
     const percentageReturn = initialBalance > 0 ? (totalProfitLoss / initialBalance) * 100 : 0;
     
     // Advanced metrics
-    const totalProfit = trades
+    const totalProfit = safeTrades
       .filter((trade) => trade.profitLoss > 0)
       .reduce((sum, trade) => sum + trade.profitLoss, 0);
     
-    const totalLoss = trades
+    const totalLoss = safeTrades
       .filter((trade) => trade.profitLoss < 0)
       .reduce((sum, trade) => sum + trade.profitLoss, 0);
     
@@ -38,7 +43,8 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
     let currentDrawdown = 0;
     let peak = initialBalance;
     
-    const balanceOverTime = trades
+    const balanceOverTime = safeTrades
+      .filter(trade => trade.date) // Filter out trades without dates
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .reduce((acc, trade, index) => {
         const date = new Date(trade.date).toLocaleDateString();
@@ -66,27 +72,29 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
       }, [] as { date: string; balance: number; drawdown: number }[]);
     
     // Generate trade count by date data
-    const tradesByDate = trades.reduce((acc, trade) => {
-      const date = new Date(trade.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-      
-      if (!acc[date]) {
-        acc[date] = {
-          date,
-          count: 0
-        };
-      }
-      
-      acc[date].count += 1;
-      
-      return acc;
-    }, {} as Record<string, { date: string; count: number }>);
+    const tradesByDate = safeTrades
+      .filter(trade => trade.date) // Filter out trades without dates
+      .reduce((acc, trade) => {
+        const date = new Date(trade.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        
+        if (!acc[date]) {
+          acc[date] = {
+            date,
+            count: 0
+          };
+        }
+        
+        acc[date].count += 1;
+        
+        return acc;
+      }, {} as Record<string, { date: string; count: number }>);
     
     const tradeCountByDate = Object.values(tradesByDate)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .slice(-14); // Show just the last 14 days for a cleaner view
     
     // Analysis by asset
-    const assetPerformance = trades.reduce((acc, trade) => {
+    const assetPerformance = safeTrades.reduce((acc, trade) => {
       if (!acc[trade.asset]) {
         acc[trade.asset] = {
           asset: trade.asset,
@@ -122,7 +130,7 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
     }));
     
     // Analysis by trade type
-    const tradeTypePerformance = trades.reduce((acc, trade) => {
+    const tradeTypePerformance = safeTrades.reduce((acc, trade) => {
       if (!acc[trade.tradeType]) {
         acc[trade.tradeType] = {
           type: trade.tradeType,
@@ -158,7 +166,7 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
     }));
     
     // Analysis by emotion
-    const emotionPerformance = trades.reduce((acc, trade) => {
+    const emotionPerformance = safeTrades.reduce((acc, trade) => {
       if (!trade.emotion) return acc;
       
       if (!acc[trade.emotion]) {
@@ -196,37 +204,39 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
     }));
     
     // Time Analysis - Group trades by hour of day
-    const tradesByHour = trades.reduce((acc, trade) => {
-      const hour = new Date(trade.date).getHours();
-      
-      if (!acc[hour]) {
-        acc[hour] = {
-          hour,
-          trades: 0,
-          wins: 0,
-          losses: 0,
-          profitLoss: 0,
-        };
-      }
-      
-      acc[hour].trades += 1;
-      
-      if (trade.profitLoss > 0) {
-        acc[hour].wins += 1;
-      } else if (trade.profitLoss < 0) {
-        acc[hour].losses += 1;
-      }
-      
-      acc[hour].profitLoss += trade.profitLoss;
-      
-      return acc;
-    }, {} as Record<number, {
-      hour: number;
-      trades: number;
-      wins: number;
-      losses: number;
-      profitLoss: number;
-    }>);
+    const tradesByHour = safeTrades
+      .filter(trade => trade.date) // Filter out trades without dates
+      .reduce((acc, trade) => {
+        const hour = new Date(trade.date).getHours();
+        
+        if (!acc[hour]) {
+          acc[hour] = {
+            hour,
+            trades: 0,
+            wins: 0,
+            losses: 0,
+            profitLoss: 0,
+          };
+        }
+        
+        acc[hour].trades += 1;
+        
+        if (trade.profitLoss > 0) {
+          acc[hour].wins += 1;
+        } else if (trade.profitLoss < 0) {
+          acc[hour].losses += 1;
+        }
+        
+        acc[hour].profitLoss += trade.profitLoss;
+        
+        return acc;
+      }, {} as Record<number, {
+        hour: number;
+        trades: number;
+        wins: number;
+        losses: number;
+        profitLoss: number;
+      }>);
     
     const tradesByHourArray = Object.values(tradesByHour).map((item) => ({
       ...item,
@@ -257,10 +267,10 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
       emotionPerformance: emotionPerformanceArray,
       tradesByHour: tradesByHourArray,
       balanceOverTime,
-      winLossData: {
-        wins: profitableTrades,
-        losses: lossTrades
-      }
+      winLossData: [
+        { label: 'Wins', value: profitableTrades, color: '#10B981' },
+        { label: 'Losses', value: lossTrades, color: '#EF4444' }
+      ]
     };
   }, [trades, initialBalance]);
 }

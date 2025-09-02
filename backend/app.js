@@ -389,6 +389,7 @@ app.post('/api/trades', authenticateToken, async (req, res) => {
     const {
       symbol,
       tradeType,
+      type,
       direction,
       entryPrice,
       exitPrice,
@@ -403,20 +404,40 @@ app.post('/api/trades', authenticateToken, async (req, res) => {
       marketCondition,
       notes,
       tags,
-      accountId
+      accountId,
+      pnl,
+      duration,
+      checklistId,
+      checklistItems
     } = req.body;
+
+    // Get default account if not provided
+    let finalAccountId = accountId;
+    if (!finalAccountId) {
+      const defaultAccount = await db.query(
+        'SELECT id FROM trading_accounts WHERE user_id = $1 ORDER BY created_at LIMIT 1',
+        [req.user.id]
+      );
+      finalAccountId = defaultAccount.rows.length > 0 ? defaultAccount.rows[0].id : null;
+    }
+
+    // Use the P&L provided by the user EXACTLY as provided
+    const calculatedPnL = pnl !== undefined && pnl !== null ? pnl : 0;
+    console.log('💰 Backend received P&L:', pnl);
+    console.log('💰 Backend will store P&L:', calculatedPnL);
 
     const result = await db.query(
       `INSERT INTO trades (
-        user_id, account_id, symbol, trade_type, direction, entry_price, exit_price, 
+        user_id, account_id, symbol, type, trade_type, direction, entry_price, exit_price, 
         quantity, position_size, entry_time, exit_time, emotion, confidence_level, 
-        execution_quality, setup_type, market_condition, notes, tags
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) 
+        execution_quality, setup_type, market_condition, notes, tags, pnl, duration, checklist_id, checklist_items
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23) 
       RETURNING *`,
       [
-        req.user.id, accountId, symbol, tradeType, direction, entryPrice, exitPrice,
+        req.user.id, finalAccountId, symbol, type, tradeType, direction, entryPrice, exitPrice,
         quantity, positionSize, entryTime, exitTime, emotion, confidenceLevel,
-        executionQuality, setupType, marketCondition, notes, tags
+        executionQuality, setupType, marketCondition, notes, tags, calculatedPnL, duration, checklistId,
+        checklistItems ? JSON.stringify(checklistItems) : null
       ]
     );
 
@@ -430,12 +451,63 @@ app.post('/api/trades', authenticateToken, async (req, res) => {
 app.put('/api/trades/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const {
+      symbol,
+      tradeType,
+      type,
+      direction,
+      entryPrice,
+      exitPrice,
+      quantity,
+      positionSize,
+      entryTime,
+      exitTime,
+      emotion,
+      confidenceLevel,
+      executionQuality,
+      setupType,
+      marketCondition,
+      notes,
+      tags,
+      pnl,
+      duration,
+      checklistId,
+      checklistItems
+    } = req.body;
 
-    // Remove fields that shouldn't be updated
-    delete updateData.id;
-    delete updateData.user_id;
-    delete updateData.created_at;
+    console.log('✏️ Backend UPDATE received P&L:', pnl);
+
+    // Map frontend fields to database fields
+    const updateData = {
+      symbol,
+      type,
+      trade_type: tradeType,
+      direction,
+      entry_price: entryPrice,
+      exit_price: exitPrice,
+      quantity,
+      position_size: positionSize,
+      entry_time: entryTime,
+      exit_time: exitTime,
+      emotion,
+      confidence_level: confidenceLevel,
+      execution_quality: executionQuality,
+      setup_type: setupType,
+      market_condition: marketCondition,
+      notes,
+      tags,
+      pnl,
+      duration,
+      checklist_id: checklistId,
+      checklist_items: checklistItems ? JSON.stringify(checklistItems) : null
+    };
+
+    // Remove undefined/null values
+    Object.keys(updateData).forEach(key => {
+      if (updateData[key] === undefined || updateData[key] === null) {
+        delete updateData[key];
+      }
+    });
 
     const setClause = Object.keys(updateData)
       .map((key, index) => `${key} = $${index + 2}`)
@@ -549,6 +621,246 @@ app.post('/api/upload', authenticateToken, upload.single('file'), (req, res) => 
 
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));
+
+// Checklists API
+app.get('/api/checklists', authenticateToken, async (req, res) => {
+  try {
+    const result = await db.query(
+      'SELECT * FROM checklists WHERE user_id = $1 ORDER BY created_at DESC',
+      [req.user.id]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Checklists error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/checklists/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await db.query(
+      'SELECT * FROM checklists WHERE id = $1 AND user_id = $2',
+      [id, req.user.id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Checklist not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Checklist error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/checklists/:id/items', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Get checklist with items (JSONB column)
+    const result = await db.query(
+      'SELECT items FROM checklists WHERE id = $1 AND user_id = $2',
+      [id, req.user.id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Checklist not found' });
+    }
+    
+    // Return the items array from JSONB column
+    const items = result.rows[0].items || [];
+    res.json(items);
+  } catch (error) {
+    console.error('Checklist items error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/checklists', authenticateToken, async (req, res) => {
+  try {
+    const { name, description, items } = req.body;
+    
+    console.log('🔄 Creating checklist:', { name, description, items });
+    
+    // Prepare the items array for JSONB storage
+    let itemsToStore = null;
+    if (items && Array.isArray(items)) {
+      // Ensure each item has the required structure
+      itemsToStore = items.map((item, index) => ({
+        id: item.id || Date.now() + index,
+        text: item.text || '',
+        completed: item.completed || false
+      }));
+      console.log('📝 Items to store:', itemsToStore);
+    }
+    
+    const result = await db.query(
+      'INSERT INTO checklists (name, description, items, user_id) VALUES ($1, $2, $3, $4) RETURNING *',
+      [name, description, itemsToStore ? JSON.stringify(itemsToStore) : JSON.stringify([]), req.user.id]
+    );
+    
+    console.log('✅ Checklist created successfully');
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Create checklist error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/checklists/:id/items', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { content, checked = false } = req.body;
+    
+    // Get current checklist with items
+    const checklistResult = await db.query(
+      'SELECT items FROM checklists WHERE id = $1 AND user_id = $2',
+      [id, req.user.id]
+    );
+    
+    if (checklistResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Checklist not found' });
+    }
+    
+    // Get current items and add new one
+    const currentItems = checklistResult.rows[0].items || [];
+    const newItem = {
+      id: Date.now(), // Simple ID generation
+      text: content,
+      completed: checked
+    };
+    currentItems.push(newItem);
+    
+    // Update checklist with new items
+    await db.query(
+      'UPDATE checklists SET items = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND user_id = $3',
+      [JSON.stringify(currentItems), id, req.user.id]
+    );
+    
+    res.status(201).json(newItem);
+  } catch (error) {
+    console.error('Create checklist item error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.put('/api/checklists/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, items } = req.body;
+    
+    console.log('🔄 Updating checklist:', { id, name, description, items });
+    
+    // Prepare the items array for JSONB storage
+    let itemsToStore = null;
+    if (items && Array.isArray(items)) {
+      // Ensure each item has the required structure
+      itemsToStore = items.map((item, index) => ({
+        id: item.id || Date.now() + index,
+        text: item.text || '',
+        completed: item.completed || false
+      }));
+      console.log('📝 Items to store:', itemsToStore);
+    }
+    
+    const result = await db.query(
+      'UPDATE checklists SET name = $1, description = $2, items = $3, updated_at = NOW() WHERE id = $4 AND user_id = $5 RETURNING *',
+      [name, description, itemsToStore ? JSON.stringify(itemsToStore) : JSON.stringify([]), id, req.user.id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Checklist not found' });
+    }
+    
+    console.log('✅ Checklist updated successfully');
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Update checklist error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Individual item updates are handled via the main checklist update endpoint
+
+app.delete('/api/checklists/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Delete checklist (items are stored as JSONB, so no separate deletion needed)
+    const result = await db.query(
+      'DELETE FROM checklists WHERE id = $1 AND user_id = $2 RETURNING id',
+      [id, req.user.id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Checklist not found' });
+    }
+    
+    res.json({ message: 'Checklist deleted successfully' });
+  } catch (error) {
+    console.error('Delete checklist error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Individual item deletion is handled via the main checklist update endpoint
+
+// ===== USER SETTINGS ENDPOINTS =====
+
+// Get user settings
+app.get('/api/user/settings', authenticateToken, async (req, res) => {
+  try {
+    const result = await db.query(
+      'SELECT initial_balance, currency, date_format FROM user_settings WHERE user_id = $1',
+      [req.user.id]
+    );
+    
+    if (result.rows.length === 0) {
+      // Create default settings if they don't exist
+      await db.query(
+        'INSERT INTO user_settings (user_id, initial_balance, currency, date_format) VALUES ($1, $2, $3, $4)',
+        [req.user.id, 10000.00, 'USD', 'MM/DD/YYYY']
+      );
+      return res.json({ initial_balance: 10000.00, currency: 'USD', date_format: 'MM/DD/YYYY' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Get user settings error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update user settings
+app.put('/api/user/settings', authenticateToken, async (req, res) => {
+  try {
+    const { initial_balance, currency, date_format } = req.body;
+    
+    const result = await db.query(
+      `UPDATE user_settings 
+       SET initial_balance = $1, currency = $2, date_format = $3, updated_at = CURRENT_TIMESTAMP
+       WHERE user_id = $4 
+       RETURNING initial_balance, currency, date_format`,
+      [initial_balance, currency, date_format, req.user.id]
+    );
+    
+    if (result.rows.length === 0) {
+      // Create settings if they don't exist
+      const createResult = await db.query(
+        'INSERT INTO user_settings (user_id, initial_balance, currency, date_format) VALUES ($1, $2, $3, $4) RETURNING initial_balance, currency, date_format',
+        [req.user.id, initial_balance, currency, date_format]
+      );
+      return res.json(createResult.rows[0]);
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Update user settings error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // Error handling middleware
 app.use((error, req, res, next) => {

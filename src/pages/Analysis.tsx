@@ -159,6 +159,8 @@ export default function Analysis() {
 
   // Filter trades based on timeframe and asset
   const filteredTrades = useMemo(() => {
+    // Ensure trades is always an array to prevent filter/reduce errors
+    if (!Array.isArray(trades)) return [];
     let filtered = trades;
 
     // Filter by timeframe
@@ -248,6 +250,11 @@ export default function Analysis() {
 
   // Get unique assets for filter
   const uniqueAssets = useMemo(() => {
+    console.log('Analysis uniqueAssets - trades:', trades, 'isArray:', Array.isArray(trades));
+    if (!Array.isArray(trades)) {
+      console.warn('Analysis uniqueAssets - trades is not array:', trades);
+      return [];
+    }
     const assets = [...new Set(trades.map(t => t.asset))];
     return assets.sort();
   }, [trades]);
