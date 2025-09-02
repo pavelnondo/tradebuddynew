@@ -121,6 +121,8 @@ const TradeDetailsModal = ({
   const totalPnL = dayTrades.reduce((sum, trade) => sum + (trade.profitLoss || 0), 0);
   const isProfit = totalPnL >= 0;
 
+  const navigate = useNavigate();
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <Card className="card-modern w-full max-w-2xl max-h-[80vh] overflow-hidden">
@@ -146,9 +148,27 @@ const TradeDetailsModal = ({
                 </span>
               </CardDescription>
             </div>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              ×
-            </Button>
+            <div className="flex items-center space-x-2">
+              {dayTrades.length > 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    onClose();
+                    navigate('/trades', { 
+                      state: { 
+                        filterDate: date.toISOString().split('T')[0] 
+                      } 
+                    });
+                  }}
+                >
+                  View All Trades
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={onClose}>
+                ×
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -164,7 +184,14 @@ const TradeDetailsModal = ({
             ) : (
               <div className="divide-y divide-border/50">
                 {dayTrades.map((trade, index) => (
-                  <div key={trade.id} className="p-4 hover:bg-muted/30 transition-smooth">
+                  <div 
+                    key={trade.id} 
+                    className="p-4 hover:bg-muted/30 transition-smooth cursor-pointer"
+                    onClick={() => {
+                      onClose();
+                      navigate(`/trades/${trade.id}`);
+                    }}
+                  >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-3">
                         <div className={cn(
@@ -209,6 +236,9 @@ const TradeDetailsModal = ({
                           </Badge>
                         </div>
                       )}
+                    </div>
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      Click to view full details →
                     </div>
                   </div>
                 ))}
