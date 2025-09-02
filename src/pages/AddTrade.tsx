@@ -226,8 +226,10 @@ export default function AddTrade() {
         entryPrice: editTrade.entryPrice?.toString() || editTrade.entry_price?.toString() || prev.entryPrice,
         exitPrice: editTrade.exitPrice?.toString() || editTrade.exit_price?.toString() || prev.exitPrice,
         positionSize: editTrade.positionSize?.toString() || editTrade.quantity?.toString() || prev.positionSize,
-        entryTime: editTrade.date ? new Date(editTrade.date).toLocaleString('sv-SE').slice(0, 16) : prev.entryTime,
-        exitTime: editTrade.exitTime ? new Date(editTrade.exitTime).toLocaleString('sv-SE').slice(0, 16) : prev.exitTime,
+        entryTime: editTrade.entryTime ? new Date(editTrade.entryTime).toLocaleString('sv-SE').slice(0, 16) : 
+                  editTrade.entry_time ? new Date(editTrade.entry_time).toLocaleString('sv-SE').slice(0, 16) : prev.entryTime,
+        exitTime: editTrade.exitTime ? new Date(editTrade.exitTime).toLocaleString('sv-SE').slice(0, 16) : 
+                 editTrade.exit_time ? new Date(editTrade.exit_time).toLocaleString('sv-SE').slice(0, 16) : prev.exitTime,
         emotion: editTrade.emotion || prev.emotion,
         notes: editTrade.notes || prev.notes,
         setup: editTrade.setup || editTrade.setup_type || prev.setup,

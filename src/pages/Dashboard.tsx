@@ -423,7 +423,7 @@ export default function Dashboard() {
             <InsightCard
               title="Profit Factor"
               value={analysisData.metrics.profitFactor ? analysisData.metrics.profitFactor.toFixed(2) : "N/A"}
-              description="Your profit to loss ratio"
+              description={`Total Profit: $${analysisData.metrics.totalProfit?.toFixed(2) || '0'} | Total Loss: $${Math.abs(analysisData.metrics.totalLoss || 0).toFixed(2)}`}
               icon={Award}
               color="yellow"
             />

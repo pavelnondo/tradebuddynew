@@ -35,7 +35,7 @@ export default function TradeDetails() {
             profitLoss: t.pnl != null ? Number(t.pnl) : 0,
             notes: t.notes || '',
             emotion: t.emotion || '',
-            screenshot: t.screenshot_url ? `${API_BASE_URL}${t.screenshot_url}` : '',
+            screenshot: t.screenshot_url ? (t.screenshot_url.startsWith('http') ? t.screenshot_url : `${API_BASE_URL}${t.screenshot_url}`) : '',
             checklistItems: Array.isArray(t.checklist_items) ? t.checklist_items : [],
             entryTime: t.entry_time,
             exitTime: t.exit_time,
@@ -137,7 +137,9 @@ export default function TradeDetails() {
               <div className="w-full h-2 rounded-full bg-muted/50 overflow-hidden">
                 <div className="h-full bg-blue-500" style={{ width: `${Math.min(100, (durationMinutes ?? 0) / 180 * 100)}%` }} />
               </div>
-              <div className="text-xs text-muted-foreground mt-1">Scaled vs 3h</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {durationMinutes ? `${durationMinutes} minutes` : 'No duration data'}
+              </div>
             </div>
           </div>
 
