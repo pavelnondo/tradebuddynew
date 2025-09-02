@@ -128,6 +128,7 @@ export default function AddTrade() {
   const [allChecklists, setAllChecklists] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedChecklistItems, setSelectedChecklistItems] = useState<Array<{ id: string; text: string }>>([]);
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
+  const [useAutoDuration, setUseAutoDuration] = useState(true);
   
   // Check if we're editing an existing trade
   const editTrade = location.state?.editTrade;
@@ -219,6 +220,21 @@ export default function AddTrade() {
       const manualPnL = parseFloat(formData.profitLoss);
       const isValidPnL = !Number.isNaN(manualPnL);
 
+      // duration calculation
+      let durationToSend: number | undefined = undefined;
+      if (useAutoDuration && formData.entryTime && formData.exitTime) {
+        const start = new Date(formData.entryTime).getTime();
+        const end = new Date(formData.exitTime).getTime();
+        if (!Number.isNaN(start) && !Number.isNaN(end) && end > start) {
+          durationToSend = Math.floor((end - start) / 60000);
+        }
+      } else if (!useAutoDuration && formData.duration) {
+        const manualMinutes = parseInt(formData.duration, 10);
+        if (!Number.isNaN(manualMinutes)) {
+          durationToSend = manualMinutes;
+        }
+      }
+
       const tradeData = {
         symbol: formData.asset,
         tradeType: formData.tradeType, // Preserve Long/Short
@@ -238,7 +254,7 @@ export default function AddTrade() {
         marketCondition: 'normal',
         tags: [],
         pnl: isValidPnL ? manualPnL : 0,
-        duration: formData.duration,
+        duration: durationToSend,
         checklistId: formData.checklistId !== 'none' ? parseInt(formData.checklistId, 10) : null,
         checklistItems: formData.checklistId !== 'none'
           ? selectedChecklistItems.map(i => ({ id: i.id, text: i.text, completed: !!checkedItems[i.id] }))
@@ -247,29 +263,16 @@ export default function AddTrade() {
 
       if (isEditing) {
         await tradeApi.updateTrade(editTrade.id, tradeData);
-        toast({
-          title: "✏️ Trade Updated Successfully!",
-          description: `Your ${formData.asset} trade has been updated.`,
-          className: "bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0 shadow-lg",
-        });
+        toast({ title: "✏️ Trade Updated Successfully!", description: `Your ${formData.asset} trade has been updated.`, className: "bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0 shadow-lg" });
       } else {
         await tradeApi.addTrade(tradeData);
-        toast({
-          title: "🎉 Trade Added Successfully!",
-          description: `Your ${formData.asset} trade has been added to your portfolio.`,
-          className: "bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 shadow-lg",
-        });
+        toast({ title: "🎉 Trade Added Successfully!", description: `Your ${formData.asset} trade has been added to your portfolio.`, className: "bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 shadow-lg" });
       }
       
       navigate('/trades');
     } catch (error: any) {
       console.error(`Error ${isEditing ? 'updating' : 'adding'} trade:`, error);
-      toast({
-        title: `❌ Error ${isEditing ? 'Updating' : 'Adding'} Trade`,
-        description: error.message || "Something went wrong. Please try again.",
-        variant: "destructive",
-        className: "bg-gradient-to-r from-red-500 to-rose-600 text-white border-0 shadow-lg",
-      });
+      toast({ title: `❌ Error ${isEditing ? 'Updating' : 'Adding'} Trade`, description: error.message || "Something went wrong. Please try again.", variant: "destructive", className: "bg-gradient-to-r from-red-500 to-rose-600 text-white border-0 shadow-lg" });
     } finally {
       setIsLoading(false);
     }
@@ -436,36 +439,24 @@ export default function AddTrade() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="duration">Duration</Label>
-                <Select value={formData.duration} onValueChange={(value) => handleInputChange('duration', value)}>
-                  <SelectTrigger className="input-modern">
-                    <SelectValue placeholder="Select duration" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Scalp">Scalp (&lt; 5 min)</SelectItem>
-                    <SelectItem value="Day">Day Trade</SelectItem>
-                    <SelectItem value="Swing">Swing (1-7 days)</SelectItem>
-                    <SelectItem value="Position">Position (&gt; 7 days)</SelectItem>
-                  </SelectContent>
-                </Select>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2 md:col-span-2">
+                <Label>Duration Mode</Label>
+                <div className="flex gap-3">
+                  <Button type="button" variant={useAutoDuration ? 'default' : 'outline'} onClick={() => setUseAutoDuration(true)} className="btn-apple">
+                    Auto (from entry/exit)
+                  </Button>
+                  <Button type="button" variant={!useAutoDuration ? 'default' : 'outline'} onClick={() => setUseAutoDuration(false)} className="btn-apple-secondary">
+                    Manual (minutes)
+                  </Button>
+                </div>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="executionQuality">Execution Quality</Label>
-                <Select value={formData.executionQuality} onValueChange={(value) => handleInputChange('executionQuality', value)}>
-                  <SelectTrigger className="input-modern">
-                    <SelectValue placeholder="Rate your execution" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Excellent">Excellent</SelectItem>
-                    <SelectItem value="Good">Good</SelectItem>
-                    <SelectItem value="Average">Average</SelectItem>
-                    <SelectItem value="Poor">Poor</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {!useAutoDuration && (
+                <div className="space-y-2">
+                  <Label htmlFor="duration">Duration (minutes)</Label>
+                  <Input id="duration" type="number" min={0} placeholder="e.g., 45" value={formData.duration} onChange={(e) => handleInputChange('duration', e.target.value)} className="input-modern" />
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
