@@ -1,16 +1,17 @@
 import React from 'react';
-import { Bar } from 'react-chartjs-2';
+import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  BarElement,
+  PointElement,
+  LineElement,
   Title,
   Tooltip,
   Legend,
 } from 'chart.js';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 interface HourlyPerformanceProps {
   data: Array<{
@@ -27,7 +28,6 @@ export function HourlyPerformanceChart({
   isEmpty = false,
   isLoading = false
 }: HourlyPerformanceProps) {
-  // Ensure data is always an array to prevent map errors
   const safeData = Array.isArray(data) ? data : [];
   
   const chartData = {
@@ -36,24 +36,29 @@ export function HourlyPerformanceChart({
       {
         label: 'P&L ($)',
         data: safeData.map(d => d.profitLoss),
-        backgroundColor: '#60a5fa',
+        borderColor: 'rgb(59, 130, 246)',
+        backgroundColor: 'rgba(59, 130, 246, 0.15)',
         yAxisID: 'y',
-        borderRadius: 4,
+        tension: 0.35,
+        fill: true,
+        pointRadius: 3,
       },
       {
         label: 'Win Rate (%)',
         data: safeData.map(d => d.winRate),
-        backgroundColor: '#4ade80',
+        borderColor: 'rgb(16, 185, 129)',
+        backgroundColor: 'rgba(16, 185, 129, 0.15)',
         yAxisID: 'y1',
-        borderRadius: 4,
+        tension: 0.35,
+        fill: false,
+        pointRadius: 3,
       },
     ],
   };
 
   const options = {
     responsive: true,
-    maintainAspectRatio: true,
-    layout: { padding: 10 },
+    maintainAspectRatio: false,
     plugins: {
       legend: { display: true, position: 'top' as const },
       title: { display: false },
@@ -62,14 +67,16 @@ export function HourlyPerformanceChart({
     scales: {
       x: {
         title: { display: true, text: 'Hour' },
-        ticks: { font: { size: 10 } },
+        ticks: { font: { size: 11 } },
+        grid: { display: false },
       },
       y: {
         type: 'linear' as const,
         display: true,
         position: 'left' as const,
         title: { display: true, text: 'P&L ($)' },
-        ticks: { font: { size: 10 } },
+        ticks: { font: { size: 11 } },
+        grid: { color: 'rgba(156,163,175,0.1)' },
       },
       y1: {
         type: 'linear' as const,
@@ -77,21 +84,21 @@ export function HourlyPerformanceChart({
         position: 'right' as const,
         title: { display: true, text: 'Win Rate (%)' },
         grid: { drawOnChartArea: false },
-        ticks: { font: { size: 10 } },
+        ticks: { font: { size: 11 }, min: 0, max: 100 },
       },
     },
   };
 
   if (isLoading) {
-    return <div className="chart-container">Loading...</div>;
+    return <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Loading...</div>;
   }
   if (isEmpty || data.length === 0) {
-    return <div className="chart-container">No time-based analysis data available yet.</div>;
+    return <div className="h-full flex items-center justify-center text-sm text-muted-foreground">No time-based analysis data available yet.</div>;
   }
 
   return (
-    <div className="chart-container">
-      <Bar data={chartData} options={options} />
+    <div className="w-full h-full">
+      <Line data={chartData} options={options} />
     </div>
   );
 }

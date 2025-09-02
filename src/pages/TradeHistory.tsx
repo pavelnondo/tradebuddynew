@@ -43,16 +43,18 @@ import { cn } from "@/lib/utils";
 const TradeCard = ({ 
   trade, 
   onEdit, 
-  onDelete 
+  onDelete,
+  onOpen
 }: { 
   trade: any; 
   onEdit: (trade: any) => void;
   onDelete: (trade: any) => void;
+  onOpen: (trade: any) => void;
 }) => {
   const isProfit = trade.profitLoss >= 0;
   
   return (
-    <Card className="card-modern hover:shadow-lg transition-smooth group">
+    <Card className="card-modern hover:shadow-lg transition-smooth group cursor-pointer" onClick={() => onOpen(trade)}>
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3">
@@ -465,6 +467,7 @@ export default function TradeHistory() {
               trade={trade} 
               onEdit={handleEditTrade}
               onDelete={handleDeleteTrade}
+              onOpen={(t) => navigate('/trade/'+t.id, { state: { trade: t }})}
             />
           ))}
         </div>

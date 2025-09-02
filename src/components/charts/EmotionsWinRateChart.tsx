@@ -1,15 +1,16 @@
 import React from 'react';
-import { Bar } from 'react-chartjs-2';
+import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  BarElement,
+  PointElement,
+  LineElement,
   Tooltip,
   Legend,
 } from 'chart.js';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
 
 interface EmotionPerformance {
   emotion: string;
@@ -25,7 +26,6 @@ interface EmotionsWinRateChartProps {
 }
 
 export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
-  // Ensure data is always an array to prevent map errors
   const safeData = Array.isArray(data) ? data : [];
   
   const chartData = {
@@ -34,7 +34,11 @@ export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
       {
         label: 'Win Rate (%)',
         data: safeData.map((d) => d.winRate),
-        backgroundColor: '#4ade80',
+        borderColor: 'rgb(16, 185, 129)',
+        backgroundColor: 'rgba(16, 185, 129, 0.15)',
+        tension: 0.35,
+        fill: true,
+        pointRadius: 3,
       },
     ],
   };
@@ -46,9 +50,9 @@ export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
       tooltip: { enabled: true },
     },
     scales: {
-      x: { title: { display: true, text: 'Emotion' } },
-      y: { title: { display: true, text: 'Win Rate (%)' }, min: 0, max: 100 },
+      x: { title: { display: true, text: 'Emotion' }, grid: { display: false } },
+      y: { title: { display: true, text: 'Win Rate (%)' }, min: 0, max: 100, grid: { color: 'rgba(156,163,175,0.1)' } },
     },
   };
-  return <Bar data={chartData} options={options} />;
+  return <Line data={chartData} options={options} />;
 } 
