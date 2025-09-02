@@ -5,18 +5,7 @@ import { ArrowLeft, Image as ImageIcon, Edit, CheckCircle2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react';
 import { useApiTrades } from '@/hooks/useApiTrades';
 import { API_BASE_URL } from '@/config';
-import { Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
+// Removed irrelevant per-trade P&L line chart
 
 export default function TradeDetails() {
   const navigate = useNavigate();
@@ -67,28 +56,22 @@ export default function TradeDetails() {
     }
   }, [params.id, trades, trade]);
 
-  const pnlSeries = useMemo(() => {
-    if (!trade) return null;
-    const points = [] as Array<{ label: string; value: number }>;
-    const entry = trade.entryPrice || 0;
-    const exit = trade.exitPrice != null ? trade.exitPrice : entry;
-    points.push({ label: 'Entry', value: 0 });
-    points.push({ label: 'Exit', value: trade.profitLoss || (exit - entry) * (trade.positionSize || 0) });
-    return {
-      labels: points.map(p => p.label),
-      datasets: [
-        {
-          label: 'P&L Progression',
-          data: points.map(p => p.value),
-          borderColor: 'rgb(59,130,246)',
-          backgroundColor: 'rgba(59,130,246,0.15)',
-          tension: 0.35,
-          fill: true,
-          pointRadius: 3,
-        }
-      ]
-    };
+  // Duration (minutes) and pretty time
+  const durationMinutes = useMemo(() => {
+    if (typeof trade?.duration === 'number') return trade.duration;
+    const start = trade?.entryTime ? new Date(trade.entryTime).getTime() : NaN;
+    const end = trade?.exitTime ? new Date(trade.exitTime).getTime() : NaN;
+    if (!Number.isNaN(start) && !Number.isNaN(end) && end > start) {
+      return Math.floor((end - start) / 60000);
+    }
+    return undefined;
   }, [trade]);
+  const formatHM = (mins?: number) => {
+    if (mins == null) return '-';
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  };
 
   if (!trade || loading) {
     return (
@@ -143,9 +126,18 @@ export default function TradeDetails() {
             </div>
           </div>
 
-          {/* Mini P&L chart */}
-          <div className="h-48">
-            {pnlSeries && <Line data={pnlSeries} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }}, scales: { x: { grid: { display: false }}, y: { grid: { color: 'rgba(156,163,175,0.1)'}}}}} />}
+          {/* Time in trade */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+            <div>
+              <div className="text-sm text-muted-foreground">Time in Trade</div>
+              <div className="font-semibold">{formatHM(durationMinutes)}</div>
+            </div>
+            <div className="md:col-span-2">
+              <div className="w-full h-2 rounded-full bg-muted/50 overflow-hidden">
+                <div className="h-full bg-blue-500" style={{ width: `${Math.min(100, (durationMinutes ?? 0) / 180 * 100)}%` }} />
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">Scaled vs 3h</div>
+            </div>
           </div>
 
           {/* Checklist completion */}
@@ -154,14 +146,7 @@ export default function TradeDetails() {
               <div className="text-sm text-muted-foreground">Checklist Completion</div>
               <div className="flex items-center gap-3">
                 <div className="relative w-20 h-20">
-                  <svg viewBox="0 0 36 36" className="w-20 h-20">
-                    <path d="M18 2.0845
-                      a 15.9155 15.9155 0 0 1 0 31.831
-                      a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e5e7eb" strokeWidth="3" />
-                    <path d="M18 2.0845
-                      a 15.9155 15.9155 0 0 1 0 31.831" fill="none" stroke="#10b981" strokeWidth="3"
-                      strokeDasharray={`${completionPct}, 100`} />
-                  </svg>
+                  <div className="w-20 h-20 rounded-full" style={{ background: `conic-gradient(#10b981 ${completionPct}%, #e5e7eb 0)` }} />
                   <div className="absolute inset-0 flex items-center justify-center text-sm font-semibold">{completionPct}%</div>
                 </div>
                 <div className="space-y-1">
