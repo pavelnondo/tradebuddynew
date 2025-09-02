@@ -162,27 +162,74 @@ export default function AddTrade() {
 
   // Populate form data when editing
   useEffect(() => {
+    const hydrateFromFullTrade = async (tradeId: string | number) => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API_BASE_URL}/trades/${tradeId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const t = await res.json();
+        const entryIso = t.entry_time ? new Date(t.entry_time).toISOString().slice(0, 16) : "";
+        const exitIso = t.exit_time ? new Date(t.exit_time).toISOString().slice(0, 16) : "";
+        setFormData(prev => ({
+          ...prev,
+          asset: t.symbol || prev.asset,
+          tradeType: t.trade_type || t.type || prev.tradeType,
+          entryPrice: t.entry_price != null ? String(t.entry_price) : prev.entryPrice,
+          exitPrice: t.exit_price != null ? String(t.exit_price) : prev.exitPrice,
+          positionSize: t.quantity != null ? String(t.quantity) : prev.positionSize,
+          entryTime: entryIso,
+          exitTime: exitIso,
+          emotion: t.emotion || prev.emotion,
+          notes: t.notes || prev.notes,
+          setup: t.setup_type || prev.setup,
+          executionQuality: t.execution_quality || prev.executionQuality,
+          duration: t.duration != null ? String(t.duration) : prev.duration,
+          profitLoss: t.pnl != null ? String(t.pnl) : prev.profitLoss,
+          checklistId: t.checklist_id ? String(t.checklist_id) : prev.checklistId,
+        }));
+        // Checklist items + checked states
+        const items = Array.isArray(t.checklist_items) ? t.checklist_items : [];
+        setSelectedChecklistItems(items.map((i: any) => ({ id: String(i.id), text: i.text })));
+        const initialChecks: Record<string, boolean> = {};
+        items.forEach((i: any) => { initialChecks[String(i.id)] = !!i.completed; });
+        setCheckedItems(initialChecks);
+        // Screenshot
+        if (t.screenshot_url) setScreenshotUrl(t.screenshot_url);
+      } catch (e) {
+        // ignore, fall back to existing location.state
+      }
+    };
+
     if (isEditing && editTrade) {
+      // prefill from passed trade object
       setFormData(prev => ({
         ...prev,
-        asset: editTrade.asset || editTrade.symbol || "",
-        tradeType: editTrade.tradeType || editTrade.type || "",
-        entryPrice: editTrade.entryPrice?.toString() || editTrade.entry_price?.toString() || "",
-        exitPrice: editTrade.exitPrice?.toString() || editTrade.exit_price?.toString() || "",
-        positionSize: editTrade.positionSize?.toString() || editTrade.quantity?.toString() || "",
-        entryTime: editTrade.date ? new Date(editTrade.date).toISOString().slice(0, 16) : 
-                  editTrade.entry_time ? new Date(editTrade.entry_time).toISOString().slice(0, 16) : "",
-        exitTime: editTrade.exitTime ? new Date(editTrade.exitTime).toISOString().slice(0, 16) : 
-                 editTrade.exit_time ? new Date(editTrade.exit_time).toISOString().slice(0, 16) : "",
-        emotion: editTrade.emotion || "",
-        notes: editTrade.notes || "",
-        setup: editTrade.setup || editTrade.setup_type || "",
-        executionQuality: editTrade.executionQuality || editTrade.execution_quality || "",
-        duration: editTrade.duration || "",
-        profitLoss: (editTrade.profitLoss ?? editTrade.pnl ?? "").toString(),
-        checklistId: editTrade.checklist_id ? String(editTrade.checklist_id) : "none",
+        asset: editTrade.asset || editTrade.symbol || prev.asset,
+        tradeType: editTrade.tradeType || editTrade.type || prev.tradeType,
+        entryPrice: editTrade.entryPrice?.toString() || editTrade.entry_price?.toString() || prev.entryPrice,
+        exitPrice: editTrade.exitPrice?.toString() || editTrade.exit_price?.toString() || prev.exitPrice,
+        positionSize: editTrade.positionSize?.toString() || editTrade.quantity?.toString() || prev.positionSize,
+        entryTime: editTrade.date ? new Date(editTrade.date).toISOString().slice(0, 16) : prev.entryTime,
+        exitTime: editTrade.exitTime ? new Date(editTrade.exitTime).toISOString().slice(0, 16) : prev.exitTime,
+        emotion: editTrade.emotion || prev.emotion,
+        notes: editTrade.notes || prev.notes,
+        setup: editTrade.setup || editTrade.setup_type || prev.setup,
+        executionQuality: editTrade.executionQuality || editTrade.execution_quality || prev.executionQuality,
+        duration: editTrade.duration ? String(editTrade.duration) : prev.duration,
+        profitLoss: (editTrade.profitLoss ?? editTrade.pnl ?? prev.profitLoss)?.toString?.() || prev.profitLoss,
+        checklistId: editTrade.checklist_id ? String(editTrade.checklist_id) : prev.checklistId,
       }));
-      setScreenshotUrl(editTrade.screenshot || editTrade.screenshot_url || "");
+      if (Array.isArray(editTrade.checklistItems)) {
+        setSelectedChecklistItems(editTrade.checklistItems.map((i: any) => ({ id: String(i.id), text: i.text })));
+        const initialChecks: Record<string, boolean> = {};
+        editTrade.checklistItems.forEach((i: any) => { initialChecks[String(i.id)] = !!i.completed; });
+        setCheckedItems(initialChecks);
+      }
+      if (editTrade.screenshot) setScreenshotUrl(editTrade.screenshot);
+      // Fetch full trade to ensure entry/exit ISO strings and checklist completion are exact
+      hydrateFromFullTrade(editTrade.id);
     }
   }, [isEditing, editTrade]);
 
