@@ -24,7 +24,13 @@ export default function TradeDetails() {
         const res = await fetch(`${API_BASE_URL}/trades/${params.id}`, { headers: { 'Authorization': `Bearer ${token}` } });
         if (res.ok) {
           const t = await res.json();
-          setTrade({
+          console.log('🔍 Trade Details - Raw API Response:', t);
+          console.log('🔍 Screenshot URL:', t.screenshot_url);
+          console.log('🔍 Duration:', t.duration);
+          console.log('🔍 Entry Time:', t.entry_time);
+          console.log('🔍 Exit Time:', t.exit_time);
+          
+          const tradeData = {
             id: t.id,
             asset: t.symbol,
             tradeType: t.trade_type || t.type,
@@ -35,12 +41,15 @@ export default function TradeDetails() {
             profitLoss: t.pnl != null ? Number(t.pnl) : 0,
             notes: t.notes || '',
             emotion: t.emotion || '',
-            screenshot: t.screenshot_url ? (t.screenshot_url.startsWith('http') ? t.screenshot_url : `${API_BASE_URL}${t.screenshot_url}`) : '',
+            screenshot: t.screenshot_url ? (t.screenshot_url.startsWith('http') ? t.screenshot_url : `https://www.mytradebuddy.ru${t.screenshot_url}`) : '',
             checklistItems: Array.isArray(t.checklist_items) ? t.checklist_items : [],
             entryTime: t.entry_time,
             exitTime: t.exit_time,
-            duration: t.duration,
-          });
+            duration: t.duration ? Number(t.duration) : (t.duration_minutes ? Number(t.duration_minutes) : null),
+          };
+          
+          console.log('🔍 Processed Trade Data:', tradeData);
+          setTrade(tradeData);
         }
       } finally {
         setLoading(false);
@@ -94,9 +103,15 @@ export default function TradeDetails() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => navigate(-1)} className="p-2">
-          <ArrowLeft className="w-4 h-4" />
-        </Button>
+        <div className="flex items-center space-x-4">
+          <Button variant="ghost" onClick={() => navigate(-1)} className="p-2">
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">Trade Details</h1>
+            <p className="text-muted-foreground">Detailed view of your trade</p>
+          </div>
+        </div>
         <Button onClick={() => navigate('/add-trade', { state: { editTrade: trade }})}>
           <Edit className="w-4 h-4 mr-2" /> Edit Trade
         </Button>

@@ -170,10 +170,16 @@ export default function AddTrade() {
         });
         if (!res.ok) return;
         const t = await res.json();
+        console.log('✏️ Full trade data from API:', t);
+        console.log('✏️ Entry Time from API:', t.entry_time);
+        console.log('✏️ Exit Time from API:', t.exit_time);
+        console.log('✏️ Duration from API:', t.duration);
         
         // Convert database times to local datetime-local format
         const entryIso = t.entry_time ? new Date(t.entry_time).toLocaleString('sv-SE').slice(0, 16) : "";
         const exitIso = t.exit_time ? new Date(t.exit_time).toLocaleString('sv-SE').slice(0, 16) : "";
+        console.log('✏️ Converted Entry Time:', entryIso);
+        console.log('✏️ Converted Exit Time:', exitIso);
         
         setFormData(prev => ({
           ...prev,
@@ -215,8 +221,9 @@ export default function AddTrade() {
     };
 
     if (isEditing && editTrade) {
-      // Always fetch the full trade data to ensure we have everything
-      hydrateFromFullTrade(editTrade.id);
+              // Always fetch the full trade data to ensure we have everything
+        console.log('🔍 AddTrade - Edit Trade Data:', editTrade);
+        hydrateFromFullTrade(editTrade.id);
       
       // Also set initial data from editTrade for immediate display
       setFormData(prev => ({
@@ -227,7 +234,8 @@ export default function AddTrade() {
         exitPrice: editTrade.exitPrice?.toString() || editTrade.exit_price?.toString() || prev.exitPrice,
         positionSize: editTrade.positionSize?.toString() || editTrade.quantity?.toString() || prev.positionSize,
         entryTime: editTrade.entryTime ? new Date(editTrade.entryTime).toLocaleString('sv-SE').slice(0, 16) : 
-                  editTrade.entry_time ? new Date(editTrade.entry_time).toLocaleString('sv-SE').slice(0, 16) : prev.entryTime,
+                  editTrade.entry_time ? new Date(editTrade.entry_time).toLocaleString('sv-SE').slice(0, 16) : 
+                  editTrade.date ? new Date(editTrade.date).toLocaleString('sv-SE').slice(0, 16) : prev.entryTime,
         exitTime: editTrade.exitTime ? new Date(editTrade.exitTime).toLocaleString('sv-SE').slice(0, 16) : 
                  editTrade.exit_time ? new Date(editTrade.exit_time).toLocaleString('sv-SE').slice(0, 16) : prev.exitTime,
         emotion: editTrade.emotion || prev.emotion,
