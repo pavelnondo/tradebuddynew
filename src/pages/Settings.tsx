@@ -17,7 +17,7 @@ import { useEffect } from "react";
 const settingsFormSchema = z.object({
   currency: z.string(),
   dateFormat: z.enum(["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD"]),
-  initialBalance: z.coerce.number().min(0, "Initial balance must be positive"),
+  initialBalance: z.string().regex(/^\d*(?:\.\d{0,2})?$/, "Enter a valid amount"),
   enableNotifications: z.boolean(),
   emailNotifications: z.boolean(),
   emailAddress: z.string().email().optional().or(z.literal("")),
@@ -40,7 +40,7 @@ export default function Settings() {
     defaultValues: {
       currency: "USD",
       dateFormat: "MM/DD/YYYY",
-      initialBalance: 10000,
+      initialBalance: "10000",
       enableNotifications: parsedSettings.enableNotifications ?? true,
       emailNotifications: parsedSettings.emailNotifications ?? false,
       emailAddress: parsedSettings.emailAddress || "",
@@ -55,7 +55,7 @@ export default function Settings() {
       form.reset({
         currency: settings.currency,
         dateFormat: settings.date_format as "MM/DD/YYYY" | "DD/MM/YYYY" | "YYYY-MM-DD",
-        initialBalance: Number(settings.initial_balance),
+        initialBalance: String(settings.initial_balance ?? 10000),
         enableNotifications: parsedSettings.enableNotifications ?? true,
         emailNotifications: parsedSettings.emailNotifications ?? false,
         emailAddress: parsedSettings.emailAddress || "",
@@ -68,11 +68,11 @@ export default function Settings() {
   // Form submission handler
   const onSubmit = async (data: SettingsFormValues) => {
     try {
-      console.log("Saving settings:", data);
+      const initialBalanceNum = Number(data.initialBalance || 0);
       
       // Save core settings to backend
       await updateSettings({
-        initial_balance: data.initialBalance,
+        initial_balance: initialBalanceNum,
         currency: data.currency,
         date_format: data.dateFormat,
       });
@@ -86,7 +86,6 @@ export default function Settings() {
         syncWithSheets: data.syncWithSheets,
       }));
       
-      // Show success toast
       toast({
         title: "Settings Saved",
         description: "Your preferences have been updated successfully.",
@@ -179,12 +178,11 @@ export default function Settings() {
                     <FormLabel>Initial Trading Balance</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="10000"
+                        type="text"
                         inputMode="decimal"
-                        {...field}
+                        placeholder="10000"
+                        value={field.value}
+                        onChange={field.onChange}
                       />
                     </FormControl>
                     <FormDescription>
