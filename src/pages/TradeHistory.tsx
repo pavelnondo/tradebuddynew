@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { 
   Plus, 
   Search, 
@@ -297,8 +297,12 @@ export default function TradeHistory() {
   const { trades, isLoading, error, fetchTrades } = useApiTrades();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Filter trades based on search and filters
+  // Get date filter from calendar navigation
+  const dateFilter = location.state?.filterDate;
+
+  // Filter trades based on search, filters, and date
   const filteredTrades = useMemo(() => {
     // Ensure trades is always an array to prevent filter errors
     const safeTrades = Array.isArray(trades) ? trades : [];
@@ -310,9 +314,16 @@ export default function TradeHistory() {
       const matchesType = selectedType === "All" || trade.tradeType === selectedType;
       const matchesEmotion = selectedEmotion === "All" || trade.emotion === selectedEmotion;
       
-      return matchesSearch && matchesType && matchesEmotion;
+      // Date filtering from calendar
+      let matchesDate = true;
+      if (dateFilter && trade.date) {
+        const tradeDate = new Date(trade.date).toISOString().split('T')[0];
+        matchesDate = tradeDate === dateFilter;
+      }
+      
+      return matchesSearch && matchesType && matchesEmotion && matchesDate;
     });
-  }, [trades, searchTerm, selectedType, selectedEmotion]);
+  }, [trades, searchTerm, selectedType, selectedEmotion, dateFilter]);
 
   const handleEditTrade = (trade: any) => {
     // Navigate to edit trade page with trade data
@@ -427,6 +438,35 @@ export default function TradeHistory() {
       {/* Stats */}
       <TradeStats trades={trades} />
 
+      {/* Date Filter Indicator */}
+      {dateFilter && (
+        <Card className="card-modern border-blue-200 dark:border-blue-800">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Calendar className="w-4 h-4 text-blue-600" />
+                <span className="text-sm font-medium">
+                  Showing trades for {new Date(dateFilter).toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </span>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate('/trades', { replace: true })}
+                className="text-blue-600 hover:text-blue-700"
+              >
+                Clear Filter
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Filters */}
       <FilterBar
         searchTerm={searchTerm}
@@ -434,7 +474,7 @@ export default function TradeHistory() {
         selectedType={selectedType}
         setSelectedType={setSelectedType}
         selectedEmotion={selectedEmotion}
-        setSelectedEmotion={setSelectedEmotion}
+        setSelectedEmotion={selectedEmotion}
       />
 
       {/* Trades Grid */}

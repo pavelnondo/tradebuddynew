@@ -215,7 +215,10 @@ export default function AddTrade() {
     };
 
     if (isEditing && editTrade) {
-      // prefill from passed trade object first
+      // Always fetch the full trade data to ensure we have everything
+      hydrateFromFullTrade(editTrade.id);
+      
+      // Also set initial data from editTrade for immediate display
       setFormData(prev => ({
         ...prev,
         asset: editTrade.asset || editTrade.symbol || prev.asset,
@@ -243,12 +246,6 @@ export default function AddTrade() {
       }
       
       if (editTrade.screenshot) setScreenshotUrl(editTrade.screenshot);
-      
-      // Fetch full trade to ensure entry/exit ISO strings and checklist completion are exact
-      // Only if we don't already have the data
-      if (!editTrade.entryTime || !editTrade.exitTime || !editTrade.checklistItems) {
-        hydrateFromFullTrade(editTrade.id);
-      }
     }
   }, [isEditing, editTrade, screenshotUrl]);
 
