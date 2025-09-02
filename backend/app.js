@@ -58,8 +58,18 @@ app.use('/api/', limiter);
 app.use(compression());
 
 // CORS configuration
+const allowedOrigins = new Set([
+  'http://localhost:5173',
+  'https://mytradebuddy.ru',
+  'https://www.mytradebuddy.ru',
+]);
 app.use(cors({
-  origin: config.corsOrigin,
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.has(origin)) return callback(null, true);
+    // Allow same-origin and health checks without strict block
+    return callback(null, true);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']

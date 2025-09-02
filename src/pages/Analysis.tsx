@@ -32,6 +32,7 @@ import { cn } from "@/lib/utils";
 import { BalanceChart } from "@/components/charts/BalanceChart";
 import { HourlyPerformanceChart } from "@/components/charts/HourlyPerformanceChart";
 import { EmotionsWinRateChart } from "@/components/charts/EmotionsWinRateChart";
+import { useUserSettings } from "@/hooks/useUserSettings";
 
 // Performance metric card
 const MetricCard = ({ 
@@ -160,6 +161,7 @@ export default function Analysis() {
   const [tradeType, setTradeType] = useState("all");
   const [emotion, setEmotion] = useState("all");
   const { trades, isLoading, error } = useApiTrades();
+  const { settings } = useUserSettings();
   const navigate = useNavigate();
 
   // Filter trades based on timeframe, asset, trade type, and emotion
@@ -195,7 +197,7 @@ export default function Analysis() {
   }, [trades, timeframe, selectedAsset, tradeType, emotion]);
 
   // Calculate analysis metrics using the existing hook
-  const initialBalance = 10000;
+  const initialBalance = settings ? Number(settings.initial_balance) : 10000;
   const analysisHook = useTradeAnalysis(filteredTrades as any, initialBalance);
 
   // Get unique assets for filter
