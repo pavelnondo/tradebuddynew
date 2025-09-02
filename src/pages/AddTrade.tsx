@@ -31,6 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { tradeApi } from "@/services/tradeApi";
 import { API_BASE_URL } from "@/config";
 import { cn } from "@/lib/utils";
+import { useChecklists } from "@/hooks/useChecklists";
 
 // Emotion selector component
 const EmotionSelector = ({ 
@@ -123,6 +124,10 @@ export default function AddTrade() {
   const location = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { fetchChecklists, getChecklist } = useChecklists();
+  const [allChecklists, setAllChecklists] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedChecklistItems, setSelectedChecklistItems] = useState<Array<{ id: string; text: string }>>([]);
+  const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
   
   // Check if we're editing an existing trade
   const editTrade = location.state?.editTrade;
@@ -140,13 +145,23 @@ export default function AddTrade() {
     setup: "",
     executionQuality: "",
     duration: "",
+    profitLoss: "",
+    checklistId: "none",
   });
+
+  // Load all checklists for selection
+  useEffect(() => {
+    (async () => {
+      const cls = await fetchChecklists();
+      setAllChecklists(cls.map(c => ({ id: String(c.id), name: c.name })));
+    })();
+  }, [fetchChecklists]);
 
   // Populate form data when editing
   useEffect(() => {
     if (isEditing && editTrade) {
-      console.log('Editing trade:', editTrade);
-      setFormData({
+      setFormData(prev => ({
+        ...prev,
         asset: editTrade.asset || editTrade.symbol || "",
         tradeType: editTrade.tradeType || editTrade.type || "",
         entryPrice: editTrade.entryPrice?.toString() || editTrade.entry_price?.toString() || "",
@@ -161,53 +176,54 @@ export default function AddTrade() {
         setup: editTrade.setup || editTrade.setup_type || "",
         executionQuality: editTrade.executionQuality || editTrade.execution_quality || "",
         duration: editTrade.duration || "",
-      });
+        profitLoss: (editTrade.profitLoss ?? editTrade.pnl ?? "").toString(),
+        checklistId: editTrade.checklist_id ? String(editTrade.checklist_id) : "none",
+      }));
     }
   }, [isEditing, editTrade]);
+
+  // When checklist changes, load its items
+  useEffect(() => {
+    (async () => {
+      if (!formData.checklistId || formData.checklistId === "none") {
+        setSelectedChecklistItems([]);
+        setCheckedItems({});
+        return;
+      }
+      const checklist = await getChecklist(formData.checklistId);
+      const items = Array.isArray(checklist?.items) ? checklist!.items : [];
+      setSelectedChecklistItems(items.map(i => ({ id: String(i.id), text: i.text })));
+      const initialChecks: Record<string, boolean> = {};
+      items.forEach(i => { initialChecks[String(i.id)] = false; });
+      setCheckedItems(initialChecks);
+    })();
+  }, [formData.checklistId, getChecklist]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const calculatePnL = () => {
-    const entry = parseFloat(formData.entryPrice) || 0;
-    const exit = parseFloat(formData.exitPrice) || 0;
-    const size = parseFloat(formData.positionSize) || 0;
-    
-    if (entry && exit && size) {
-      // Calculate P&L based on trade type
-      let pnl = 0;
-      if (formData.tradeType === 'Long' || formData.tradeType === 'buy') {
-        pnl = (exit - entry) * size;
-      } else if (formData.tradeType === 'Short' || formData.tradeType === 'sell') {
-        pnl = (entry - exit) * size;
-      } else {
-        // Default to long calculation
-        pnl = (exit - entry) * size;
-      }
-      return pnl;
-    }
-    return 0;
+  const handleChecklistChange = (value: string) => {
+    handleInputChange('checklistId', value);
   };
 
-  const pnl = calculatePnL();
-  const isProfit = pnl >= 0;
+  const toggleItemChecked = (itemId: string) => {
+    setCheckedItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const calculatedPnL = calculatePnL();
-      
+      const manualPnL = parseFloat(formData.profitLoss);
+      const isValidPnL = !Number.isNaN(manualPnL);
+
       const tradeData = {
         symbol: formData.asset,
-        tradeType: formData.tradeType.toLowerCase() === 'long' ? 'buy' : 
-                  formData.tradeType.toLowerCase() === 'short' ? 'sell' : 
-                  formData.tradeType.toLowerCase(),
-        direction: formData.tradeType.toLowerCase() === 'long' ? 'long' : 
-                  formData.tradeType.toLowerCase() === 'short' ? 'short' : 
-                  formData.tradeType.toLowerCase(),
+        tradeType: formData.tradeType, // Preserve Long/Short
+        type: '',
+        direction: '',
         entryPrice: parseFloat(formData.entryPrice),
         exitPrice: parseFloat(formData.exitPrice),
         quantity: parseFloat(formData.positionSize),
@@ -221,9 +237,13 @@ export default function AddTrade() {
         confidenceLevel: 5,
         marketCondition: 'normal',
         tags: [],
-        pnl: calculatedPnL,
-        duration: formData.duration
-      };
+        pnl: isValidPnL ? manualPnL : 0,
+        duration: formData.duration,
+        checklistId: formData.checklistId !== 'none' ? parseInt(formData.checklistId, 10) : null,
+        checklistItems: formData.checklistId !== 'none'
+          ? selectedChecklistItems.map(i => ({ id: i.id, text: i.text, completed: !!checkedItems[i.id] }))
+          : null,
+      } as any;
 
       if (isEditing) {
         await tradeApi.updateTrade(editTrade.id, tradeData);
@@ -359,32 +379,22 @@ export default function AddTrade() {
               </div>
             </div>
 
-            {/* P&L Preview */}
-            {pnl !== 0 && (
-              <div className={cn(
-                "p-4 rounded-xl border-2",
-                isProfit 
-                  ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30" 
-                  : "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30"
-              )}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    {isProfit ? (
-                      <TrendingUp className="w-5 h-5 text-green-600" />
-                    ) : (
-                      <TrendingDown className="w-5 h-5 text-red-600" />
-                    )}
-                    <span className="font-medium">Estimated P&L:</span>
-                  </div>
-                  <span className={cn(
-                    "text-xl font-bold",
-                    isProfit ? "text-green-600" : "text-red-600"
-                  )}>
-                    {isProfit ? "+" : ""}${pnl.toFixed(2)}
-                  </span>
-                </div>
+            {/* Manual P&L */}
+            <div className="space-y-2">
+              <Label htmlFor="profitLoss">Profit / Loss</Label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="profitLoss"
+                  type="number"
+                  step="0.01"
+                  placeholder="Enter P&L manually (e.g., 150 or -75)"
+                  value={formData.profitLoss}
+                  onChange={(e) => handleInputChange('profitLoss', e.target.value)}
+                  className="input-modern pl-10"
+                />
               </div>
-            )}
+            </div>
           </CardContent>
         </Card>
 
@@ -434,10 +444,10 @@ export default function AddTrade() {
                     <SelectValue placeholder="Select duration" />
                   </SelectTrigger>
                   <SelectContent>
-                                         <SelectItem value="Scalp">Scalp (&lt; 5 min)</SelectItem>
+                    <SelectItem value="Scalp">Scalp (&lt; 5 min)</SelectItem>
                     <SelectItem value="Day">Day Trade</SelectItem>
                     <SelectItem value="Swing">Swing (1-7 days)</SelectItem>
-                                         <SelectItem value="Position">Position (&gt; 7 days)</SelectItem>
+                    <SelectItem value="Position">Position (&gt; 7 days)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -498,6 +508,54 @@ export default function AddTrade() {
                 className="input-modern min-h-[100px]"
               />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Checklist Selection */}
+        <Card className="card-modern">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Target className="w-5 h-5 mr-2" />
+              Checklist
+            </CardTitle>
+            <CardDescription>
+              Select a checklist and mark completed items
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Choose Checklist</Label>
+              <Select value={formData.checklistId} onValueChange={handleChecklistChange}>
+                <SelectTrigger className="input-modern">
+                  <SelectValue placeholder="No Checklist" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Checklist</SelectItem>
+                  {allChecklists.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedChecklistItems.length > 0 && (
+              <div className="space-y-2">
+                <Label>Checklist Items</Label>
+                <div className="space-y-2">
+                  {selectedChecklistItems.map((item, idx) => (
+                    <label key={item.id} className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4"
+                        checked={!!checkedItems[item.id]}
+                        onChange={() => toggleItemChecked(item.id)}
+                      />
+                      <span className="text-sm">{idx + 1}. {item.text}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
