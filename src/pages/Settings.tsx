@@ -17,7 +17,7 @@ import { useEffect } from "react";
 const settingsFormSchema = z.object({
   currency: z.string(),
   dateFormat: z.enum(["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD"]),
-  initialBalance: z.number().min(0, "Initial balance must be positive"),
+  initialBalance: z.coerce.number().min(0, "Initial balance must be positive"),
   enableNotifications: z.boolean(),
   emailNotifications: z.boolean(),
   emailAddress: z.string().email().optional().or(z.literal("")),
@@ -183,8 +183,8 @@ export default function Settings() {
                         step="0.01"
                         min="0"
                         placeholder="10000"
+                        inputMode="decimal"
                         {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                       />
                     </FormControl>
                     <FormDescription>
