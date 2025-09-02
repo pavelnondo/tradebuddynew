@@ -14,10 +14,12 @@ export default function TradeDetails() {
   const { trades } = useApiTrades();
   const [trade, setTrade] = useState<any>(location.state?.trade || null);
   const [loading, setLoading] = useState(false);
+  
+  console.log('🔍 Trade Details - Initial state:', { trade: location.state?.trade, params: params.id });
 
   useEffect(() => {
     const load = async () => {
-      if (trade || !params.id) return;
+      if (!params.id) return;
       setLoading(true);
       try {
         const token = localStorage.getItem('token');
@@ -68,12 +70,19 @@ export default function TradeDetails() {
 
   // Duration (minutes) and pretty time
   const durationMinutes = useMemo(() => {
+    console.log('🔍 Duration calculation - trade:', trade);
+    console.log('🔍 Duration calculation - trade.duration:', trade?.duration, 'type:', typeof trade?.duration);
     if (typeof trade?.duration === 'number') return trade.duration;
+    if (typeof trade?.duration === 'string' && trade.duration) return Number(trade.duration);
     const start = trade?.entryTime ? new Date(trade.entryTime).getTime() : NaN;
     const end = trade?.exitTime ? new Date(trade.exitTime).getTime() : NaN;
+    console.log('🔍 Duration calculation - start:', start, 'end:', end);
     if (!Number.isNaN(start) && !Number.isNaN(end) && end > start) {
-      return Math.floor((end - start) / 60000);
+      const calculated = Math.floor((end - start) / 60000);
+      console.log('🔍 Duration calculation - calculated:', calculated);
+      return calculated;
     }
+    console.log('🔍 Duration calculation - returning undefined');
     return undefined;
   }, [trade]);
   const formatHM = (mins?: number) => {
@@ -191,7 +200,22 @@ export default function TradeDetails() {
               <div className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
                 <ImageIcon className="w-4 h-4" /> Screenshot
               </div>
-              <img src={trade.screenshot} alt="Trade screenshot" className="rounded-lg border w-full max-w-3xl" />
+              <img 
+                src={trade.screenshot} 
+                alt="Trade screenshot" 
+                className="rounded-lg border w-full max-w-3xl" 
+                onLoad={() => console.log('🔍 Screenshot loaded successfully:', trade.screenshot)}
+                onError={(e) => console.log('🔍 Screenshot failed to load:', trade.screenshot, e)}
+              />
+            </div>
+          )}
+          {!trade.screenshot && (
+            <div>
+              <div className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                <ImageIcon className="w-4 h-4" /> Screenshot
+              </div>
+              <div className="text-muted-foreground">No screenshot available</div>
+              <div className="text-xs text-muted-foreground">Debug: trade.screenshot = {JSON.stringify(trade.screenshot)}</div>
             </div>
           )}
         </CardContent>
