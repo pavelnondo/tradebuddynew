@@ -170,8 +170,11 @@ export default function AddTrade() {
         });
         if (!res.ok) return;
         const t = await res.json();
+        
+        // Fix time zone handling - convert UTC to local time for datetime-local inputs
         const entryIso = t.entry_time ? new Date(t.entry_time).toISOString().slice(0, 16) : "";
         const exitIso = t.exit_time ? new Date(t.exit_time).toISOString().slice(0, 16) : "";
+        
         setFormData(prev => ({
           ...prev,
           asset: t.symbol || prev.asset,
@@ -189,21 +192,30 @@ export default function AddTrade() {
           profitLoss: t.pnl != null ? String(t.pnl) : prev.profitLoss,
           checklistId: t.checklist_id ? String(t.checklist_id) : prev.checklistId,
         }));
-        // Checklist items + checked states
-        const items = Array.isArray(t.checklist_items) ? t.checklist_items : [];
-        setSelectedChecklistItems(items.map((i: any) => ({ id: String(i.id), text: i.text })));
-        const initialChecks: Record<string, boolean> = {};
-        items.forEach((i: any) => { initialChecks[String(i.id)] = !!i.completed; });
-        setCheckedItems(initialChecks);
-        // Screenshot
-        if (t.screenshot_url) setScreenshotUrl(t.screenshot_url);
+        
+        // Checklist items + checked states - preserve existing if already set
+        if (t.checklist_items && Array.isArray(t.checklist_items)) {
+          const items = t.checklist_items.map((i: any) => ({ id: String(i.id), text: i.text }));
+          setSelectedChecklistItems(items);
+          const initialChecks: Record<string, boolean> = {};
+          t.checklist_items.forEach((i: any) => { 
+            initialChecks[String(i.id)] = !!i.completed; 
+          });
+          setCheckedItems(initialChecks);
+        }
+        
+        // Screenshot - preserve existing if already set
+        if (t.screenshot_url && !screenshotUrl) {
+          setScreenshotUrl(t.screenshot_url);
+        }
       } catch (e) {
+        console.error('Error hydrating trade:', e);
         // ignore, fall back to existing location.state
       }
     };
 
     if (isEditing && editTrade) {
-      // prefill from passed trade object
+      // prefill from passed trade object first
       setFormData(prev => ({
         ...prev,
         asset: editTrade.asset || editTrade.symbol || prev.asset,
@@ -221,20 +233,30 @@ export default function AddTrade() {
         profitLoss: (editTrade.profitLoss ?? editTrade.pnl ?? prev.profitLoss)?.toString?.() || prev.profitLoss,
         checklistId: editTrade.checklist_id ? String(editTrade.checklist_id) : prev.checklistId,
       }));
+      
+      // Set checklist items from editTrade if available
       if (Array.isArray(editTrade.checklistItems)) {
         setSelectedChecklistItems(editTrade.checklistItems.map((i: any) => ({ id: String(i.id), text: i.text })));
         const initialChecks: Record<string, boolean> = {};
         editTrade.checklistItems.forEach((i: any) => { initialChecks[String(i.id)] = !!i.completed; });
         setCheckedItems(initialChecks);
       }
+      
       if (editTrade.screenshot) setScreenshotUrl(editTrade.screenshot);
+      
       // Fetch full trade to ensure entry/exit ISO strings and checklist completion are exact
-      hydrateFromFullTrade(editTrade.id);
+      // Only if we don't already have the data
+      if (!editTrade.entryTime || !editTrade.exitTime || !editTrade.checklistItems) {
+        hydrateFromFullTrade(editTrade.id);
+      }
     }
-  }, [isEditing, editTrade]);
+  }, [isEditing, editTrade, screenshotUrl]);
 
   // When checklist changes, load its items
   useEffect(() => {
+    // Don't override checklist items when editing - they should come from the trade data
+    if (isEditing) return;
+    
     (async () => {
       if (!formData.checklistId || formData.checklistId === "none") {
         setSelectedChecklistItems([]);
@@ -248,7 +270,7 @@ export default function AddTrade() {
       items.forEach(i => { initialChecks[String(i.id)] = false; });
       setCheckedItems(initialChecks);
     })();
-  }, [formData.checklistId, getChecklist]);
+  }, [formData.checklistId, getChecklist, isEditing]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));

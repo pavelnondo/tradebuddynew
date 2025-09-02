@@ -459,6 +459,10 @@ app.post('/api/trades', authenticateToken, async (req, res) => {
     console.log('💰 Backend received P&L:', pnl);
     console.log('💰 Backend will store P&L:', calculatedPnL);
 
+    // Convert times to UTC before storing
+    const entryTimeUTC = entryTime ? new Date(entryTime).toISOString() : null;
+    const exitTimeUTC = exitTime ? new Date(exitTime).toISOString() : null;
+
     const result = await db.query(
       `INSERT INTO trades (
         user_id, account_id, symbol, type, trade_type, direction, entry_price, exit_price, 
@@ -468,7 +472,7 @@ app.post('/api/trades', authenticateToken, async (req, res) => {
       RETURNING *`,
       [
         req.user.id, finalAccountId, symbol, type, tradeType, direction, entryPrice, exitPrice,
-        quantity, positionSize, entryTime, exitTime, emotion, confidenceLevel,
+        quantity, positionSize, entryTimeUTC, exitTimeUTC, emotion, confidenceLevel,
         executionQuality, setupType, marketCondition, notes, tags, calculatedPnL, duration, checklistId,
         checklistItems ? JSON.stringify(checklistItems) : null, screenshot || null
       ]
@@ -511,6 +515,10 @@ app.put('/api/trades/:id', authenticateToken, async (req, res) => {
 
     console.log('✏️ Backend UPDATE received P&L:', pnl);
 
+    // Convert times to UTC before storing
+    const entryTimeUTC = entryTime ? new Date(entryTime).toISOString() : null;
+    const exitTimeUTC = exitTime ? new Date(exitTime).toISOString() : null;
+
     // Map frontend fields to database fields
     const updateData = {
       symbol,
@@ -522,8 +530,8 @@ app.put('/api/trades/:id', authenticateToken, async (req, res) => {
       exit_price: exitPrice,
       quantity,
       position_size: positionSize,
-      entry_time: entryTime,
-      exit_time: exitTime,
+      entry_time: entryTimeUTC,
+      exit_time: exitTimeUTC,
       emotion,
       confidence_level: confidenceLevel,
       execution_quality: executionQuality,
