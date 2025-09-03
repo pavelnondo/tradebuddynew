@@ -32,6 +32,9 @@ const db = new Pool({
 // Express app with Apple-level security and performance
 const app = express();
 
+// Trust proxy for rate limiting and real IP detection (required for Nginx)
+app.set('trust proxy', true);
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
