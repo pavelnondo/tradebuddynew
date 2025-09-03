@@ -7,8 +7,6 @@ import {
   TrendingUp,
   TrendingDown,
   DollarSign,
-  Calendar,
-  Clock,
   Target,
   Heart,
   FileText,
@@ -85,16 +83,14 @@ const TradeTypeSelector = ({
   onTypeSelect: (type: string) => void;
 }) => {
   const types = [
-    { value: "Long", label: "Long", icon: TrendingUp, color: "text-green-600" },
-    { value: "Short", label: "Short", icon: TrendingDown, color: "text-red-600" },
-    { value: "Scalp", label: "Scalp", icon: Clock, color: "text-blue-600" },
-    { value: "Swing", label: "Swing", icon: Calendar, color: "text-purple-600" },
+    { value: "Buy", label: "Buy", icon: TrendingUp, color: "text-green-600" },
+    { value: "Sell", label: "Sell", icon: TrendingDown, color: "text-red-600" },
   ];
 
   return (
     <div className="space-y-3">
       <Label>Trade Type</Label>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         {types.map((type) => {
           const Icon = type.icon;
           return (
@@ -208,7 +204,11 @@ export default function AddTrade() {
         setFormData(prev => ({
           ...prev,
           asset: t.symbol || prev.asset,
-          tradeType: t.trade_type || t.type || prev.tradeType,
+          tradeType: t.trade_type ? 
+            (t.trade_type.toLowerCase() === 'long' ? 'Buy' : 
+             t.trade_type.toLowerCase() === 'short' ? 'Sell' : 
+             t.trade_type) : 
+            (t.type === 'buy' ? 'Buy' : t.type === 'sell' ? 'Sell' : prev.tradeType),
           entryPrice: t.entry_price != null ? String(t.entry_price) : prev.entryPrice,
           exitPrice: t.exit_price != null ? String(t.exit_price) : prev.exitPrice,
           positionSize: t.quantity != null ? String(t.quantity) : prev.positionSize,
@@ -253,7 +253,11 @@ export default function AddTrade() {
       setFormData(prev => ({
         ...prev,
         asset: editTrade.asset || editTrade.symbol || prev.asset,
-        tradeType: editTrade.tradeType || editTrade.type || prev.tradeType,
+        tradeType: editTrade.tradeType ? 
+          (editTrade.tradeType.toLowerCase() === 'long' ? 'Buy' : 
+           editTrade.tradeType.toLowerCase() === 'short' ? 'Sell' : 
+           editTrade.tradeType) : 
+          (editTrade.type === 'buy' ? 'Buy' : editTrade.type === 'sell' ? 'Sell' : prev.tradeType),
         entryPrice: editTrade.entryPrice?.toString() || editTrade.entry_price?.toString() || prev.entryPrice,
         exitPrice: editTrade.exitPrice?.toString() || editTrade.exit_price?.toString() || prev.exitPrice,
         positionSize: editTrade.positionSize?.toString() || editTrade.quantity?.toString() || prev.positionSize,
@@ -371,11 +375,9 @@ export default function AddTrade() {
 
       const baseData: any = {
         symbol: formData.asset,
-        tradeType: formData.tradeType || undefined, // Preserve Long/Short if provided
-        type: formData.tradeType ? (formData.tradeType.toLowerCase() === 'long' ? 'buy' : 
-              formData.tradeType.toLowerCase() === 'short' ? 'sell' : 'buy') : 'buy',
-        direction: formData.tradeType ? (formData.tradeType.toLowerCase() === 'long' ? 'long' : 
-                  formData.tradeType.toLowerCase() === 'short' ? 'short' : 'long') : 'long',
+        tradeType: formData.tradeType || undefined, // Buy/Sell from selector
+        type: formData.tradeType ? formData.tradeType.toLowerCase() : 'buy', // buy/sell for database
+        direction: formData.tradeType ? (formData.tradeType.toLowerCase() === 'buy' ? 'long' : 'short') : 'long',
         entryPrice: formData.entryPrice ? parseFloat(formData.entryPrice) : undefined,
         exitPrice: formData.exitPrice ? parseFloat(formData.exitPrice) : undefined,
         quantity: formData.positionSize ? parseFloat(formData.positionSize) : undefined,
