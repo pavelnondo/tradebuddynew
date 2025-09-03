@@ -471,17 +471,16 @@ app.post('/api/trades', authenticateToken, async (req, res) => {
     console.log('💰 Backend received P&L:', pnl);
     console.log('💰 Backend will store P&L:', calculatedPnL);
 
-    // Store times EXACTLY as provided by user - NO timezone conversion
+    // Store times as PLAIN STRINGS - NO conversion whatsoever
     console.log('🕐 Raw entryTime from frontend:', entryTime);
     console.log('🕐 Raw exitTime from frontend:', exitTime);
     
-    // FORCE UTC storage without timezone interpretation
-    // User enters "2025-09-03T16:55" -> We want to store "2025-09-03T16:55" exactly
-    const entryTimeUTC = entryTime ? entryTime + ':00+00:00' : null;
-    const exitTimeUTC = exitTime ? exitTime + ':00+00:00' : null;
+    // Store EXACTLY as received - as VARCHAR strings, no timezone conversion
+    const entryTimeString = entryTime || null;
+    const exitTimeString = exitTime || null;
     
-    console.log('🕐 Final entryTimeUTC to DB:', entryTimeUTC);
-    console.log('🕐 Final exitTimeUTC to DB:', exitTimeUTC);
+    console.log('🕐 Final entryTimeString to DB:', entryTimeString);
+    console.log('🕐 Final exitTimeString to DB:', exitTimeString);
 
     const result = await db.query(
       `INSERT INTO trades (
@@ -535,17 +534,16 @@ app.put('/api/trades/:id', authenticateToken, async (req, res) => {
 
     console.log('✏️ Backend UPDATE received P&L:', pnl);
 
-    // Store times EXACTLY as provided by user - NO timezone conversion
+    // Store times as PLAIN STRINGS - NO conversion whatsoever
     console.log('🕐 Raw entryTime from frontend:', entryTime);
     console.log('🕐 Raw exitTime from frontend:', exitTime);
     
-    // FORCE UTC storage without timezone interpretation
-    // User enters "2025-09-03T16:55" -> We want to store "2025-09-03T16:55" exactly
-    const entryTimeUTC = entryTime ? entryTime + ':00+00:00' : null;
-    const exitTimeUTC = exitTime ? exitTime + ':00+00:00' : null;
+    // Store EXACTLY as received - as VARCHAR strings, no timezone conversion
+    const entryTimeString = entryTime || null;
+    const exitTimeString = exitTime || null;
     
-    console.log('🕐 Final entryTimeUTC to DB:', entryTimeUTC);
-    console.log('🕐 Final exitTimeUTC to DB:', exitTimeUTC);
+    console.log('🕐 Final entryTimeString to DB:', entryTimeString);
+    console.log('🕐 Final exitTimeString to DB:', exitTimeString);
 
     // Map frontend fields to database fields
     const updateData = {
@@ -558,8 +556,8 @@ app.put('/api/trades/:id', authenticateToken, async (req, res) => {
       exit_price: exitPrice,
       quantity,
       position_size: positionSize,
-      entry_time: entryTimeUTC,
-      exit_time: exitTimeUTC,
+      entry_time: entryTimeString,
+      exit_time: exitTimeString,
       emotion,
       confidence_level: confidenceLevel,
       execution_quality: executionQuality,
