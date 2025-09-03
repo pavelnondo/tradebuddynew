@@ -372,6 +372,10 @@ export default function AddTrade() {
       const baseData: any = {
         symbol: formData.asset,
         tradeType: formData.tradeType || undefined, // Preserve Long/Short if provided
+        type: formData.tradeType ? (formData.tradeType.toLowerCase() === 'long' ? 'buy' : 
+              formData.tradeType.toLowerCase() === 'short' ? 'sell' : 'buy') : 'buy',
+        direction: formData.tradeType ? (formData.tradeType.toLowerCase() === 'long' ? 'long' : 
+                  formData.tradeType.toLowerCase() === 'short' ? 'short' : 'long') : 'long',
         entryPrice: formData.entryPrice ? parseFloat(formData.entryPrice) : undefined,
         exitPrice: formData.exitPrice ? parseFloat(formData.exitPrice) : undefined,
         quantity: formData.positionSize ? parseFloat(formData.positionSize) : undefined,
