@@ -1,17 +1,16 @@
 import React from 'react';
-import { Line } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
 } from 'chart.js';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 interface HourlyPerformanceProps {
   data: Array<{
@@ -36,22 +35,24 @@ export function HourlyPerformanceChart({
       {
         label: 'P&L ($)',
         data: safeData.map(d => d.profitLoss),
-        borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.15)',
+        backgroundColor: safeData.map(d => 
+          d.profitLoss >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(245, 101, 101, 0.8)'
+        ),
+        borderColor: safeData.map(d => 
+          d.profitLoss >= 0 ? 'rgb(16, 185, 129)' : 'rgb(245, 101, 101)'
+        ),
+        borderWidth: 2,
+        borderRadius: 4,
         yAxisID: 'y',
-        tension: 0.35,
-        fill: true,
-        pointRadius: 3,
       },
       {
         label: 'Win Rate (%)',
         data: safeData.map(d => d.winRate),
-        borderColor: 'rgb(16, 185, 129)',
-        backgroundColor: 'rgba(16, 185, 129, 0.15)',
+        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+        borderColor: 'rgb(59, 130, 246)',
+        borderWidth: 2,
+        borderRadius: 4,
         yAxisID: 'y1',
-        tension: 0.35,
-        fill: false,
-        pointRadius: 3,
       },
     ],
   };
@@ -98,7 +99,7 @@ export function HourlyPerformanceChart({
 
   return (
     <div className="w-full h-full">
-      <Line data={chartData} options={options} />
+      <Bar data={chartData} options={options} />
     </div>
   );
 }
