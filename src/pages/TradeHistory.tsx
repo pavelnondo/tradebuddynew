@@ -187,7 +187,7 @@ const FilterBar = ({
   return (
     <Card className="card-modern mb-6">
       <CardContent className="p-6">
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 relative z-10">
           {/* First Row - Search and Date Filters */}
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Search - Reduced width to accommodate date filters */}
@@ -292,20 +292,21 @@ const FilterBar = ({
             <div className="flex flex-wrap gap-2 items-center">
               <span className="text-sm font-medium text-muted-foreground flex items-center mr-2 shrink-0">Emotion:</span>
               {emotions.map((emotion) => (
-                <Button
+                <button
                   key={emotion}
-                  variant={selectedEmotion === emotion ? "default" : "outline"}
-                  size="sm"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
+                  onClick={() => {
+                    console.log('Emotion clicked:', emotion);
                     setSelectedEmotion(emotion);
                   }}
-                  className="text-xs cursor-pointer hover:bg-primary/10 transition-colors"
+                  className={`px-3 py-1 text-xs rounded-md border transition-colors cursor-pointer relative z-20 pointer-events-auto ${
+                    selectedEmotion === emotion
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background text-foreground border-border hover:bg-accent hover:text-accent-foreground'
+                  }`}
                   type="button"
                 >
                   {emotion}
-                </Button>
+                </button>
               ))}
             </div>
           </div>
