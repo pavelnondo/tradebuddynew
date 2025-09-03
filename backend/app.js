@@ -472,8 +472,12 @@ app.post('/api/trades', authenticateToken, async (req, res) => {
     console.log('💰 Backend will store P&L:', calculatedPnL);
 
     // Store times EXACTLY as provided by user - NO timezone conversion
+    console.log('🕐 Raw entryTime from frontend:', entryTime);
+    console.log('🕐 Raw exitTime from frontend:', exitTime);
     const entryTimeUTC = entryTime || null;
     const exitTimeUTC = exitTime || null;
+    console.log('🕐 Final entryTimeUTC to DB:', entryTimeUTC);
+    console.log('🕐 Final exitTimeUTC to DB:', exitTimeUTC);
 
     const result = await db.query(
       `INSERT INTO trades (
@@ -528,8 +532,12 @@ app.put('/api/trades/:id', authenticateToken, async (req, res) => {
     console.log('✏️ Backend UPDATE received P&L:', pnl);
 
     // Store times EXACTLY as provided by user - NO timezone conversion
+    console.log('🕐 Raw entryTime from frontend:', entryTime);
+    console.log('🕐 Raw exitTime from frontend:', exitTime);
     const entryTimeUTC = entryTime || null;
     const exitTimeUTC = exitTime || null;
+    console.log('🕐 Final entryTimeUTC to DB:', entryTimeUTC);
+    console.log('🕐 Final exitTimeUTC to DB:', exitTimeUTC);
 
     // Map frontend fields to database fields
     const updateData = {

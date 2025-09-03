@@ -435,22 +435,24 @@ export default function TradeDetails() {
                 <ImageIcon className="w-5 h-5 text-slate-600 dark:text-slate-400" />
                 <h4 className="font-semibold text-slate-800 dark:text-slate-300">Trade Screenshot</h4>
               </div>
-              <div className="relative group bg-card rounded-lg p-4 shadow-sm border">
+              <div 
+                className="relative group bg-card rounded-lg p-4 shadow-sm border cursor-pointer hover:shadow-lg transition-all duration-300"
+                onClick={() => window.open(
+                  trade.screenshot_url!.startsWith('http') ? trade.screenshot_url! : `/uploads/${trade.screenshot_url!.split('/').pop()}`, 
+                  '_blank'
+                )}
+              >
                 <img 
                   src={trade.screenshot_url.startsWith('http') ? trade.screenshot_url : `/uploads/${trade.screenshot_url.split('/').pop()}`}
                   alt="Trade Screenshot"
-                  className="max-w-full h-auto rounded-lg border-2 border-border cursor-pointer hover:border-primary transition-all duration-300 shadow-md"
-                  onClick={() => window.open(
-                    trade.screenshot_url!.startsWith('http') ? trade.screenshot_url! : `/uploads/${trade.screenshot_url!.split('/').pop()}`, 
-                    '_blank'
-                  )}
+                  className="max-w-full h-auto rounded-lg border-2 border-border hover:border-primary transition-all duration-300 shadow-md"
                   onError={(e) => {
                     console.error('Screenshot failed to load:', trade.screenshot_url);
                     e.currentTarget.style.display = 'none';
                     e.currentTarget.parentElement!.innerHTML = '<div class="text-center text-muted-foreground py-8">Screenshot not available</div>';
                   }}
                 />
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg flex items-center justify-center">
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg flex items-center justify-center pointer-events-none">
                   <div className="bg-card/90 rounded-full p-3 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg border">
                     <ImageIcon className="w-6 h-6 text-primary" />
                   </div>
