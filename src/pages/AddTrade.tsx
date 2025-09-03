@@ -224,8 +224,9 @@ export default function AddTrade() {
           }
         };
         
-        const entryIso = extractTimeFromDB(t.entry_time);
-        const exitIso = extractTimeFromDB(t.exit_time);
+        // Never pass full ISO with seconds/ms into datetime-local; keep only YYYY-MM-DDTHH:MM
+        const entryIso = extractTimeFromDB(String(t.entry_time || ''));
+        const exitIso = extractTimeFromDB(String(t.exit_time || ''));
         console.log('✏️ Raw Entry Time from DB:', t.entry_time);
         console.log('✏️ Raw Exit Time from DB:', t.exit_time);
         console.log('✏️ Extracted Entry Time:', entryIso);

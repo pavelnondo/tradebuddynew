@@ -4,6 +4,11 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Image as ImageIcon, Edit, CheckCircle2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { API_BASE_URL } from '@/config';
+
+// Module-level caches to persist across remounts and fully stop request storms
+const tradeCache: Record<string, any> = {};
+const lastFetchAt: Record<string, number> = {};
+const inflightFetch: Record<string, Promise<any>> = {};
 // Removed irrelevant per-trade P&L line chart
 
 // Helper function to format trade date without timezone conversion
@@ -63,16 +68,16 @@ export default function TradeDetails() {
       setTrade(location.state.trade);
       return;
     }
-    if (tradeCacheRef.current[params.id]) {
-      setTrade(tradeCacheRef.current[params.id]);
+    if (tradeCache[params.id]) {
+      setTrade(tradeCache[params.id]);
       return;
     }
     // Throttle re-fetching the same id within 2 seconds
-    const last = lastFetchRef.current[params.id];
+    const last = lastFetchAt[params.id];
     if (last && Date.now() - last < 2000) {
       return;
     }
-    lastFetchRef.current[params.id] = Date.now();
+    lastFetchAt[params.id] = Date.now();
     if (hasLoadedRef.current) return;
     hasLoadedRef.current = true;
 
@@ -84,19 +89,25 @@ export default function TradeDetails() {
       setLoading(true);
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE_URL}/trades/${params.id}`, { 
-          headers: { 'Authorization': `Bearer ${token}` },
-          signal: controller.signal
-        });
-        if (res.status === 401) {
-          navigate('/');
-          return;
+        // Reuse in-flight promise if available
+        if (!inflightFetch[params.id]) {
+          inflightFetch[params.id] = fetch(`${API_BASE_URL}/trades/${params.id}`, { 
+            headers: { 'Authorization': `Bearer ${token}` },
+            signal: controller.signal
+          }).then(async (res) => {
+            if (res.status === 401) {
+              navigate('/');
+              throw new Error('unauthorized');
+            }
+            if (!res.ok) {
+              throw new Error(String(res.status));
+            }
+            return res.json();
+          }).finally(() => {
+            delete inflightFetch[params.id!];
+          });
         }
-        if (!res.ok) {
-          console.error('Failed to load trade', res.status);
-          return;
-        }
-        const t = await res.json();
+        const t = await inflightFetch[params.id];
         console.log('🔍 Trade Details - Raw API Response:', t);
         const tradeData = {
           id: t.id,
@@ -116,6 +127,7 @@ export default function TradeDetails() {
           duration: t.duration != null ? Number(t.duration) : (t.duration_minutes != null ? Number(t.duration_minutes) : null),
         };
         tradeCacheRef.current[String(tradeData.id)] = tradeData;
+        tradeCache[String(tradeData.id)] = tradeData;
         try {
           sessionStorage.setItem(`td_cache_${tradeData.id}`, JSON.stringify(tradeData));
         } catch {}
