@@ -56,16 +56,16 @@ const TradeCard = ({
   
   return (
     <Card className="card-modern hover:shadow-lg transition-smooth group cursor-pointer" onClick={() => onOpen(trade)}>
-      <CardContent className="p-6">
+      <CardContent className="p-4 sm:p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3">
             <div className={cn(
-              "w-3 h-3 rounded-full",
+              "w-3 h-3 rounded-full shrink-0",
               isProfit ? "bg-green-500" : "bg-red-500"
             )} />
-            <div>
-              <h3 className="font-semibold text-lg">{trade.asset}</h3>
-              <p className="text-sm text-muted-foreground">{trade.tradeType}</p>
+            <div className="min-w-0">
+              <h3 className="font-semibold text-lg truncate">{trade.asset}</h3>
+              <p className="text-sm text-muted-foreground truncate">{trade.tradeType}</p>
             </div>
           </div>
           <DropdownMenu>
@@ -186,43 +186,43 @@ const FilterBar = ({
 
   return (
     <Card className="card-modern mb-6">
-      <CardContent className="p-6">
+      <CardContent className="p-4 sm:p-6">
         <div className="flex flex-col gap-4 relative z-10">
           {/* First Row - Search and Date Filters */}
           <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search - Reduced width to accommodate date filters */}
-            <div className="flex-1 max-w-md">
+            {/* Search - Mobile friendly */}
+            <div className="flex-1 lg:max-w-md">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Search trades by asset, notes..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 input-modern"
+                  className="pl-10 input-modern w-full"
                 />
               </div>
             </div>
 
-            {/* Date Filters - Wider inputs for calendar button visibility */}
-            <div className="flex gap-2">
-              <div className="relative">
+            {/* Date Filters - Responsive */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1 sm:flex-initial">
                 <Calendar className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
                 <Input
                   type="date"
                   placeholder="Start Date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="pl-8 input-modern w-44"
+                  className="pl-8 input-modern w-full sm:w-40 lg:w-44"
                 />
               </div>
-              <div className="relative">
+              <div className="relative flex-1 sm:flex-initial">
                 <Calendar className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
                 <Input
                   type="date"
                   placeholder="End Date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="pl-8 input-modern w-44"
+                  className="pl-8 input-modern w-full sm:w-40 lg:w-44"
                 />
               </div>
               {(startDate || endDate) && (
@@ -233,7 +233,7 @@ const FilterBar = ({
                     setStartDate('');
                     setEndDate('');
                   }}
-                  className="px-2"
+                  className="px-2 self-start sm:self-center"
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -242,10 +242,10 @@ const FilterBar = ({
           </div>
 
           {/* Second Row - Type, Duration, and Emotion Filters */}
-          <div className="flex flex-col lg:flex-row gap-4">
+          <div className="flex flex-col gap-4">
             {/* Trade Type Filter */}
-            <div className="flex flex-wrap gap-2">
-              <span className="text-sm font-medium text-muted-foreground flex items-center mr-2">Type:</span>
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-sm font-medium text-muted-foreground flex items-center mr-2 shrink-0">Type:</span>
               {tradeTypes.map((type) => (
                 <Button
                   key={type}
@@ -260,21 +260,23 @@ const FilterBar = ({
             </div>
 
             {/* Duration Filter */}
-            <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-sm font-medium text-muted-foreground flex items-center mr-2">Duration:</span>
-              {durations.map((duration) => (
-                <Button
-                  key={duration}
-                  variant={durationFilter === duration ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setDurationFilter(duration)}
-                  className="text-xs"
-                >
-                  {duration}
-                </Button>
-              ))}
+            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:items-center">
+              <span className="text-sm font-medium text-muted-foreground flex items-center mr-2 shrink-0">Duration:</span>
+              <div className="flex flex-wrap gap-2">
+                {durations.map((duration) => (
+                  <Button
+                    key={duration}
+                    variant={durationFilter === duration ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setDurationFilter(duration)}
+                    className="text-xs"
+                  >
+                    {duration}
+                  </Button>
+                ))}
+              </div>
               {durationFilter === "Custom" && (
-                <div className="flex items-center gap-1 ml-2">
+                <div className="flex items-center gap-1 mt-2 sm:mt-0 sm:ml-2">
                   <Input
                     type="number"
                     placeholder="Minutes"
@@ -283,31 +285,33 @@ const FilterBar = ({
                     className="w-20 h-8 text-xs"
                     min="1"
                   />
-                  <span className="text-xs text-muted-foreground">min</span>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">min</span>
                 </div>
               )}
             </div>
 
             {/* Emotion Filter */}
-            <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:items-center">
               <span className="text-sm font-medium text-muted-foreground flex items-center mr-2 shrink-0">Emotion:</span>
-              {emotions.map((emotion) => (
-                <button
-                  key={emotion}
-                  onClick={() => {
-                    console.log('Emotion clicked:', emotion);
-                    setSelectedEmotion(emotion);
-                  }}
-                  className={`px-3 py-1 text-xs rounded-md border transition-colors cursor-pointer relative z-20 pointer-events-auto ${
-                    selectedEmotion === emotion
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-background text-foreground border-border hover:bg-accent hover:text-accent-foreground'
-                  }`}
-                  type="button"
-                >
-                  {emotion}
-                </button>
-              ))}
+              <div className="flex flex-wrap gap-2">
+                {emotions.map((emotion) => (
+                  <button
+                    key={emotion}
+                    onClick={() => {
+                      console.log('Emotion clicked:', emotion);
+                      setSelectedEmotion(emotion);
+                    }}
+                    className={`px-3 py-1 text-xs rounded-md border transition-colors cursor-pointer relative z-20 pointer-events-auto whitespace-nowrap ${
+                      selectedEmotion === emotion
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background text-foreground border-border hover:bg-accent hover:text-accent-foreground'
+                    }`}
+                    type="button"
+                  >
+                    {emotion}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -651,7 +655,7 @@ export default function TradeHistory() {
       {/* Trades Grid */}
       {filteredTrades.length === 0 ? (
         <Card className="card-modern">
-          <CardContent className="p-12 text-center">
+          <CardContent className="p-8 sm:p-12 text-center">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
               <TrendingUp className="w-8 h-8 text-muted-foreground" />
             </div>
@@ -671,7 +675,7 @@ export default function TradeHistory() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {filteredTrades.map((trade) => (
             <TradeCard 
               key={trade.id} 
