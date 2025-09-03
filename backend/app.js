@@ -33,7 +33,7 @@ const db = new Pool({
 const app = express();
 
 // Trust proxy for rate limiting and real IP detection (required for Nginx)
-app.set('trust proxy', true);
+app.set('trust proxy', ['127.0.0.1', '::1']);
 
 // Security middleware
 app.use(helmet({
@@ -54,10 +54,8 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
-  // Proper trust proxy configuration for Nginx
-  trustProxy: ['127.0.0.1', '::1'], // Trust local proxies only
+  // Use X-Forwarded-For header if available, fallback to req.ip
   keyGenerator: (req) => {
-    // Use X-Forwarded-For header if available, fallback to req.ip
     return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
   }
 });
