@@ -5,9 +5,8 @@ import { ArrowLeft, Image as ImageIcon, Edit, CheckCircle2 } from 'lucide-react'
 import { useEffect, useState } from 'react';
 import { API_BASE_URL } from '@/config';
 
-// Global cache - survives component remounts
+// Global cache - survives component remounts (kept minimal)
 const tradeCache: Record<string, any> = {};
-const loadedTrades: Record<string, boolean> = {};
 
 // Helper function to format trade date without timezone conversion
 const formatTradeDate = (date: string | Date | null | undefined) => {
@@ -55,61 +54,50 @@ export default function TradeDetails() {
   const [trade, setTrade] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  // Load trade data - this effect runs ONLY when params.id changes
+  // Load trade data - single path, no early returns that can leave us stuck
   useEffect(() => {
     if (!params.id) return;
 
-    // Check if already loaded this trade
-    if (loadedTrades[params.id]) {
-      if (tradeCache[params.id]) {
-        setTrade(tradeCache[params.id]);
-      }
-      return;
-    }
-
-    // Try to load from navigation state first
+    // 1) navigation state
     if (location.state?.trade) {
       const tradeData = location.state.trade;
       tradeCache[params.id] = tradeData;
-      loadedTrades[params.id] = true;
       setTrade(tradeData);
+      // also seed session cache
+      try { sessionStorage.setItem(`td_cache_${params.id}`, JSON.stringify(tradeData)); } catch {}
       return;
     }
 
-    // Try to load from sessionStorage cache
+    // 2) sessionStorage
     try {
-      const key = `td_cache_${params.id}`;
-      const cached = sessionStorage.getItem(key);
+      const cached = sessionStorage.getItem(`td_cache_${params.id}`);
       if (cached) {
         const parsed = JSON.parse(cached);
         if (parsed && typeof parsed === 'object') {
           tradeCache[params.id] = parsed;
-          loadedTrades[params.id] = true;
           setTrade(parsed);
-          return;
+          // continue to refresh in background once, but do not block UI
         }
       }
     } catch {}
 
-    // If nothing cached, fetch from API
-    const loadFromAPI = async () => {
+    // 3) API fetch (always run once per id)
+    let didCancel = false;
+    (async () => {
       setLoading(true);
       try {
         const token = localStorage.getItem('token');
         const res = await fetch(`${API_BASE_URL}/trades/${params.id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-
         if (res.status === 401) {
           navigate('/');
           return;
         }
-
         if (!res.ok) {
           console.error('Failed to load trade', res.status);
           return;
         }
-
         const t = await res.json();
         const tradeData = {
           id: t.id,
@@ -128,24 +116,17 @@ export default function TradeDetails() {
           exitTime: t.exit_time,
           duration: t.duration != null ? Number(t.duration) : (t.duration_minutes != null ? Number(t.duration_minutes) : null),
         };
-
-        // Cache the data
         tradeCache[params.id] = tradeData;
-        loadedTrades[params.id] = true;
-        try {
-          sessionStorage.setItem(`td_cache_${params.id}`, JSON.stringify(tradeData));
-        } catch {}
-
-        setTrade(tradeData);
+        try { sessionStorage.setItem(`td_cache_${params.id}`, JSON.stringify(tradeData)); } catch {}
+        if (!didCancel) setTrade(tradeData);
       } catch (e) {
         console.error('Trade load error', e);
       } finally {
-        setLoading(false);
+        if (!didCancel) setLoading(false);
       }
-    };
-
-    loadFromAPI();
-  }, [params.id, navigate]); // Only depends on params.id and navigate
+    })();
+    return () => { didCancel = true; };
+  }, [params.id, navigate]);
 
   if (!trade && loading) {
     return (
