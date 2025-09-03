@@ -18,47 +18,48 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/tradebuddy-logo.svg" />
     <script>
-      // ULTIMATE CACHE BUSTER - IMMEDIATE FORCE RELOAD
+      // NUCLEAR CACHE ANNIHILATOR - FORCE NEW BUNDLE LOAD
       (() => {
-        console.log('💥 ULTIMATE CACHE BUSTER ACTIVATED');
+        console.log('☢️ NUCLEAR CACHE ANNIHILATOR ACTIVATED');
         
-        // Check if we already have a cache-busting parameter
-        const urlParams = new URLSearchParams(window.location.search);
-        const hasCacheBuster = urlParams.has('cb') || urlParams.has('nuclear');
-        
-        if (!hasCacheBuster) {
-          console.log('🔄 FORCING IMMEDIATE RELOAD WITH CACHE BUSTER');
+        // ALWAYS force reload for index-DUzU8MtJ.js
+        const checkOldBundle = () => {
+          const scripts = Array.from(document.scripts);
+          const hasOldBundle = scripts.some(script => 
+            script.src && script.src.includes('index-DUzU8MtJ.js')
+          );
           
-          // Clear everything immediately
-          try {
-            localStorage.clear();
-            sessionStorage.clear();
+          if (hasOldBundle) {
+            console.log('🚨 OLD BUNDLE DETECTED - NUCLEAR RELOAD');
+            // Nuclear option: destroy everything and reload
+            try {
+              localStorage.clear();
+              sessionStorage.clear();
+              if (window.caches) {
+                caches.keys().then(keys => keys.forEach(key => caches.delete(key)));
+              }
+              if (navigator.serviceWorker) {
+                navigator.serviceWorker.getRegistrations().then(regs => 
+                  regs.forEach(reg => reg.unregister())
+                );
+              }
+            } catch (e) {}
             
-            if ('caches' in window) {
-              caches.keys().then(keys => {
-                keys.forEach(key => caches.delete(key));
-              });
-            }
-            
-            if ('serviceWorker' in navigator) {
-              navigator.serviceWorker.getRegistrations().then(registrations => {
-                registrations.forEach(registration => registration.unregister());
-              });
-            }
-          } catch (e) {
-            console.log('Cache clear error:', e);
+            // Force reload with nuclear parameters
+            const nuclear = Date.now() + Math.random();
+            window.location.href = window.location.href.split('?')[0] + '?nuclear=' + nuclear;
+            return true;
           }
-          
-          // Force reload with unique parameters
-          const timestamp = Date.now();
-          const random = Math.random();
-          const currentUrl = window.location.href.split('?')[0];
-          const newUrl = `${currentUrl}?cb=${timestamp}&r=${random}&force=true`;
-          
-          // Use replace to avoid back button issues
-          window.location.replace(newUrl);
-        } else {
-          console.log('✅ Cache buster already applied, loading normally');
+          return false;
+        };
+        
+        // Check immediately and every 100ms until new bundle loads
+        if (!checkOldBundle()) {
+          const interval = setInterval(() => {
+            if (checkOldBundle() || document.readyState === 'complete') {
+              clearInterval(interval);
+            }
+          }, 100);
         }
       })();
     </script>
