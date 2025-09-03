@@ -475,9 +475,10 @@ app.post('/api/trades', authenticateToken, async (req, res) => {
     console.log('🕐 Raw entryTime from frontend:', entryTime);
     console.log('🕐 Raw exitTime from frontend:', exitTime);
     
-    // Force timezone handling: treat frontend datetime-local as UTC to prevent conversion
-    const entryTimeUTC = entryTime ? entryTime + ':00.000Z' : null;
-    const exitTimeUTC = exitTime ? exitTime + ':00.000Z' : null;
+    // FORCE UTC storage without timezone interpretation
+    // User enters "2025-09-03T16:55" -> We want to store "2025-09-03T16:55" exactly
+    const entryTimeUTC = entryTime ? entryTime + ':00+00:00' : null;
+    const exitTimeUTC = exitTime ? exitTime + ':00+00:00' : null;
     
     console.log('🕐 Final entryTimeUTC to DB:', entryTimeUTC);
     console.log('🕐 Final exitTimeUTC to DB:', exitTimeUTC);
@@ -538,9 +539,10 @@ app.put('/api/trades/:id', authenticateToken, async (req, res) => {
     console.log('🕐 Raw entryTime from frontend:', entryTime);
     console.log('🕐 Raw exitTime from frontend:', exitTime);
     
-    // Force timezone handling: treat frontend datetime-local as UTC to prevent conversion
-    const entryTimeUTC = entryTime ? entryTime + ':00.000Z' : null;
-    const exitTimeUTC = exitTime ? exitTime + ':00.000Z' : null;
+    // FORCE UTC storage without timezone interpretation
+    // User enters "2025-09-03T16:55" -> We want to store "2025-09-03T16:55" exactly
+    const entryTimeUTC = entryTime ? entryTime + ':00+00:00' : null;
+    const exitTimeUTC = exitTime ? exitTime + ':00+00:00' : null;
     
     console.log('🕐 Final entryTimeUTC to DB:', entryTimeUTC);
     console.log('🕐 Final exitTimeUTC to DB:', exitTimeUTC);
