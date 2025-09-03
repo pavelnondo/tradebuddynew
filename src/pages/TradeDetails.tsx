@@ -2,27 +2,20 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Image as ImageIcon, Edit, CheckCircle2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { API_BASE_URL } from '@/config';
-
-// Global cache - survives component remounts (kept minimal)
-const tradeCache: Record<string, any> = {};
 
 // Helper function to format trade date without timezone conversion
 const formatTradeDate = (date: string | Date | null | undefined) => {
   if (!date) return '';
-
   if (typeof date === 'string') {
-    // If it's a string, extract time directly without timezone conversion
     if (date.includes('T')) {
-      return date.replace('T', ' ').slice(0, 16); // "2025-09-02T10:37:00.000Z" -> "2025-09-02 10:37"
+      return date.replace('T', ' ').slice(0, 16);
     } else if (date.includes(' ')) {
-      return date.slice(0, 16); // "2025-09-02 10:37:00" -> "2025-09-02 10:37"
+      return date.slice(0, 16);
     }
     return date.slice(0, 16);
   } else if (date instanceof Date) {
-    // If it's a Date object, convert it back to the original time string format
-    // This is less ideal but handles legacy data from location.state
     return date.toISOString().replace('T', ' ').slice(0, 16);
   }
   return '';
@@ -51,113 +44,12 @@ export default function TradeDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
-  const [trade, setTrade] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const hasFetchedRef = useRef<Record<string, boolean>>({});
-
-  // Simple, reliable trade loading logic
-  useEffect(() => {
-    if (!params.id) return;
-
-    // If we have trade data from navigation, use it immediately
-    if (location.state?.trade) {
-      setTrade(location.state.trade);
-      return;
-    }
-
-    // Prevent multiple API calls for the same trade ID
-    if (hasFetchedRef.current[params.id]) {
-      return;
-    }
-
-    // Otherwise, fetch from API
-    const fetchTrade = async () => {
-      setLoading(true);
-      setError(null);
-      
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          navigate('/');
-          return;
-        }
-
-        const res = await fetch(`${API_BASE_URL}/trades/${params.id}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (res.status === 401) {
-          navigate('/');
-          return;
-        }
-
-        if (!res.ok) {
-          setError(`Failed to load trade: ${res.status}`);
-          setLoading(false);
-          return;
-        }
-
-        const t = await res.json();
-        
-        // Ensure all fields are properly sanitized to prevent re-render loops
-        const tradeData = {
-          id: Number(t.id) || 0,
-          asset: String(t.symbol || ''),
-          tradeType: String(t.trade_type || t.type || ''),
-          entryPrice: Number(t.entry_price) || 0,
-          exitPrice: t.exit_price != null ? Number(t.exit_price) : null,
-          positionSize: Number(t.quantity) || 0,
-          date: t.entry_time ? String(t.entry_time) : null,
-          profitLoss: t.pnl != null ? Number(t.pnl) : 0,
-          notes: String(t.notes || ''),
-          emotion: String(t.emotion || ''),
-          screenshot: t.screenshot_url ? (t.screenshot_url.startsWith('http') ? t.screenshot_url : `https://www.mytradebuddy.ru${t.screenshot_url}`) : '',
-          checklistItems: Array.isArray(t.checklist_items) ? t.checklist_items.map((item: any) => ({
-            id: Number(item.id) || 0,
-            text: String(item.text || ''),
-            completed: Boolean(item.completed)
-          })) : [],
-          entryTime: t.entry_time ? String(t.entry_time) : null,
-          exitTime: t.exit_time ? String(t.exit_time) : null,
-          duration: t.duration != null ? Number(t.duration) : (t.duration_minutes != null ? Number(t.duration_minutes) : null),
-        };
-
-        // Only update if we don't already have this trade data
-        setTrade(prevTrade => {
-          if (prevTrade && prevTrade.id === tradeData.id) {
-            return prevTrade; // Don't update if it's the same trade
-          }
-          return tradeData;
-        });
-        
-        // Mark this trade as fetched to prevent re-fetching
-        hasFetchedRef.current[params.id] = true;
-      } catch (e) {
-        setError('Failed to load trade');
-        console.error('Trade load error:', e);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTrade();
-  }, [params.id, navigate]);
-
-  if (!trade && loading) {
-    return (
-      <div className="space-y-6">
-        <Button variant="ghost" onClick={() => navigate(-1)} className="p-2">
-          <ArrowLeft className="w-4 h-4" />
-        </Button>
-        <Card className="card-modern">
-          <CardContent className="p-8">Loading trade...</CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (error) {
+  
+  // Use navigation state if available, otherwise null
+  const trade = location.state?.trade || null;
+  
+  // If no trade data, show error immediately
+  if (!trade) {
     return (
       <div className="space-y-6">
         <Button variant="ghost" onClick={() => navigate(-1)} className="p-2">
@@ -166,10 +58,12 @@ export default function TradeDetails() {
         <Card className="card-modern">
           <CardContent className="p-8">
             <div className="text-center">
-              <h2 className="text-xl font-bold text-red-600 mb-2">Error Loading Trade</h2>
-              <p className="text-muted-foreground mb-4">{error}</p>
-              <Button onClick={() => window.location.reload()} className="btn-apple">
-                Try Again
+              <h2 className="text-xl font-bold text-red-600 mb-2">Trade Not Found</h2>
+              <p className="text-muted-foreground mb-4">
+                Please navigate to this page from the Trades list.
+              </p>
+              <Button onClick={() => navigate('/trades')} className="btn-apple">
+                Go to Trades
               </Button>
             </div>
           </CardContent>
@@ -178,18 +72,7 @@ export default function TradeDetails() {
     );
   }
 
-  if (!trade && !loading) {
-    return (
-      <div className="space-y-6">
-        <Button variant="ghost" onClick={() => navigate(-1)} className="p-2">
-          <ArrowLeft className="w-4 h-4" />
-        </Button>
-        <Card className="card-modern">
-          <CardContent className="p-8">Trade not found.</CardContent>
-        </Card>
-      </div>
-    );
-  }
+
 
   // Calculate duration and completion data (no more useMemo logging loops)
   const durationMinutes = calculateDuration(trade);
