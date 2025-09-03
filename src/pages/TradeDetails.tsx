@@ -259,8 +259,6 @@ export default function TradeDetails() {
                   src={trade.screenshot} 
                   alt="Trade screenshot" 
                   className="w-full max-w-3xl hover:scale-105 transition-transform" 
-                  onLoad={() => console.log('🔍 Screenshot loaded successfully:', trade.screenshot)}
-                  onError={(e) => console.log('🔍 Screenshot failed to load:', trade.screenshot, e)}
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">Click to open in full size</p>
