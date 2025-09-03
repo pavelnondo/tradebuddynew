@@ -48,18 +48,23 @@ app.use(helmet({
 }));
 
 // Rate limiting for API protection with proper proxy support
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-  // Use X-Forwarded-For header if available, fallback to req.ip
-  keyGenerator: (req) => {
-    return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
-  }
-});
-app.use('/api/', limiter);
+// Disable limiter outside production to avoid blocking during debugging
+if (config.nodeEnv === 'production') {
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 500, // allow more headroom in production
+    message: 'Too many requests from this IP, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+    // Use X-Forwarded-For header if available, fallback to req.ip
+    keyGenerator: (req) => {
+      return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+    }
+  });
+  app.use('/api/', limiter);
+} else {
+  console.log('⚠️ Rate limiting disabled in non-production environment');
+}
 
 // Compression for better performance
 app.use(compression());
