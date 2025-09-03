@@ -91,6 +91,18 @@ const AppRoutes = () => {
         </ProtectedRoute>
       } />
       
+      <Route path="/edit-trade/:id" element={
+        <ProtectedRoute>
+          <ErrorBoundary>
+            <Layout>
+              <Suspense fallback={<PageLoader />}>
+                <AddTrade />
+              </Suspense>
+            </Layout>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      
       <Route path="/add-trade" element={
         <ProtectedRoute>
           <ErrorBoundary>

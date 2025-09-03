@@ -258,118 +258,193 @@ export default function TradeDetails() {
   const isLoss = trade.pnl < 0;
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => navigate(-1)} className="p-2">
-          <ArrowLeft className="w-4 h-4" />
-        </Button>
-        <Button onClick={handleEdit} className="flex items-center gap-2">
-          <Edit className="w-4 h-4" />
-          Edit Trade
-        </Button>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between bg-white rounded-lg shadow-sm p-4">
+          <Button variant="ghost" onClick={() => navigate(-1)} className="hover:bg-gray-100">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
+          <Button onClick={handleEdit} className="bg-blue-600 hover:bg-blue-700 text-white shadow-md">
+            <Edit className="w-4 h-4 mr-2" />
+            Edit Trade
+          </Button>
+        </div>
 
-      {/* Trade Overview Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3">
-            <span className="text-2xl font-bold">{trade.symbol}</span>
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              trade.trade_type === 'Long' 
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-red-100 text-red-800'
-            }`}>
-              {trade.trade_type}
-            </span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        {/* Trade Overview Card */}
+        <Card className="shadow-lg border-0 bg-white">
+          <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl font-bold">{trade.symbol}</span>
+                <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
+                  trade.trade_type === 'Long' 
+                    ? 'bg-green-500/20 text-green-100 border border-green-400/30' 
+                    : 'bg-red-500/20 text-red-100 border border-red-400/30'
+                }`}>
+                  {trade.trade_type}
+                </span>
+              </div>
+              <div className={`text-right ${
+                isProfit ? 'text-green-300' : isLoss ? 'text-red-300' : 'text-gray-300'
+              }`}>
+                <div className="text-2xl font-bold">
+                  {isProfit ? '+' : ''}${trade.pnl.toFixed(2)}
+                </div>
+                <div className="text-sm opacity-80">P&L</div>
+              </div>
+            </CardTitle>
+          </CardHeader>
+        <CardContent className="p-6 space-y-6">
           {/* Key Metrics */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
-              <div className="text-sm text-muted-foreground">Entry Price</div>
-              <div className="text-lg font-semibold">${trade.entry_price.toFixed(2)}</div>
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
+              <div className="flex items-center gap-2 mb-2">
+                <DollarSign className="w-4 h-4 text-blue-600" />
+                <div className="text-sm font-medium text-blue-800">Entry Price</div>
+              </div>
+              <div className="text-xl font-bold text-blue-900">${trade.entry_price.toFixed(2)}</div>
             </div>
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
-              <div className="text-sm text-muted-foreground">Exit Price</div>
-              <div className="text-lg font-semibold">
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200">
+              <div className="flex items-center gap-2 mb-2">
+                <DollarSign className="w-4 h-4 text-purple-600" />
+                <div className="text-sm font-medium text-purple-800">Exit Price</div>
+              </div>
+              <div className="text-xl font-bold text-purple-900">
                 {trade.exit_price ? `$${trade.exit_price.toFixed(2)}` : 'N/A'}
               </div>
             </div>
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
-              <div className="text-sm text-muted-foreground">Quantity</div>
-              <div className="text-lg font-semibold">{trade.quantity}</div>
+            <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-4 rounded-xl border border-indigo-200">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="w-4 h-4 text-indigo-600" />
+                <div className="text-sm font-medium text-indigo-800">Quantity</div>
+              </div>
+              <div className="text-xl font-bold text-indigo-900">{trade.quantity}</div>
             </div>
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
-              <div className="text-sm text-muted-foreground">P&L</div>
-              <div className={`text-lg font-semibold flex items-center justify-center gap-1 ${
-                isProfit ? 'text-green-600' : isLoss ? 'text-red-600' : 'text-gray-600'
+            <div className={`p-4 rounded-xl border ${
+              isProfit 
+                ? 'bg-gradient-to-br from-green-50 to-green-100 border-green-200' 
+                : isLoss 
+                ? 'bg-gradient-to-br from-red-50 to-red-100 border-red-200'
+                : 'bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200'
+            }`}>
+              <div className="flex items-center gap-2 mb-2">
+                {isProfit ? <TrendingUp className="w-4 h-4 text-green-600" /> : 
+                 isLoss ? <TrendingDown className="w-4 h-4 text-red-600" /> : 
+                 <DollarSign className="w-4 h-4 text-gray-600" />}
+                <div className={`text-sm font-medium ${
+                  isProfit ? 'text-green-800' : isLoss ? 'text-red-800' : 'text-gray-800'
+                }`}>
+                  P&L
+                </div>
+              </div>
+              <div className={`text-xl font-bold ${
+                isProfit ? 'text-green-900' : isLoss ? 'text-red-900' : 'text-gray-900'
               }`}>
-                {isProfit ? <TrendingUp className="w-4 h-4" /> : isLoss ? <TrendingDown className="w-4 h-4" /> : null}
-                ${trade.pnl.toFixed(2)}
+                {isProfit ? '+' : ''}${trade.pnl.toFixed(2)}
               </div>
             </div>
           </div>
 
           {/* Trade Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Entry Time:</span>
-                <span className="font-medium">{formatDateTime(trade.entry_time)}</span>
-              </div>
-              {trade.exit_time && (
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Exit Time:</span>
-                  <span className="font-medium">{formatDateTime(trade.exit_time)}</span>
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Trade Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="bg-white rounded-lg p-4 shadow-sm">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Clock className="w-5 h-5 text-blue-600" />
+                    <span className="text-sm font-medium text-gray-700">Entry Time</span>
+                  </div>
+                  <span className="text-lg font-semibold text-gray-900">{formatDateTime(trade.entry_time)}</span>
                 </div>
-              )}
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Duration:</span>
-                <span className="font-medium">{getDuration(trade)}</span>
+                {trade.exit_time && (
+                  <div className="bg-white rounded-lg p-4 shadow-sm">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Clock className="w-5 h-5 text-purple-600" />
+                      <span className="text-sm font-medium text-gray-700">Exit Time</span>
+                    </div>
+                    <span className="text-lg font-semibold text-gray-900">{formatDateTime(trade.exit_time)}</span>
+                  </div>
+                )}
+                <div className="bg-white rounded-lg p-4 shadow-sm">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Clock className="w-5 h-5 text-indigo-600" />
+                    <span className="text-sm font-medium text-gray-700">Duration</span>
+                  </div>
+                  <span className="text-lg font-semibold text-gray-900">{getDuration(trade)}</span>
+                </div>
               </div>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Emotion:</span>
-                <span className="font-medium capitalize">{trade.emotion || 'N/A'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Checklist Items:</span>
-                <span className="font-medium">
-                  {trade.checklist_items.filter(item => item.completed).length}/{trade.checklist_items.length}
-                </span>
+              <div className="space-y-4">
+                <div className="bg-white rounded-lg p-4 shadow-sm">
+                  <div className="flex items-center gap-3 mb-2">
+                    <DollarSign className="w-5 h-5 text-green-600" />
+                    <span className="text-sm font-medium text-gray-700">Emotion</span>
+                  </div>
+                  <span className="text-lg font-semibold text-gray-900 capitalize">{trade.emotion || 'N/A'}</span>
+                </div>
+                <div className="bg-white rounded-lg p-4 shadow-sm">
+                  <div className="flex items-center gap-3 mb-2">
+                    <CheckCircle2 className="w-5 h-5 text-orange-600" />
+                    <span className="text-sm font-medium text-gray-700">Checklist Completion</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-semibold text-gray-900">
+                      {trade.checklist_items.filter(item => item.completed).length}/{trade.checklist_items.length}
+                    </span>
+                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-orange-500 h-2 rounded-full transition-all duration-300"
+                        style={{ 
+                          width: `${trade.checklist_items.length > 0 ? 
+                            (trade.checklist_items.filter(item => item.completed).length / trade.checklist_items.length) * 100 : 0}%` 
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Notes */}
           {trade.notes && (
-            <div className="pt-4 border-t">
-              <h4 className="font-medium mb-2">Notes</h4>
-              <p className="text-muted-foreground">{trade.notes}</p>
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <Edit className="w-5 h-5 text-amber-600" />
+                <h4 className="font-semibold text-amber-800">Trade Notes</h4>
+              </div>
+              <p className="text-amber-700 leading-relaxed">{trade.notes}</p>
             </div>
           )}
 
           {/* Screenshot */}
           {trade.screenshot_url && (
-            <div className="pt-4 border-t">
-              <h4 className="font-medium mb-2">Screenshot</h4>
-              <div className="relative group">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <ImageIcon className="w-5 h-5 text-slate-600" />
+                <h4 className="font-semibold text-slate-800">Trade Screenshot</h4>
+              </div>
+              <div className="relative group bg-white rounded-lg p-4 shadow-sm">
                 <img 
-                  src={trade.screenshot_url.startsWith('http') ? trade.screenshot_url : `${API_BASE_URL}${trade.screenshot_url}`}
+                  src={trade.screenshot_url.startsWith('http') ? trade.screenshot_url : `/uploads/${trade.screenshot_url.split('/').pop()}`}
                   alt="Trade Screenshot"
-                  className="max-w-full h-auto rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
-                  onClick={() => window.open(trade.screenshot_url!, '_blank')}
+                  className="max-w-full h-auto rounded-lg border-2 border-gray-200 cursor-pointer hover:border-blue-400 transition-all duration-300 shadow-md"
+                  onClick={() => window.open(
+                    trade.screenshot_url!.startsWith('http') ? trade.screenshot_url! : `/uploads/${trade.screenshot_url!.split('/').pop()}`, 
+                    '_blank'
+                  )}
+                  onError={(e) => {
+                    console.error('Screenshot failed to load:', trade.screenshot_url);
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.parentElement!.innerHTML = '<div class="text-center text-gray-500 py-8">Screenshot not available</div>';
+                  }}
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg flex items-center justify-center">
-                  <ImageIcon className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="bg-white/90 rounded-full p-3 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                    <ImageIcon className="w-6 h-6 text-blue-600" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -377,22 +452,29 @@ export default function TradeDetails() {
 
           {/* Checklist Items */}
           {trade.checklist_items.length > 0 && (
-            <div className="pt-4 border-t">
-              <h4 className="font-medium mb-3">Checklist Items</h4>
-              <div className="space-y-2">
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                <h4 className="font-semibold text-emerald-800">Trading Checklist</h4>
+              </div>
+              <div className="space-y-3">
                 {trade.checklist_items.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div key={item.id} className={`flex items-center gap-3 p-4 rounded-lg transition-all ${
+                    item.completed 
+                      ? 'bg-green-100 border border-green-300' 
+                      : 'bg-white border border-gray-200'
+                  }`}>
                     <CheckCircle2 
-                      className={`w-5 h-5 ${
+                      className={`w-5 h-5 flex-shrink-0 ${
                         item.completed 
                           ? 'text-green-600' 
                           : 'text-gray-400'
                       }`} 
                     />
-                    <span className={`${
+                    <span className={`font-medium ${
                       item.completed 
-                        ? 'line-through text-gray-500' 
-                        : 'text-gray-700'
+                        ? 'line-through text-green-700' 
+                        : 'text-gray-800'
                     }`}>
                       {item.text}
                     </span>
@@ -403,6 +485,7 @@ export default function TradeDetails() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
