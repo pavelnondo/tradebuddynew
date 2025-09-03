@@ -637,7 +637,7 @@ export default function TradeHistory() {
         selectedType={selectedType}
         setSelectedType={setSelectedType}
         selectedEmotion={selectedEmotion}
-        setSelectedEmotion={selectedEmotion}
+        setSelectedEmotion={setSelectedEmotion}
         startDate={startDate}
         setStartDate={setStartDate}
         endDate={endDate}
