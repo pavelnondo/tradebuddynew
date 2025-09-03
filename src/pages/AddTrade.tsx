@@ -170,10 +170,7 @@ export default function AddTrade() {
         });
         if (!res.ok) return;
         const t = await res.json();
-        console.log('✏️ Full trade data from API:', t);
-        console.log('✏️ Entry Time from API:', t.entry_time);
-        console.log('✏️ Exit Time from API:', t.exit_time);
-        console.log('✏️ Duration from API:', t.duration);
+
         
         // Extract times from database preserving the user's original input
         const extractTimeFromDB = (dbTime: string) => {
@@ -185,7 +182,7 @@ export default function AddTrade() {
             
             // If it's already in the correct format, just return it
             if (dbTime.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)) {
-              console.log('✏️ Time already in correct format:', dbTime);
+      
               return dbTime;
             }
             
@@ -196,7 +193,7 @@ export default function AddTrade() {
               // Try direct string manipulation as fallback
               if (dbTime.includes('T')) {
                 const fallback = dbTime.slice(0, 16);
-                console.log('✏️ Using fallback format:', fallback);
+  
                 return fallback;
               }
               return "";
@@ -210,14 +207,14 @@ export default function AddTrade() {
             const localMinutes = String(utcDate.getMinutes()).padStart(2, '0');
             
             const result = `${localYear}-${localMonth}-${localDay}T${localHours}:${localMinutes}`;
-            console.log('✏️ Time conversion:', dbTime, '->', result);
+
             return result;
           } catch (error) {
             console.error('Error parsing time:', dbTime, error);
             // Try direct string manipulation as final fallback
             if (dbTime.includes('T')) {
               const fallback = dbTime.slice(0, 16);
-              console.log('✏️ Using error fallback format:', fallback);
+
               return fallback;
             }
             return "";
@@ -227,10 +224,7 @@ export default function AddTrade() {
         // Never pass full ISO with seconds/ms into datetime-local; keep only YYYY-MM-DDTHH:MM
         const entryIso = extractTimeFromDB(String(t.entry_time || ''));
         const exitIso = extractTimeFromDB(String(t.exit_time || ''));
-        console.log('✏️ Raw Entry Time from DB:', t.entry_time);
-        console.log('✏️ Raw Exit Time from DB:', t.exit_time);
-        console.log('✏️ Extracted Entry Time:', entryIso);
-        console.log('✏️ Extracted Exit Time:', exitIso);
+
         
         setFormData(prev => ({
           ...prev,
@@ -273,7 +267,7 @@ export default function AddTrade() {
 
     if (isEditing && editTrade) {
               // Always fetch the full trade data to ensure we have everything
-        console.log('🔍 AddTrade - Edit Trade Data:', editTrade);
+
         hydrateFromFullTrade(editTrade.id);
       
       // Also set initial data from editTrade for immediate display
@@ -341,18 +335,18 @@ export default function AddTrade() {
 
   const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
-    console.log('📸 Screenshot file selected:', file);
+    
     setScreenshotFile(file);
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
         const dataUrl = reader.result as string;
-        console.log('📸 Screenshot data URL created:', dataUrl.slice(0, 100) + '...');
+
         setScreenshotUrl(dataUrl);
       };
       reader.readAsDataURL(file);
     } else {
-      console.log('📸 No file selected, clearing screenshot URL');
+      
       setScreenshotUrl("");
     }
   };
