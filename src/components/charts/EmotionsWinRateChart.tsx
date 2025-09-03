@@ -1,16 +1,15 @@
 import React from 'react';
-import { Line } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
+  BarElement,
   Tooltip,
   Legend,
 } from 'chart.js';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 interface EmotionPerformance {
   emotion: string;
@@ -34,11 +33,24 @@ export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
       {
         label: 'Win Rate (%)',
         data: safeData.map((d) => d.winRate),
-        borderColor: 'rgb(16, 185, 129)',
-        backgroundColor: 'rgba(16, 185, 129, 0.15)',
-        tension: 0.35,
-        fill: true,
-        pointRadius: 3,
+        backgroundColor: [
+          'rgba(16, 185, 129, 0.8)',
+          'rgba(59, 130, 246, 0.8)',
+          'rgba(245, 101, 101, 0.8)',
+          'rgba(251, 191, 36, 0.8)',
+          'rgba(139, 92, 246, 0.8)',
+          'rgba(236, 72, 153, 0.8)',
+        ],
+        borderColor: [
+          'rgb(16, 185, 129)',
+          'rgb(59, 130, 246)',
+          'rgb(245, 101, 101)',
+          'rgb(251, 191, 36)',
+          'rgb(139, 92, 246)',
+          'rgb(236, 72, 153)',
+        ],
+        borderWidth: 2,
+        borderRadius: 6,
       },
     ],
   };
@@ -54,5 +66,5 @@ export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
       y: { title: { display: true, text: 'Win Rate (%)' }, min: 0, max: 100, grid: { color: 'rgba(156,163,175,0.1)' } },
     },
   };
-  return <Line data={chartData} options={options} />;
+  return <Bar data={chartData} options={options} />;
 } 

@@ -474,8 +474,11 @@ app.post('/api/trades', authenticateToken, async (req, res) => {
     // Store times EXACTLY as provided by user - NO timezone conversion
     console.log('🕐 Raw entryTime from frontend:', entryTime);
     console.log('🕐 Raw exitTime from frontend:', exitTime);
-    const entryTimeUTC = entryTime || null;
-    const exitTimeUTC = exitTime || null;
+    
+    // Force timezone handling: treat frontend datetime-local as UTC to prevent conversion
+    const entryTimeUTC = entryTime ? entryTime + ':00.000Z' : null;
+    const exitTimeUTC = exitTime ? exitTime + ':00.000Z' : null;
+    
     console.log('🕐 Final entryTimeUTC to DB:', entryTimeUTC);
     console.log('🕐 Final exitTimeUTC to DB:', exitTimeUTC);
 
@@ -534,8 +537,11 @@ app.put('/api/trades/:id', authenticateToken, async (req, res) => {
     // Store times EXACTLY as provided by user - NO timezone conversion
     console.log('🕐 Raw entryTime from frontend:', entryTime);
     console.log('🕐 Raw exitTime from frontend:', exitTime);
-    const entryTimeUTC = entryTime || null;
-    const exitTimeUTC = exitTime || null;
+    
+    // Force timezone handling: treat frontend datetime-local as UTC to prevent conversion
+    const entryTimeUTC = entryTime ? entryTime + ':00.000Z' : null;
+    const exitTimeUTC = exitTime ? exitTime + ':00.000Z' : null;
+    
     console.log('🕐 Final entryTimeUTC to DB:', entryTimeUTC);
     console.log('🕐 Final exitTimeUTC to DB:', exitTimeUTC);
 

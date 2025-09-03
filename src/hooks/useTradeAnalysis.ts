@@ -41,10 +41,21 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
     let currentDrawdown = 0;
     let peak = initialBalance;
     
-    const balanceOverTime = safeTrades
-      .filter(trade => trade.date) // Filter out trades without dates
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .reduce((acc, trade, index) => {
+    const balanceOverTime = (() => {
+      const sortedTrades = safeTrades
+        .filter(trade => trade.date) // Filter out trades without dates
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      
+      // Start with initial balance point
+      const startPoint = {
+        date: sortedTrades.length > 0 ? 
+          new Date(new Date(sortedTrades[0].date).getTime() - 24 * 60 * 60 * 1000).toLocaleDateString() : // Day before first trade
+          new Date().toLocaleDateString(), // Or today if no trades
+        balance: initialBalance,
+        drawdown: 0
+      };
+      
+      const tradePoints = sortedTrades.reduce((acc, trade, index) => {
         const date = new Date(trade.date).toLocaleDateString();
         const prevBalance = index > 0 ? acc[index - 1].balance : initialBalance;
         const currentBalance = prevBalance + trade.profitLoss;
@@ -68,6 +79,10 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
         
         return acc;
       }, [] as { date: string; balance: number; drawdown: number }[]);
+      
+      // Return initial balance point + trade points
+      return sortedTrades.length > 0 ? [startPoint, ...tradePoints] : [startPoint];
+    })();
     
     // Generate trade count by date data
     const tradesByDate = safeTrades
