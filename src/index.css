@@ -68,4 +68,20 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;  /* Chrome, Safari and Opera */
   }
+  
+  /* Fix datetime-local calendar icons in dark mode */
+  .dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+  }
+  
+  /* Ensure calendar icon is visible in all cases */
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.8;
+  }
+  
+  input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
+    opacity: 1;
+  }
 }

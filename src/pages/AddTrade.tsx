@@ -42,13 +42,13 @@ const EmotionSelector = ({
   onEmotionSelect: (emotion: string) => void;
 }) => {
   const emotions = [
-    { value: "Confident", label: "Confident", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
-    { value: "Calm", label: "Calm", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
-    { value: "Excited", label: "Excited", color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" },
-    { value: "Nervous", label: "Nervous", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" },
-    { value: "Fearful", label: "Fearful", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" },
-    { value: "Greedy", label: "Greedy", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
-    { value: "Frustrated", label: "Frustrated", color: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400" },
+    { value: "Confident", label: "Confident", color: "bg-green-500" },
+    { value: "Calm", label: "Calm", color: "bg-blue-500" },
+    { value: "Excited", label: "Excited", color: "bg-yellow-500" },
+    { value: "Nervous", label: "Nervous", color: "bg-orange-500" },
+    { value: "Fearful", label: "Fearful", color: "bg-purple-500" },
+    { value: "Greedy", label: "Greedy", color: "bg-red-500" },
+    { value: "Frustrated", label: "Frustrated", color: "bg-gray-500" },
   ];
 
   return (
@@ -175,22 +175,35 @@ export default function AddTrade() {
         console.log('✏️ Exit Time from API:', t.exit_time);
         console.log('✏️ Duration from API:', t.duration);
         
-        // Extract times directly from database string without timezone conversion
+        // Extract times from database preserving the user's original input
         const extractTimeFromDB = (dbTime: string) => {
           if (!dbTime) return "";
-          // User wants to see the EXACT times they originally entered
-          // If database has "2025-09-02T10:37:00.000Z" but user entered 16:37,
-          // we need to preserve that original time
           
-          // First try direct string parsing without Date conversion
-          if (dbTime.includes('T')) {
-            // "2025-09-02T10:37:00.000Z" -> "2025-09-02T10:37"
+          // The issue: user enters "16:37" local time, JS converts to UTC for storage
+          // We need to reverse that conversion to show the user their original time
+          
+          try {
+            // Parse the UTC time from database
+            const dbDate = new Date(dbTime + (dbTime.endsWith('Z') ? '' : 'Z'));
+            
+            // Convert back to local timezone to get the time the user originally entered
+            const localYear = dbDate.getFullYear();
+            const localMonth = String(dbDate.getMonth() + 1).padStart(2, '0');
+            const localDay = String(dbDate.getDate()).padStart(2, '0');
+            const localHours = String(dbDate.getHours()).padStart(2, '0');
+            const localMinutes = String(dbDate.getMinutes()).padStart(2, '0');
+            
+            return `${localYear}-${localMonth}-${localDay}T${localHours}:${localMinutes}`;
+          } catch (error) {
+            console.error('Error parsing time:', dbTime, error);
+            // Fallback: direct string manipulation
+            if (dbTime.includes('T')) {
+              return dbTime.slice(0, 16);
+            } else if (dbTime.includes(' ')) {
+              return dbTime.slice(0, 16).replace(' ', 'T');
+            }
             return dbTime.slice(0, 16);
-          } else if (dbTime.includes(' ')) {
-            // "2025-09-02 10:37:00" -> "2025-09-02T10:37"
-            return dbTime.slice(0, 16).replace(' ', 'T');
           }
-          return dbTime.slice(0, 16);
         };
         
         const entryIso = extractTimeFromDB(t.entry_time);
