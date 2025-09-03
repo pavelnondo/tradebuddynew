@@ -159,7 +159,9 @@ const FilterBar = ({
   startDate,
   setStartDate,
   endDate,
-  setEndDate
+  setEndDate,
+  durationFilter,
+  setDurationFilter
 }: {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
@@ -171,9 +173,12 @@ const FilterBar = ({
   setStartDate: (date: string) => void;
   endDate: string;
   setEndDate: (date: string) => void;
+  durationFilter: string;
+  setDurationFilter: (duration: string) => void;
 }) => {
-  const tradeTypes = ["All", "Long", "Short", "Scalp", "Swing"];
+  const tradeTypes = ["All", "Buy", "Sell"];
   const emotions = ["All", "Confident", "Calm", "Nervous", "Excited", "Fearful", "Greedy", "Frustrated"];
+  const durations = ["All", "< 5min", "5-15min", "15-30min", "30-60min", "> 1hr"];
 
   return (
     <Card className="card-modern mb-6">
@@ -181,8 +186,8 @@ const FilterBar = ({
         <div className="flex flex-col gap-4">
           {/* First Row - Search and Date Filters */}
           <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1">
+            {/* Search - Reduced width to accommodate date filters */}
+            <div className="flex-1 max-w-md">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -194,26 +199,26 @@ const FilterBar = ({
               </div>
             </div>
 
-            {/* Date Filters */}
+            {/* Date Filters - Fixed calendar icon positioning */}
             <div className="flex gap-2">
               <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Calendar className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
                 <Input
                   type="date"
                   placeholder="Start Date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="pl-10 input-modern w-40"
+                  className="pl-8 input-modern w-36"
                 />
               </div>
               <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Calendar className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
                 <Input
                   type="date"
                   placeholder="End Date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="pl-10 input-modern w-40"
+                  className="pl-8 input-modern w-36"
                 />
               </div>
               {(startDate || endDate) && (
@@ -232,10 +237,11 @@ const FilterBar = ({
             </div>
           </div>
 
-          {/* Second Row - Type and Emotion Filters */}
+          {/* Second Row - Type, Duration, and Emotion Filters */}
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Trade Type Filter */}
             <div className="flex flex-wrap gap-2">
+              <span className="text-sm font-medium text-muted-foreground flex items-center mr-2">Type:</span>
               {tradeTypes.map((type) => (
                 <Button
                   key={type}
@@ -249,8 +255,25 @@ const FilterBar = ({
               ))}
             </div>
 
+            {/* Duration Filter */}
+            <div className="flex flex-wrap gap-2">
+              <span className="text-sm font-medium text-muted-foreground flex items-center mr-2">Duration:</span>
+              {durations.map((duration) => (
+                <Button
+                  key={duration}
+                  variant={durationFilter === duration ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setDurationFilter(duration)}
+                  className="text-xs"
+                >
+                  {duration}
+                </Button>
+              ))}
+            </div>
+
             {/* Emotion Filter */}
             <div className="flex flex-wrap gap-2">
+              <span className="text-sm font-medium text-muted-foreground flex items-center mr-2">Emotion:</span>
               {emotions.map((emotion) => (
                 <Button
                   key={emotion}
@@ -359,6 +382,7 @@ export default function TradeHistory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("All");
   const [selectedEmotion, setSelectedEmotion] = useState("All");
+  const [durationFilter, setDurationFilter] = useState("All");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -381,8 +405,39 @@ export default function TradeHistory() {
         trade.asset?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         trade.notes?.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesType = selectedType === "All" || trade.tradeType === selectedType;
+      // Map trade types: Buy/Sell from UI to backend data
+      let matchesType = selectedType === "All";
+      if (!matchesType) {
+        // Check both tradeType and type fields to handle different data formats
+        const buyMatch = selectedType === "Buy" && (trade.tradeType === "Buy" || trade.type === "buy" || trade.tradeType === "Long");
+        const sellMatch = selectedType === "Sell" && (trade.tradeType === "Sell" || trade.type === "sell" || trade.tradeType === "Short");
+        matchesType = buyMatch || sellMatch;
+      }
+      
       const matchesEmotion = selectedEmotion === "All" || trade.emotion === selectedEmotion;
+      
+      // Duration filtering
+      let matchesDuration = durationFilter === "All";
+      if (!matchesDuration && trade.duration) {
+        const duration = parseInt(trade.duration);
+        switch (durationFilter) {
+          case "< 5min":
+            matchesDuration = duration < 5;
+            break;
+          case "5-15min":
+            matchesDuration = duration >= 5 && duration <= 15;
+            break;
+          case "15-30min":
+            matchesDuration = duration >= 15 && duration <= 30;
+            break;
+          case "30-60min":
+            matchesDuration = duration >= 30 && duration <= 60;
+            break;
+          case "> 1hr":
+            matchesDuration = duration > 60;
+            break;
+        }
+      }
       
       // Date filtering from calendar
       let matchesDate = true;
@@ -391,9 +446,17 @@ export default function TradeHistory() {
         matchesDate = tradeDate === dateFilter;
       }
       
-      return matchesSearch && matchesType && matchesEmotion && matchesDate;
+      // Date range filtering
+      let matchesDateRange = true;
+      if ((startDate || endDate) && trade.date) {
+        const tradeDate = new Date(trade.date).toLocaleDateString('sv-SE');
+        if (startDate && tradeDate < startDate) matchesDateRange = false;
+        if (endDate && tradeDate > endDate) matchesDateRange = false;
+      }
+      
+      return matchesSearch && matchesType && matchesEmotion && matchesDuration && matchesDate && matchesDateRange;
     });
-  }, [trades, searchTerm, selectedType, selectedEmotion, dateFilter]);
+  }, [trades, searchTerm, selectedType, selectedEmotion, durationFilter, dateFilter, startDate, endDate]);
 
   const handleEditTrade = (trade: any) => {
     // Navigate to edit trade page with trade data
@@ -549,6 +612,8 @@ export default function TradeHistory() {
         setStartDate={setStartDate}
         endDate={endDate}
         setEndDate={setEndDate}
+        durationFilter={durationFilter}
+        setDurationFilter={setDurationFilter}
       />
 
       {/* Trades Grid */}
