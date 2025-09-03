@@ -2,19 +2,17 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Image as ImageIcon, Edit, CheckCircle2 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { API_BASE_URL } from '@/config';
 
-// Module-level caches to persist across remounts and fully stop request storms
+// Global cache - survives component remounts
 const tradeCache: Record<string, any> = {};
-const lastFetchAt: Record<string, number> = {};
-const inflightFetch: Record<string, Promise<any>> = {};
-// Removed irrelevant per-trade P&L line chart
+const loadedTrades: Record<string, boolean> = {};
 
 // Helper function to format trade date without timezone conversion
 const formatTradeDate = (date: string | Date | null | undefined) => {
   if (!date) return '';
-  
+
   if (typeof date === 'string') {
     // If it's a string, extract time directly without timezone conversion
     if (date.includes('T')) {
@@ -31,84 +29,88 @@ const formatTradeDate = (date: string | Date | null | undefined) => {
   return '';
 };
 
+// Duration calculation helper
+const calculateDuration = (trade: any) => {
+  if (typeof trade?.duration === 'number') return trade.duration;
+  if (typeof trade?.duration === 'string' && trade.duration) return Number(trade.duration);
+  const start = trade?.entryTime ? new Date(trade.entryTime).getTime() : NaN;
+  const end = trade?.exitTime ? new Date(trade.exitTime).getTime() : NaN;
+  if (!Number.isNaN(start) && !Number.isNaN(end) && end > start) {
+    return Math.floor((end - start) / 60000);
+  }
+  return undefined;
+};
+
+const formatHM = (mins?: number) => {
+  if (mins == null) return '-';
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+};
+
 export default function TradeDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
-  const [trade, setTrade] = useState<any>(location.state?.trade || null);
+  const [trade, setTrade] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const hasLoadedRef = useRef(false);
-  const abortRef = useRef<AbortController | null>(null);
 
-  // Simple in-memory cache to avoid repeated fetches across remounts
-  const tradeCacheRef = useRef<Record<string, any>>({});
-  const lastFetchRef = useRef<Record<string, number>>({});
-
-  // Load from sessionStorage cache immediately if available
+  // Load trade data - this effect runs ONLY when params.id changes
   useEffect(() => {
     if (!params.id) return;
+
+    // Check if already loaded this trade
+    if (loadedTrades[params.id]) {
+      if (tradeCache[params.id]) {
+        setTrade(tradeCache[params.id]);
+      }
+      return;
+    }
+
+    // Try to load from navigation state first
+    if (location.state?.trade) {
+      const tradeData = location.state.trade;
+      tradeCache[params.id] = tradeData;
+      loadedTrades[params.id] = true;
+      setTrade(tradeData);
+      return;
+    }
+
+    // Try to load from sessionStorage cache
     try {
       const key = `td_cache_${params.id}`;
       const cached = sessionStorage.getItem(key);
       if (cached) {
         const parsed = JSON.parse(cached);
         if (parsed && typeof parsed === 'object') {
+          tradeCache[params.id] = parsed;
+          loadedTrades[params.id] = true;
           setTrade(parsed);
+          return;
         }
       }
     } catch {}
-  }, [params.id]);
-  
-  console.log('🔍 Trade Details - Initial state:', { trade: location.state?.trade, params: params.id });
 
-  useEffect(() => {
-    if (!params.id) return;
-    // If we already have the trade (from navigation state or cache), use it
-    if (location.state?.trade) {
-      setTrade(location.state.trade);
-      return;
-    }
-    if (tradeCache[params.id]) {
-      setTrade(tradeCache[params.id]);
-      return;
-    }
-    // Throttle re-fetching the same id within 2 seconds
-    const last = lastFetchAt[params.id];
-    if (last && Date.now() - last < 2000) {
-      return;
-    }
-    lastFetchAt[params.id] = Date.now();
-    if (hasLoadedRef.current) return;
-    hasLoadedRef.current = true;
-
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    const load = async () => {
+    // If nothing cached, fetch from API
+    const loadFromAPI = async () => {
       setLoading(true);
       try {
         const token = localStorage.getItem('token');
-        // Reuse in-flight promise if available
-        if (!inflightFetch[params.id]) {
-          inflightFetch[params.id] = fetch(`${API_BASE_URL}/trades/${params.id}`, { 
-            headers: { 'Authorization': `Bearer ${token}` },
-            signal: controller.signal
-          }).then(async (res) => {
-            if (res.status === 401) {
-              navigate('/');
-              throw new Error('unauthorized');
-            }
-            if (!res.ok) {
-              throw new Error(String(res.status));
-            }
-            return res.json();
-          }).finally(() => {
-            delete inflightFetch[params.id!];
-          });
+        const res = await fetch(`${API_BASE_URL}/trades/${params.id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.status === 401) {
+          navigate('/');
+          return;
         }
-        const t = await inflightFetch[params.id];
-        console.log('🔍 Trade Details - Raw API Response:', t);
+
+        if (!res.ok) {
+          console.error('Failed to load trade', res.status);
+          return;
+        }
+
+        const t = await res.json();
         const tradeData = {
           id: t.id,
           asset: t.symbol,
@@ -126,50 +128,24 @@ export default function TradeDetails() {
           exitTime: t.exit_time,
           duration: t.duration != null ? Number(t.duration) : (t.duration_minutes != null ? Number(t.duration_minutes) : null),
         };
-        tradeCacheRef.current[String(tradeData.id)] = tradeData;
-        tradeCache[String(tradeData.id)] = tradeData;
+
+        // Cache the data
+        tradeCache[params.id] = tradeData;
+        loadedTrades[params.id] = true;
         try {
-          sessionStorage.setItem(`td_cache_${tradeData.id}`, JSON.stringify(tradeData));
+          sessionStorage.setItem(`td_cache_${params.id}`, JSON.stringify(tradeData));
         } catch {}
+
         setTrade(tradeData);
       } catch (e) {
-        if ((e as any).name !== 'AbortError') {
-          console.error('Trade load error', e);
-        }
+        console.error('Trade load error', e);
       } finally {
         setLoading(false);
       }
     };
-    load();
 
-    return () => controller.abort();
-  }, [params.id, navigate]);
-
-  // Removed trades fallback to avoid extra fetching and re-renders
-
-  // Duration (minutes) and pretty time
-  const durationMinutes = useMemo(() => {
-    console.log('🔍 Duration calculation - trade:', trade);
-    console.log('🔍 Duration calculation - trade.duration:', trade?.duration, 'type:', typeof trade?.duration);
-    if (typeof trade?.duration === 'number') return trade.duration;
-    if (typeof trade?.duration === 'string' && trade.duration) return Number(trade.duration);
-    const start = trade?.entryTime ? new Date(trade.entryTime).getTime() : NaN;
-    const end = trade?.exitTime ? new Date(trade.exitTime).getTime() : NaN;
-    console.log('🔍 Duration calculation - start:', start, 'end:', end);
-    if (!Number.isNaN(start) && !Number.isNaN(end) && end > start) {
-      const calculated = Math.floor((end - start) / 60000);
-      console.log('🔍 Duration calculation - calculated:', calculated);
-      return calculated;
-    }
-    console.log('🔍 Duration calculation - returning undefined');
-    return undefined;
-  }, [trade]);
-  const formatHM = (mins?: number) => {
-    if (mins == null) return '-';
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    return h > 0 ? `${h}h ${m}m` : `${m}m`;
-  };
+    loadFromAPI();
+  }, [params.id, navigate]); // Only depends on params.id and navigate
 
   if (!trade && loading) {
     return (
@@ -197,6 +173,8 @@ export default function TradeDetails() {
     );
   }
 
+  // Calculate duration and completion data (no more useMemo logging loops)
+  const durationMinutes = calculateDuration(trade);
   const completedCount = Array.isArray(trade.checklistItems) ? trade.checklistItems.filter((i: any) => i.completed).length : 0;
   const totalCount = Array.isArray(trade.checklistItems) ? trade.checklistItems.length : 0;
   const completionPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
