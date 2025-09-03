@@ -545,6 +545,10 @@ export default function TradeHistory() {
         setSelectedType={setSelectedType}
         selectedEmotion={selectedEmotion}
         setSelectedEmotion={selectedEmotion}
+        startDate={startDate}
+        setStartDate={setStartDate}
+        endDate={endDate}
+        setEndDate={setEndDate}
       />
 
       {/* Trades Grid */}
