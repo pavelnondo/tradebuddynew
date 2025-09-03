@@ -483,13 +483,10 @@ export default function AddTrade() {
                 />
               </div>
               
-              <div className="space-y-2">
-                <Label>Trade Type</Label>
-                <TradeTypeSelector
-                  selectedType={formData.tradeType}
-                  onTypeSelect={(type) => handleInputChange('tradeType', type)}
-                />
-              </div>
+              <TradeTypeSelector
+                selectedType={formData.tradeType}
+                onTypeSelect={(type) => handleInputChange('tradeType', type)}
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
