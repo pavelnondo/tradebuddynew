@@ -2,8 +2,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Image as ImageIcon, Edit, CheckCircle2 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import { useApiTrades } from '@/hooks/useApiTrades';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { API_BASE_URL } from '@/config';
 // Removed irrelevant per-trade P&L line chart
 
@@ -31,62 +30,71 @@ export default function TradeDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
-  const { trades } = useApiTrades();
   const [trade, setTrade] = useState<any>(location.state?.trade || null);
   const [loading, setLoading] = useState(false);
+  const hasLoadedRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
   
   console.log('🔍 Trade Details - Initial state:', { trade: location.state?.trade, params: params.id });
 
   useEffect(() => {
+    if (!params.id || hasLoadedRef.current) return;
+    hasLoadedRef.current = true;
+
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     const load = async () => {
-      if (!params.id) return;
       setLoading(true);
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE_URL}/trades/${params.id}`, { headers: { 'Authorization': `Bearer ${token}` } });
-        if (res.ok) {
-          const t = await res.json();
-          console.log('🔍 Trade Details - Raw API Response:', t);
-          console.log('🔍 Screenshot URL:', t.screenshot_url);
-          console.log('🔍 Duration:', t.duration);
-          console.log('🔍 Entry Time:', t.entry_time);
-          console.log('🔍 Exit Time:', t.exit_time);
-          
-          const tradeData = {
-            id: t.id,
-            asset: t.symbol,
-            tradeType: t.trade_type || t.type,
-            entryPrice: Number(t.entry_price),
-            exitPrice: t.exit_price != null ? Number(t.exit_price) : null,
-            positionSize: Number(t.quantity),
-            date: t.entry_time,
-            profitLoss: t.pnl != null ? Number(t.pnl) : 0,
-            notes: t.notes || '',
-            emotion: t.emotion || '',
-            screenshot: t.screenshot_url ? (t.screenshot_url.startsWith('http') ? t.screenshot_url : `https://www.mytradebuddy.ru${t.screenshot_url}`) : '',
-            checklistItems: Array.isArray(t.checklist_items) ? t.checklist_items : [],
-            entryTime: t.entry_time,
-            exitTime: t.exit_time,
-            duration: t.duration != null ? Number(t.duration) : (t.duration_minutes != null ? Number(t.duration_minutes) : null),
-          };
-          
-          console.log('🔍 Processed Trade Data:', tradeData);
-          setTrade(tradeData);
+        const res = await fetch(`${API_BASE_URL}/trades/${params.id}`, { 
+          headers: { 'Authorization': `Bearer ${token}` },
+          signal: controller.signal
+        });
+        if (res.status === 401) {
+          navigate('/');
+          return;
+        }
+        if (!res.ok) {
+          console.error('Failed to load trade', res.status);
+          return;
+        }
+        const t = await res.json();
+        console.log('🔍 Trade Details - Raw API Response:', t);
+        const tradeData = {
+          id: t.id,
+          asset: t.symbol,
+          tradeType: t.trade_type || t.type,
+          entryPrice: Number(t.entry_price),
+          exitPrice: t.exit_price != null ? Number(t.exit_price) : null,
+          positionSize: Number(t.quantity),
+          date: t.entry_time,
+          profitLoss: t.pnl != null ? Number(t.pnl) : 0,
+          notes: t.notes || '',
+          emotion: t.emotion || '',
+          screenshot: t.screenshot_url ? (t.screenshot_url.startsWith('http') ? t.screenshot_url : `https://www.mytradebuddy.ru${t.screenshot_url}`) : '',
+          checklistItems: Array.isArray(t.checklist_items) ? t.checklist_items : [],
+          entryTime: t.entry_time,
+          exitTime: t.exit_time,
+          duration: t.duration != null ? Number(t.duration) : (t.duration_minutes != null ? Number(t.duration_minutes) : null),
+        };
+        setTrade(tradeData);
+      } catch (e) {
+        if ((e as any).name !== 'AbortError') {
+          console.error('Trade load error', e);
         }
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [params.id]); // FIXED: Removed 'trade' dependency to prevent infinite loop
 
-  // Fallback: find in list - run once only when trades are loaded
-  useEffect(() => {
-    if (!trade && params.id && Array.isArray(trades) && trades.length > 0) {
-      const t = trades.find((tr: any) => String(tr.id) === String(params.id));
-      if (t) setTrade(t);
-    }
-  }, [params.id, trades]); // Removed 'trade' dependency to prevent infinite loop
+    return () => controller.abort();
+  }, [params.id, navigate]);
+
+  // Removed trades fallback to avoid extra fetching and re-renders
 
   // Duration (minutes) and pretty time
   const durationMinutes = useMemo(() => {
