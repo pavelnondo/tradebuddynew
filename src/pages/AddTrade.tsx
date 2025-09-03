@@ -172,51 +172,30 @@ export default function AddTrade() {
         const t = await res.json();
 
         
-        // Extract times from database preserving the user's original input
+        // Extract times from database preserving EXACTLY what was saved
         const extractTimeFromDB = (dbTime: string) => {
           if (!dbTime) return "";
           
           try {
-            // Handle different time formats from database
-            let dateToProcess = dbTime;
+            // NO TIMEZONE CONVERSION - preserve exactly what the user saved
+            // If user saved 16:55, we show 16:55 in the edit form
             
-            // If it's already in the correct format, just return it
+            // Handle ISO format: "2025-09-02T16:55:00.000Z" -> "2025-09-02T16:55"
+            if (dbTime.includes('T')) {
+              const datePart = dbTime.split('T')[0]; // "2025-09-02"
+              const timePart = dbTime.split('T')[1].substring(0, 5); // "16:55"
+              return `${datePart}T${timePart}`;
+            }
+            
+            // If it's already in datetime-local format, return as-is
             if (dbTime.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)) {
-      
               return dbTime;
             }
             
-            // Parse the date (handles both UTC and local formats)
-            const utcDate = new Date(dateToProcess);
-            if (isNaN(utcDate.getTime())) {
-              console.error('Invalid date:', dbTime);
-              // Try direct string manipulation as fallback
-              if (dbTime.includes('T')) {
-                const fallback = dbTime.slice(0, 16);
-  
-                return fallback;
-              }
-              return "";
-            }
-            
-            // Convert to local time for datetime-local input
-            const localYear = utcDate.getFullYear();
-            const localMonth = String(utcDate.getMonth() + 1).padStart(2, '0');
-            const localDay = String(utcDate.getDate()).padStart(2, '0');
-            const localHours = String(utcDate.getHours()).padStart(2, '0');
-            const localMinutes = String(utcDate.getMinutes()).padStart(2, '0');
-            
-            const result = `${localYear}-${localMonth}-${localDay}T${localHours}:${localMinutes}`;
-
-            return result;
-          } catch (error) {
-            console.error('Error parsing time:', dbTime, error);
-            // Try direct string manipulation as final fallback
-            if (dbTime.includes('T')) {
-              const fallback = dbTime.slice(0, 16);
-
-              return fallback;
-            }
+            // Fallback for other formats
+            return dbTime;
+          } catch (e) {
+            console.error('Time extraction error:', e);
             return "";
           }
         };

@@ -131,19 +131,26 @@ export default function TradeDetails() {
     fetchTrade(params.id);
   }, [params.id, location.state?.trade, fetchTrade]);
 
-  // Format date without timezone conversion
+  // Format date WITHOUT timezone conversion - display exactly what was saved
   const formatDateTime = (dateString: string) => {
     if (!dateString) return '';
+    
     try {
-      const date = new Date(dateString);
-      return date.toLocaleString('en-US', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      });
+      // NO TIMEZONE CONVERSION - display exactly what was saved
+      // User saves 16:55, we display 16:55 regardless of timezone
+      
+      // Handle ISO format: "2025-09-02T16:55:00.000Z" -> "09/02/2025, 16:55"
+      if (dateString.includes('T')) {
+        const datePart = dateString.split('T')[0]; // "2025-09-02"
+        const timePart = dateString.split('T')[1].substring(0, 5); // "16:55"
+        
+        // Convert date format: "2025-09-02" -> "09/02/2025"
+        const [year, month, day] = datePart.split('-');
+        return `${month}/${day}/${year}, ${timePart}`;
+      }
+      
+      // If it's already in a display format, return as-is
+      return dateString;
     } catch {
       return dateString;
     }
