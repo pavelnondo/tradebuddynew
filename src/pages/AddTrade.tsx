@@ -169,38 +169,32 @@ export default function AddTrade() {
         const t = await res.json();
 
         
-        // Extract times from database preserving EXACTLY what was saved
+        // Extract times from database - now stored as plain strings
         const extractTimeFromDB = (dbTime: string) => {
           if (!dbTime) return "";
           
-          console.log('🔍 extractTimeFromDB input:', dbTime);
+          console.log('🔍 extractTimeFromDB input (now string):', dbTime);
           
-          try {
-            // NO TIMEZONE CONVERSION - preserve exactly what the user saved
-            // If user saved 16:55, we show 16:55 in the edit form
-            
-            // Handle ISO format: "2025-09-02T16:55:00.000Z" -> "2025-09-02T16:55"
-            if (dbTime.includes('T')) {
-              const datePart = dbTime.split('T')[0]; // "2025-09-02"
-              const timePart = dbTime.split('T')[1].substring(0, 5); // "16:55"
-              const result = `${datePart}T${timePart}`;
-              console.log('🔍 extractTimeFromDB output:', result);
-              return result;
-            }
-            
-            // If it's already in datetime-local format, return as-is
-            if (dbTime.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)) {
-              console.log('🔍 extractTimeFromDB already correct format:', dbTime);
-              return dbTime;
-            }
-            
-            // Fallback for other formats
-            console.log('🔍 extractTimeFromDB fallback for:', dbTime);
+          // Since times are now stored as VARCHAR strings in format "YYYY-MM-DDTHH:MM"
+          // We can return them directly for datetime-local inputs
+          
+          // If it's already in the correct format, return as-is
+          if (dbTime.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)) {
+            console.log('🔍 extractTimeFromDB perfect format:', dbTime);
             return dbTime;
-          } catch (e) {
-            console.error('Time extraction error:', e);
-            return "";
           }
+          
+          // Handle any legacy timestamp formats that might still exist
+          if (dbTime.includes('T') && dbTime.length > 16) {
+            const datePart = dbTime.split('T')[0]; // "2025-09-02"
+            const timePart = dbTime.split('T')[1].substring(0, 5); // "16:55"
+            const result = `${datePart}T${timePart}`;
+            console.log('🔍 extractTimeFromDB converted legacy:', result);
+            return result;
+          }
+          
+          console.log('🔍 extractTimeFromDB returning as-is:', dbTime);
+          return dbTime;
         };
         
         // Never pass full ISO with seconds/ms into datetime-local; keep only YYYY-MM-DDTHH:MM
