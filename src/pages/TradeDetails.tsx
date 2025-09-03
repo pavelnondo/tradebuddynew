@@ -34,11 +34,31 @@ export default function TradeDetails() {
   const [loading, setLoading] = useState(false);
   const hasLoadedRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
+
+  // Simple in-memory cache to avoid repeated fetches across remounts
+  const tradeCacheRef = useRef<Record<string, any>>({});
+  const lastFetchRef = useRef<Record<string, number>>({});
   
   console.log('🔍 Trade Details - Initial state:', { trade: location.state?.trade, params: params.id });
 
   useEffect(() => {
-    if (!params.id || hasLoadedRef.current) return;
+    if (!params.id) return;
+    // If we already have the trade (from navigation state or cache), use it
+    if (location.state?.trade) {
+      setTrade(location.state.trade);
+      return;
+    }
+    if (tradeCacheRef.current[params.id]) {
+      setTrade(tradeCacheRef.current[params.id]);
+      return;
+    }
+    // Throttle re-fetching the same id within 2 seconds
+    const last = lastFetchRef.current[params.id];
+    if (last && Date.now() - last < 2000) {
+      return;
+    }
+    lastFetchRef.current[params.id] = Date.now();
+    if (hasLoadedRef.current) return;
     hasLoadedRef.current = true;
 
     abortRef.current?.abort();
@@ -80,6 +100,7 @@ export default function TradeDetails() {
           exitTime: t.exit_time,
           duration: t.duration != null ? Number(t.duration) : (t.duration_minutes != null ? Number(t.duration_minutes) : null),
         };
+        tradeCacheRef.current[String(tradeData.id)] = tradeData;
         setTrade(tradeData);
       } catch (e) {
         if ((e as any).name !== 'AbortError') {
