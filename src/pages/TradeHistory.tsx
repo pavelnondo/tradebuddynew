@@ -161,7 +161,9 @@ const FilterBar = ({
   endDate,
   setEndDate,
   durationFilter,
-  setDurationFilter
+  setDurationFilter,
+  customDuration,
+  setCustomDuration
 }: {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
@@ -175,10 +177,12 @@ const FilterBar = ({
   setEndDate: (date: string) => void;
   durationFilter: string;
   setDurationFilter: (duration: string) => void;
+  customDuration: string;
+  setCustomDuration: (duration: string) => void;
 }) => {
   const tradeTypes = ["All", "Buy", "Sell"];
   const emotions = ["All", "Confident", "Calm", "Nervous", "Excited", "Fearful", "Greedy", "Frustrated"];
-  const durations = ["All", "< 5min", "5-15min", "15-30min", "30-60min", "> 1hr"];
+  const durations = ["All", "< 5min", "5-15min", "15-30min", "30-60min", "> 1hr", "Custom"];
 
   return (
     <Card className="card-modern mb-6">
@@ -256,7 +260,7 @@ const FilterBar = ({
             </div>
 
             {/* Duration Filter */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 items-center">
               <span className="text-sm font-medium text-muted-foreground flex items-center mr-2">Duration:</span>
               {durations.map((duration) => (
                 <Button
@@ -269,18 +273,36 @@ const FilterBar = ({
                   {duration}
                 </Button>
               ))}
+              {durationFilter === "Custom" && (
+                <div className="flex items-center gap-1 ml-2">
+                  <Input
+                    type="number"
+                    placeholder="Minutes"
+                    value={customDuration}
+                    onChange={(e) => setCustomDuration(e.target.value)}
+                    className="w-20 h-8 text-xs"
+                    min="1"
+                  />
+                  <span className="text-xs text-muted-foreground">min</span>
+                </div>
+              )}
             </div>
 
             {/* Emotion Filter */}
-            <div className="flex flex-wrap gap-2">
-              <span className="text-sm font-medium text-muted-foreground flex items-center mr-2">Emotion:</span>
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-sm font-medium text-muted-foreground flex items-center mr-2 shrink-0">Emotion:</span>
               {emotions.map((emotion) => (
                 <Button
                   key={emotion}
                   variant={selectedEmotion === emotion ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setSelectedEmotion(emotion)}
-                  className="text-xs"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedEmotion(emotion);
+                  }}
+                  className="text-xs cursor-pointer hover:bg-primary/10 transition-colors"
+                  type="button"
                 >
                   {emotion}
                 </Button>
@@ -383,6 +405,7 @@ export default function TradeHistory() {
   const [selectedType, setSelectedType] = useState("All");
   const [selectedEmotion, setSelectedEmotion] = useState("All");
   const [durationFilter, setDurationFilter] = useState("All");
+  const [customDuration, setCustomDuration] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -436,6 +459,12 @@ export default function TradeHistory() {
           case "> 1hr":
             matchesDuration = duration > 60;
             break;
+          case "Custom":
+            if (customDuration) {
+              const customDurationNum = parseInt(customDuration);
+              matchesDuration = duration === customDurationNum;
+            }
+            break;
         }
       }
       
@@ -456,7 +485,7 @@ export default function TradeHistory() {
       
       return matchesSearch && matchesType && matchesEmotion && matchesDuration && matchesDate && matchesDateRange;
     });
-  }, [trades, searchTerm, selectedType, selectedEmotion, durationFilter, dateFilter, startDate, endDate]);
+  }, [trades, searchTerm, selectedType, selectedEmotion, durationFilter, customDuration, dateFilter, startDate, endDate]);
 
   const handleEditTrade = (trade: any) => {
     // Navigate to edit trade page with trade data
@@ -614,6 +643,8 @@ export default function TradeHistory() {
         setEndDate={setEndDate}
         durationFilter={durationFilter}
         setDurationFilter={setDurationFilter}
+        customDuration={customDuration}
+        setCustomDuration={setCustomDuration}
       />
 
       {/* Trades Grid */}
