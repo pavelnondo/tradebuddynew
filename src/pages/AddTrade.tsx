@@ -175,11 +175,25 @@ export default function AddTrade() {
         console.log('✏️ Exit Time from API:', t.exit_time);
         console.log('✏️ Duration from API:', t.duration);
         
-        // Convert database times to local datetime-local format
-        const entryIso = t.entry_time ? new Date(t.entry_time).toLocaleString('sv-SE').slice(0, 16) : "";
-        const exitIso = t.exit_time ? new Date(t.exit_time).toLocaleString('sv-SE').slice(0, 16) : "";
-        console.log('✏️ Converted Entry Time:', entryIso);
-        console.log('✏️ Converted Exit Time:', exitIso);
+        // Extract times directly from database string without timezone conversion
+        const extractTimeFromDB = (dbTime: string) => {
+          if (!dbTime) return "";
+          // Database stores: "2025-09-02T10:37:00.000Z" or "2025-09-02 10:37:00"
+          // We want: "2025-09-02T10:37"
+          if (dbTime.includes('T')) {
+            return dbTime.slice(0, 16); // "2025-09-02T10:37:00.000Z" -> "2025-09-02T10:37"
+          } else if (dbTime.includes(' ')) {
+            return dbTime.slice(0, 16).replace(' ', 'T'); // "2025-09-02 10:37:00" -> "2025-09-02T10:37"
+          }
+          return dbTime.slice(0, 16);
+        };
+        
+        const entryIso = extractTimeFromDB(t.entry_time);
+        const exitIso = extractTimeFromDB(t.exit_time);
+        console.log('✏️ Raw Entry Time from DB:', t.entry_time);
+        console.log('✏️ Raw Exit Time from DB:', t.exit_time);
+        console.log('✏️ Extracted Entry Time:', entryIso);
+        console.log('✏️ Extracted Exit Time:', exitIso);
         
         setFormData(prev => ({
           ...prev,
@@ -233,11 +247,8 @@ export default function AddTrade() {
         entryPrice: editTrade.entryPrice?.toString() || editTrade.entry_price?.toString() || prev.entryPrice,
         exitPrice: editTrade.exitPrice?.toString() || editTrade.exit_price?.toString() || prev.exitPrice,
         positionSize: editTrade.positionSize?.toString() || editTrade.quantity?.toString() || prev.positionSize,
-        entryTime: editTrade.entryTime ? new Date(editTrade.entryTime).toLocaleString('sv-SE').slice(0, 16) : 
-                  editTrade.entry_time ? new Date(editTrade.entry_time).toLocaleString('sv-SE').slice(0, 16) : 
-                  editTrade.date ? new Date(editTrade.date).toLocaleString('sv-SE').slice(0, 16) : prev.entryTime,
-        exitTime: editTrade.exitTime ? new Date(editTrade.exitTime).toLocaleString('sv-SE').slice(0, 16) : 
-                 editTrade.exit_time ? new Date(editTrade.exit_time).toLocaleString('sv-SE').slice(0, 16) : prev.exitTime,
+        entryTime: editTrade.entryTime || editTrade.entry_time || (editTrade.date ? new Date(editTrade.date).toLocaleString('sv-SE').slice(0, 16) : prev.entryTime),
+        exitTime: editTrade.exitTime || editTrade.exit_time || prev.exitTime,
         emotion: editTrade.emotion || prev.emotion,
         notes: editTrade.notes || prev.notes,
         setup: editTrade.setup || editTrade.setup_type || prev.setup,
@@ -293,11 +304,19 @@ export default function AddTrade() {
 
   const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
+    console.log('📸 Screenshot file selected:', file);
     setScreenshotFile(file);
     if (file) {
       const reader = new FileReader();
-      reader.onload = () => setScreenshotUrl(reader.result as string);
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        console.log('📸 Screenshot data URL created:', dataUrl.slice(0, 100) + '...');
+        setScreenshotUrl(dataUrl);
+      };
       reader.readAsDataURL(file);
+    } else {
+      console.log('📸 No file selected, clearing screenshot URL');
+      setScreenshotUrl("");
     }
   };
 
@@ -626,9 +645,16 @@ export default function AddTrade() {
             <div className="space-y-2">
               <Label htmlFor="screenshot">Screenshot</Label>
               <Input id="screenshot" type="file" accept="image/*" onChange={handleScreenshotChange} />
-              {screenshotUrl && (
+              {screenshotUrl ? (
                 <div className="mt-2">
                   <img src={screenshotUrl} alt="Preview" className="max-h-40 rounded border" />
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Preview loaded: {screenshotUrl.length > 100 ? 'Data URL' : screenshotUrl}
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-2 text-xs text-muted-foreground">
+                  No screenshot selected (screenshotUrl: {JSON.stringify(screenshotUrl)})
                 </div>
               )}
             </div>

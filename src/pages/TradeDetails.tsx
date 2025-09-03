@@ -39,7 +39,7 @@ export default function TradeDetails() {
             entryPrice: Number(t.entry_price),
             exitPrice: t.exit_price != null ? Number(t.exit_price) : null,
             positionSize: Number(t.quantity),
-            date: t.entry_time ? new Date(t.entry_time) : null,
+            date: t.entry_time,
             profitLoss: t.pnl != null ? Number(t.pnl) : 0,
             notes: t.notes || '',
             emotion: t.emotion || '',
@@ -129,7 +129,7 @@ export default function TradeDetails() {
       <Card className="card-modern">
         <CardHeader>
           <CardTitle>{trade.asset} — {trade.tradeType}</CardTitle>
-          <CardDescription>{trade.date ? new Date(trade.date).toLocaleString() : ''}</CardDescription>
+          <CardDescription>{trade.date ? trade.date.replace('T', ' ').slice(0, 16) : ''}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
