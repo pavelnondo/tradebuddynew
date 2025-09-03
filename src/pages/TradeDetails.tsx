@@ -80,13 +80,13 @@ export default function TradeDetails() {
     load();
   }, [params.id]); // FIXED: Removed 'trade' dependency to prevent infinite loop
 
-  // Fallback: find in list
+  // Fallback: find in list - run once only when trades are loaded
   useEffect(() => {
-    if (!trade && params.id && Array.isArray(trades)) {
+    if (!trade && params.id && Array.isArray(trades) && trades.length > 0) {
       const t = trades.find((tr: any) => String(tr.id) === String(params.id));
       if (t) setTrade(t);
     }
-  }, [params.id, trades, trade]);
+  }, [params.id, trades]); // Removed 'trade' dependency to prevent infinite loop
 
   // Duration (minutes) and pretty time
   const durationMinutes = useMemo(() => {
