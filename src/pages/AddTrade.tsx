@@ -180,14 +180,29 @@ export default function AddTrade() {
           if (!dbTime) return "";
           
           try {
-            // Parse as UTC date first
-            const utcDate = new Date(dbTime);
+            // Handle different time formats from database
+            let dateToProcess = dbTime;
+            
+            // If it's already in the correct format, just return it
+            if (dbTime.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)) {
+              console.log('✏️ Time already in correct format:', dbTime);
+              return dbTime;
+            }
+            
+            // Parse the date (handles both UTC and local formats)
+            const utcDate = new Date(dateToProcess);
             if (isNaN(utcDate.getTime())) {
               console.error('Invalid date:', dbTime);
+              // Try direct string manipulation as fallback
+              if (dbTime.includes('T')) {
+                const fallback = dbTime.slice(0, 16);
+                console.log('✏️ Using fallback format:', fallback);
+                return fallback;
+              }
               return "";
             }
             
-            // Convert to local timezone for display in datetime-local input
+            // Convert to local time for datetime-local input
             const localYear = utcDate.getFullYear();
             const localMonth = String(utcDate.getMonth() + 1).padStart(2, '0');
             const localDay = String(utcDate.getDate()).padStart(2, '0');
@@ -199,7 +214,12 @@ export default function AddTrade() {
             return result;
           } catch (error) {
             console.error('Error parsing time:', dbTime, error);
-            // Return empty string if we can't parse it
+            // Try direct string manipulation as final fallback
+            if (dbTime.includes('T')) {
+              const fallback = dbTime.slice(0, 16);
+              console.log('✏️ Using error fallback format:', fallback);
+              return fallback;
+            }
             return "";
           }
         };
