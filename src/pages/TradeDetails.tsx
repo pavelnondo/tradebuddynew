@@ -38,6 +38,21 @@ export default function TradeDetails() {
   // Simple in-memory cache to avoid repeated fetches across remounts
   const tradeCacheRef = useRef<Record<string, any>>({});
   const lastFetchRef = useRef<Record<string, number>>({});
+
+  // Load from sessionStorage cache immediately if available
+  useEffect(() => {
+    if (!params.id) return;
+    try {
+      const key = `td_cache_${params.id}`;
+      const cached = sessionStorage.getItem(key);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && typeof parsed === 'object') {
+          setTrade(parsed);
+        }
+      }
+    } catch {}
+  }, [params.id]);
   
   console.log('🔍 Trade Details - Initial state:', { trade: location.state?.trade, params: params.id });
 
@@ -101,6 +116,9 @@ export default function TradeDetails() {
           duration: t.duration != null ? Number(t.duration) : (t.duration_minutes != null ? Number(t.duration_minutes) : null),
         };
         tradeCacheRef.current[String(tradeData.id)] = tradeData;
+        try {
+          sessionStorage.setItem(`td_cache_${tradeData.id}`, JSON.stringify(tradeData));
+        } catch {}
         setTrade(tradeData);
       } catch (e) {
         if ((e as any).name !== 'AbortError') {
