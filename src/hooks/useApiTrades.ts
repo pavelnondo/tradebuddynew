@@ -22,11 +22,8 @@ export function useApiTrades() {
       });
       if (!res.ok) throw new Error('Failed to fetch trades');
       const response = await res.json();
-      // console.log('API Response:', response);
-      
       // Extract trades array from the response object
       const data = response.trades || response;
-      // console.log('Extracted data:', data);
       
       // Ensure data is an array before mapping
       if (!Array.isArray(data)) {
@@ -35,7 +32,6 @@ export function useApiTrades() {
         return;
       }
       // Map backend fields to frontend Trade type and parse dates
-      // console.log('About to map trades, data length:', data.length, 'data type:', typeof data);
       const mappedTrades = data.map((trade: any) => ({
         id: trade.id,
         asset: trade.symbol,
