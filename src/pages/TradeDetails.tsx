@@ -78,7 +78,7 @@ export default function TradeDetails() {
       }
     };
     load();
-  }, [params.id, trade]);
+  }, [params.id]); // FIXED: Removed 'trade' dependency to prevent infinite loop
 
   // Fallback: find in list
   useEffect(() => {
@@ -220,13 +220,19 @@ export default function TradeDetails() {
               <div className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
                 <ImageIcon className="w-4 h-4" /> Screenshot
               </div>
-              <img 
-                src={trade.screenshot} 
-                alt="Trade screenshot" 
-                className="rounded-lg border w-full max-w-3xl" 
-                onLoad={() => console.log('🔍 Screenshot loaded successfully:', trade.screenshot)}
-                onError={(e) => console.log('🔍 Screenshot failed to load:', trade.screenshot, e)}
-              />
+              <div 
+                className="cursor-pointer rounded-lg border overflow-hidden hover:shadow-lg transition-shadow"
+                onClick={() => window.open(trade.screenshot, '_blank')}
+              >
+                <img 
+                  src={trade.screenshot} 
+                  alt="Trade screenshot" 
+                  className="w-full max-w-3xl hover:scale-105 transition-transform" 
+                  onLoad={() => console.log('🔍 Screenshot loaded successfully:', trade.screenshot)}
+                  onError={(e) => console.log('🔍 Screenshot failed to load:', trade.screenshot, e)}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Click to open in full size</p>
             </div>
           )}
           {!trade.screenshot && (
