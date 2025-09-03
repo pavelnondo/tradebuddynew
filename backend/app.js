@@ -379,14 +379,16 @@ app.get('/api/trades', authenticateToken, async (req, res) => {
 
     if (startDate) {
       paramCount++;
+      // Convert VARCHAR date string to comparison: "2025-09-02T16:37" >= "2025-09-02"
       query += ` AND t.entry_time >= $${paramCount}`;
-      params.push(startDate);
+      params.push(startDate + 'T00:00'); // Ensure we get start of day
     }
 
     if (endDate) {
       paramCount++;
+      // Convert VARCHAR date string to comparison: "2025-09-02T16:37" <= "2025-09-02T23:59"
       query += ` AND t.entry_time <= $${paramCount}`;
-      params.push(endDate);
+      params.push(endDate + 'T23:59'); // Ensure we get end of day
     }
 
     // Add pagination

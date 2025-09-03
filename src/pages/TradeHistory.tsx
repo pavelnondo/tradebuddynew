@@ -12,7 +12,8 @@ import {
   Clock,
   MoreHorizontal,
   Edit,
-  Trash2
+  Trash2,
+  X
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -154,7 +155,11 @@ const FilterBar = ({
   selectedType, 
   setSelectedType,
   selectedEmotion,
-  setSelectedEmotion 
+  setSelectedEmotion,
+  startDate,
+  setStartDate,
+  endDate,
+  setEndDate
 }: {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
@@ -162,6 +167,10 @@ const FilterBar = ({
   setSelectedType: (type: string) => void;
   selectedEmotion: string;
   setSelectedEmotion: (emotion: string) => void;
+  startDate: string;
+  setStartDate: (date: string) => void;
+  endDate: string;
+  setEndDate: (date: string) => void;
 }) => {
   const tradeTypes = ["All", "Long", "Short", "Scalp", "Swing"];
   const emotions = ["All", "Confident", "Calm", "Nervous", "Excited", "Fearful", "Greedy", "Frustrated"];
@@ -169,48 +178,91 @@ const FilterBar = ({
   return (
     <Card className="card-modern mb-6">
       <CardContent className="p-6">
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* Search */}
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search trades by asset, notes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 input-modern"
-              />
+        <div className="flex flex-col gap-4">
+          {/* First Row - Search and Date Filters */}
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Search */}
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search trades by asset, notes..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 input-modern"
+                />
+              </div>
+            </div>
+
+            {/* Date Filters */}
+            <div className="flex gap-2">
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="date"
+                  placeholder="Start Date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="pl-10 input-modern w-40"
+                />
+              </div>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="date"
+                  placeholder="End Date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="pl-10 input-modern w-40"
+                />
+              </div>
+              {(startDate || endDate) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setStartDate('');
+                    setEndDate('');
+                  }}
+                  className="px-2"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              )}
             </div>
           </div>
 
-          {/* Trade Type Filter */}
-          <div className="flex flex-wrap gap-2">
-            {tradeTypes.map((type) => (
-              <Button
-                key={type}
-                variant={selectedType === type ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedType(type)}
-                className="text-xs"
-              >
-                {type}
-              </Button>
-            ))}
-          </div>
+          {/* Second Row - Type and Emotion Filters */}
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Trade Type Filter */}
+            <div className="flex flex-wrap gap-2">
+              {tradeTypes.map((type) => (
+                <Button
+                  key={type}
+                  variant={selectedType === type ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedType(type)}
+                  className="text-xs"
+                >
+                  {type}
+                </Button>
+              ))}
+            </div>
 
-          {/* Emotion Filter */}
-          <div className="flex flex-wrap gap-2">
-            {emotions.map((emotion) => (
-              <Button
-                key={emotion}
-                variant={selectedEmotion === emotion ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedEmotion(emotion)}
-                className="text-xs"
-              >
-                {emotion}
-              </Button>
-            ))}
+            {/* Emotion Filter */}
+            <div className="flex flex-wrap gap-2">
+              {emotions.map((emotion) => (
+                <Button
+                  key={emotion}
+                  variant={selectedEmotion === emotion ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedEmotion(emotion)}
+                  className="text-xs"
+                >
+                  {emotion}
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
       </CardContent>
@@ -307,6 +359,8 @@ export default function TradeHistory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("All");
   const [selectedEmotion, setSelectedEmotion] = useState("All");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [tradeToDelete, setTradeToDelete] = useState<any>(null);
   const [isDeleting, setIsDeleting] = useState(false);
