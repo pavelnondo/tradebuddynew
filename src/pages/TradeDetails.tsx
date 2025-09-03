@@ -53,51 +53,45 @@ export default function TradeDetails() {
   const params = useParams();
   const [trade, setTrade] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Load trade data - single path, no early returns that can leave us stuck
+  // Simple, reliable trade loading logic
   useEffect(() => {
     if (!params.id) return;
 
-    // 1) navigation state
+    // If we have trade data from navigation, use it immediately
     if (location.state?.trade) {
-      const tradeData = location.state.trade;
-      tradeCache[params.id] = tradeData;
-      setTrade(tradeData);
-      // also seed session cache
-      try { sessionStorage.setItem(`td_cache_${params.id}`, JSON.stringify(tradeData)); } catch {}
+      setTrade(location.state.trade);
       return;
     }
 
-    // 2) sessionStorage
-    try {
-      const cached = sessionStorage.getItem(`td_cache_${params.id}`);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed && typeof parsed === 'object') {
-          tradeCache[params.id] = parsed;
-          setTrade(parsed);
-          // continue to refresh in background once, but do not block UI
-        }
-      }
-    } catch {}
-
-    // 3) API fetch (always run once per id)
-    let didCancel = false;
-    (async () => {
+    // Otherwise, fetch from API
+    const fetchTrade = async () => {
       setLoading(true);
+      setError(null);
+      
       try {
         const token = localStorage.getItem('token');
+        if (!token) {
+          navigate('/');
+          return;
+        }
+
         const res = await fetch(`${API_BASE_URL}/trades/${params.id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
+
         if (res.status === 401) {
           navigate('/');
           return;
         }
+
         if (!res.ok) {
-          console.error('Failed to load trade', res.status);
+          setError(`Failed to load trade: ${res.status}`);
+          setLoading(false);
           return;
         }
+
         const t = await res.json();
         const tradeData = {
           id: t.id,
@@ -116,16 +110,17 @@ export default function TradeDetails() {
           exitTime: t.exit_time,
           duration: t.duration != null ? Number(t.duration) : (t.duration_minutes != null ? Number(t.duration_minutes) : null),
         };
-        tradeCache[params.id] = tradeData;
-        try { sessionStorage.setItem(`td_cache_${params.id}`, JSON.stringify(tradeData)); } catch {}
-        if (!didCancel) setTrade(tradeData);
+
+        setTrade(tradeData);
       } catch (e) {
-        console.error('Trade load error', e);
+        setError('Failed to load trade');
+        console.error('Trade load error:', e);
       } finally {
-        if (!didCancel) setLoading(false);
+        setLoading(false);
       }
-    })();
-    return () => { didCancel = true; };
+    };
+
+    fetchTrade();
   }, [params.id, navigate]);
 
   if (!trade && loading) {
@@ -136,6 +131,27 @@ export default function TradeDetails() {
         </Button>
         <Card className="card-modern">
           <CardContent className="p-8">Loading trade...</CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <Button variant="ghost" onClick={() => navigate(-1)} className="p-2">
+          <ArrowLeft className="w-4 h-4" />
+        </Button>
+        <Card className="card-modern">
+          <CardContent className="p-8">
+            <div className="text-center">
+              <h2 className="text-xl font-bold text-red-600 mb-2">Error Loading Trade</h2>
+              <p className="text-muted-foreground mb-4">{error}</p>
+              <Button onClick={() => window.location.reload()} className="btn-apple">
+                Try Again
+              </Button>
+            </div>
+          </CardContent>
         </Card>
       </div>
     );
