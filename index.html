@@ -18,64 +18,47 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/tradebuddy-logo.svg" />
     <script>
-      // NUCLEAR CACHE CLEAR - FORCE NEW BUNDLE LOAD
-      (async () => {
-        const version = 'td-2025-09-03-06-NUCLEAR';
-        console.log('🚀 NUCLEAR CACHE CLEAR INITIATED - Version:', version);
+      // ULTIMATE CACHE BUSTER - IMMEDIATE FORCE RELOAD
+      (() => {
+        console.log('💥 ULTIMATE CACHE BUSTER ACTIVATED');
         
-        try {
-          const KEY = 'td_app_version';
-          const prev = localStorage.getItem(KEY);
+        // Check if we already have a cache-busting parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasCacheBuster = urlParams.has('cb') || urlParams.has('nuclear');
+        
+        if (!hasCacheBuster) {
+          console.log('🔄 FORCING IMMEDIATE RELOAD WITH CACHE BUSTER');
           
-          // ALWAYS clear caches and reload for this version
-          console.log('🗑️ Clearing all caches...');
-          
-          // Unregister ALL service workers
-          if ('serviceWorker' in navigator) {
-            const regs = await navigator.serviceWorker.getRegistrations();
-            for (const r of regs) { 
-              try { 
-                console.log('🔌 Unregistering service worker:', r);
-                await r.unregister(); 
-              } catch (e) {
-                console.log('❌ Failed to unregister service worker:', e);
-              }
+          // Clear everything immediately
+          try {
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            if ('caches' in window) {
+              caches.keys().then(keys => {
+                keys.forEach(key => caches.delete(key));
+              });
             }
+            
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(registrations => {
+                registrations.forEach(registration => registration.unregister());
+              });
+            }
+          } catch (e) {
+            console.log('Cache clear error:', e);
           }
           
-          // Clear ALL caches
-          if (window.caches && caches.keys) {
-            const keys = await caches.keys();
-            for (const k of keys) { 
-              try { 
-                console.log('🗑️ Deleting cache:', k);
-                await caches.delete(k); 
-              } catch (e) {
-                console.log('❌ Failed to delete cache:', e);
-              }
-            }
-          }
-          
-          // Clear all storage
-          localStorage.clear();
-          sessionStorage.clear();
-          
-          // Set new version and force reload
-          localStorage.setItem(KEY, version);
-          console.log('🔄 FORCING RELOAD WITH NEW BUNDLE');
-          
-          // Force reload with cache-busting parameters
+          // Force reload with unique parameters
           const timestamp = Date.now();
           const random = Math.random();
           const currentUrl = window.location.href.split('?')[0];
-          const newUrl = `${currentUrl}?v=${timestamp}&cb=${random}&nuclear=true`;
+          const newUrl = `${currentUrl}?cb=${timestamp}&r=${random}&force=true`;
           
-          window.location.href = newUrl;
-          
-        } catch (e) {
-          console.error('❌ Cache clear failed:', e);
-          // Fallback: force reload anyway
-          window.location.reload();
+          // Use replace to avoid back button issues
+          window.location.replace(newUrl);
+        } else {
+          console.log('✅ Cache buster already applied, loading normally');
         }
       })();
     </script>
