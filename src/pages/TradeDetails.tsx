@@ -7,6 +7,24 @@ import { useApiTrades } from '@/hooks/useApiTrades';
 import { API_BASE_URL } from '@/config';
 // Removed irrelevant per-trade P&L line chart
 
+// Helper function to format trade date without timezone conversion
+const formatTradeDate = (date: string | Date) => {
+  if (typeof date === 'string') {
+    // If it's a string, extract time directly without timezone conversion
+    if (date.includes('T')) {
+      return date.replace('T', ' ').slice(0, 16); // "2025-09-02T10:37:00.000Z" -> "2025-09-02 10:37"
+    } else if (date.includes(' ')) {
+      return date.slice(0, 16); // "2025-09-02 10:37:00" -> "2025-09-02 10:37"
+    }
+    return date.slice(0, 16);
+  } else if (date instanceof Date) {
+    // If it's a Date object, convert it back to the original time string format
+    // This is less ideal but handles legacy data from location.state
+    return date.toISOString().replace('T', ' ').slice(0, 16);
+  }
+  return '';
+};
+
 export default function TradeDetails() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -129,7 +147,7 @@ export default function TradeDetails() {
       <Card className="card-modern">
         <CardHeader>
           <CardTitle>{trade.asset} — {trade.tradeType}</CardTitle>
-          <CardDescription>{trade.date ? trade.date.replace('T', ' ').slice(0, 16) : ''}</CardDescription>
+          <CardDescription>{trade.date ? formatTradeDate(trade.date) : ''}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
