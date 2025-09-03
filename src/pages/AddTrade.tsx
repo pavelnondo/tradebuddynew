@@ -179,30 +179,28 @@ export default function AddTrade() {
         const extractTimeFromDB = (dbTime: string) => {
           if (!dbTime) return "";
           
-          // The issue: user enters "16:37" local time, JS converts to UTC for storage
-          // We need to reverse that conversion to show the user their original time
-          
           try {
-            // Parse the UTC time from database
-            const dbDate = new Date(dbTime + (dbTime.endsWith('Z') ? '' : 'Z'));
+            // Parse as UTC date first
+            const utcDate = new Date(dbTime);
+            if (isNaN(utcDate.getTime())) {
+              console.error('Invalid date:', dbTime);
+              return "";
+            }
             
-            // Convert back to local timezone to get the time the user originally entered
-            const localYear = dbDate.getFullYear();
-            const localMonth = String(dbDate.getMonth() + 1).padStart(2, '0');
-            const localDay = String(dbDate.getDate()).padStart(2, '0');
-            const localHours = String(dbDate.getHours()).padStart(2, '0');
-            const localMinutes = String(dbDate.getMinutes()).padStart(2, '0');
+            // Convert to local timezone for display in datetime-local input
+            const localYear = utcDate.getFullYear();
+            const localMonth = String(utcDate.getMonth() + 1).padStart(2, '0');
+            const localDay = String(utcDate.getDate()).padStart(2, '0');
+            const localHours = String(utcDate.getHours()).padStart(2, '0');
+            const localMinutes = String(utcDate.getMinutes()).padStart(2, '0');
             
-            return `${localYear}-${localMonth}-${localDay}T${localHours}:${localMinutes}`;
+            const result = `${localYear}-${localMonth}-${localDay}T${localHours}:${localMinutes}`;
+            console.log('✏️ Time conversion:', dbTime, '->', result);
+            return result;
           } catch (error) {
             console.error('Error parsing time:', dbTime, error);
-            // Fallback: direct string manipulation
-            if (dbTime.includes('T')) {
-              return dbTime.slice(0, 16);
-            } else if (dbTime.includes(' ')) {
-              return dbTime.slice(0, 16).replace(' ', 'T');
-            }
-            return dbTime.slice(0, 16);
+            // Return empty string if we can't parse it
+            return "";
           }
         };
         
