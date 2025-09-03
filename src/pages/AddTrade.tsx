@@ -7,6 +7,7 @@ import {
   TrendingUp,
   TrendingDown,
   DollarSign,
+  Clock,
   Target,
   Heart,
   FileText,
