@@ -173,6 +173,8 @@ export default function AddTrade() {
         const extractTimeFromDB = (dbTime: string) => {
           if (!dbTime) return "";
           
+          console.log('🔍 extractTimeFromDB input:', dbTime);
+          
           try {
             // NO TIMEZONE CONVERSION - preserve exactly what the user saved
             // If user saved 16:55, we show 16:55 in the edit form
@@ -181,15 +183,19 @@ export default function AddTrade() {
             if (dbTime.includes('T')) {
               const datePart = dbTime.split('T')[0]; // "2025-09-02"
               const timePart = dbTime.split('T')[1].substring(0, 5); // "16:55"
-              return `${datePart}T${timePart}`;
+              const result = `${datePart}T${timePart}`;
+              console.log('🔍 extractTimeFromDB output:', result);
+              return result;
             }
             
             // If it's already in datetime-local format, return as-is
             if (dbTime.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)) {
+              console.log('🔍 extractTimeFromDB already correct format:', dbTime);
               return dbTime;
             }
             
             // Fallback for other formats
+            console.log('🔍 extractTimeFromDB fallback for:', dbTime);
             return dbTime;
           } catch (e) {
             console.error('Time extraction error:', e);
