@@ -199,7 +199,7 @@ const FilterBar = ({
               </div>
             </div>
 
-            {/* Date Filters - Fixed calendar icon positioning */}
+            {/* Date Filters - Wider inputs for calendar button visibility */}
             <div className="flex gap-2">
               <div className="relative">
                 <Calendar className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
@@ -208,7 +208,7 @@ const FilterBar = ({
                   placeholder="Start Date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="pl-8 input-modern w-36"
+                  className="pl-8 input-modern w-44"
                 />
               </div>
               <div className="relative">
@@ -218,7 +218,7 @@ const FilterBar = ({
                   placeholder="End Date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="pl-8 input-modern w-36"
+                  className="pl-8 input-modern w-44"
                 />
               </div>
               {(startDate || endDate) && (
