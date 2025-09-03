@@ -120,7 +120,7 @@ export default function TradeDetails() {
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
   };
 
-  if (!trade || loading) {
+  if (!trade && loading) {
     return (
       <div className="space-y-6">
         <Button variant="ghost" onClick={() => navigate(-1)} className="p-2">
@@ -128,6 +128,19 @@ export default function TradeDetails() {
         </Button>
         <Card className="card-modern">
           <CardContent className="p-8">Loading trade...</CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!trade && !loading) {
+    return (
+      <div className="space-y-6">
+        <Button variant="ghost" onClick={() => navigate(-1)} className="p-2">
+          <ArrowLeft className="w-4 h-4" />
+        </Button>
+        <Card className="card-modern">
+          <CardContent className="p-8">Trade not found.</CardContent>
         </Card>
       </div>
     );
