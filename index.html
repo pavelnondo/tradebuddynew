@@ -69,5 +69,25 @@
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // FORCE NEW BUNDLE LOAD - BYPASS ALL CACHES
+      console.log('🚨 FORCING NEW BUNDLE LOAD');
+      
+      // Check if we're loading the old bundle
+      const scripts = document.querySelectorAll('script[src*="index-"]');
+      scripts.forEach(script => {
+        const src = script.src;
+        if (src.includes('index-DUzU8MtJ.js')) {
+          console.log('❌ OLD BUNDLE DETECTED - FORCING RELOAD');
+          // Force reload with cache-busting
+          const timestamp = Date.now();
+          const random = Math.random();
+          const newUrl = window.location.href.split('?')[0] + '?force=' + timestamp + '&r=' + random;
+          window.location.replace(newUrl);
+        } else {
+          console.log('✅ NEW BUNDLE LOADED:', src);
+        }
+      });
+    </script>
   </body>
 </html>
