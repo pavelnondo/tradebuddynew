@@ -8,7 +8,9 @@ import { API_BASE_URL } from '@/config';
 // Removed irrelevant per-trade P&L line chart
 
 // Helper function to format trade date without timezone conversion
-const formatTradeDate = (date: string | Date) => {
+const formatTradeDate = (date: string | Date | null | undefined) => {
+  if (!date) return '';
+  
   if (typeof date === 'string') {
     // If it's a string, extract time directly without timezone conversion
     if (date.includes('T')) {
