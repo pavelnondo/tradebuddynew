@@ -54,6 +54,7 @@ export default function TradeDetails() {
   const [trade, setTrade] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasFetchedRef = useRef<Record<string, boolean>>({});
 
   // Simple, reliable trade loading logic
   useEffect(() => {
@@ -62,6 +63,11 @@ export default function TradeDetails() {
     // If we have trade data from navigation, use it immediately
     if (location.state?.trade) {
       setTrade(location.state.trade);
+      return;
+    }
+
+    // Prevent multiple API calls for the same trade ID
+    if (hasFetchedRef.current[params.id]) {
       return;
     }
 
@@ -93,25 +99,40 @@ export default function TradeDetails() {
         }
 
         const t = await res.json();
+        
+        // Ensure all fields are properly sanitized to prevent re-render loops
         const tradeData = {
-          id: t.id,
-          asset: t.symbol,
-          tradeType: t.trade_type || t.type,
-          entryPrice: Number(t.entry_price),
+          id: Number(t.id) || 0,
+          asset: String(t.symbol || ''),
+          tradeType: String(t.trade_type || t.type || ''),
+          entryPrice: Number(t.entry_price) || 0,
           exitPrice: t.exit_price != null ? Number(t.exit_price) : null,
-          positionSize: Number(t.quantity),
-          date: t.entry_time,
+          positionSize: Number(t.quantity) || 0,
+          date: t.entry_time ? String(t.entry_time) : null,
           profitLoss: t.pnl != null ? Number(t.pnl) : 0,
-          notes: t.notes || '',
-          emotion: t.emotion || '',
+          notes: String(t.notes || ''),
+          emotion: String(t.emotion || ''),
           screenshot: t.screenshot_url ? (t.screenshot_url.startsWith('http') ? t.screenshot_url : `https://www.mytradebuddy.ru${t.screenshot_url}`) : '',
-          checklistItems: Array.isArray(t.checklist_items) ? t.checklist_items : [],
-          entryTime: t.entry_time,
-          exitTime: t.exit_time,
+          checklistItems: Array.isArray(t.checklist_items) ? t.checklist_items.map((item: any) => ({
+            id: Number(item.id) || 0,
+            text: String(item.text || ''),
+            completed: Boolean(item.completed)
+          })) : [],
+          entryTime: t.entry_time ? String(t.entry_time) : null,
+          exitTime: t.exit_time ? String(t.exit_time) : null,
           duration: t.duration != null ? Number(t.duration) : (t.duration_minutes != null ? Number(t.duration_minutes) : null),
         };
 
-        setTrade(tradeData);
+        // Only update if we don't already have this trade data
+        setTrade(prevTrade => {
+          if (prevTrade && prevTrade.id === tradeData.id) {
+            return prevTrade; // Don't update if it's the same trade
+          }
+          return tradeData;
+        });
+        
+        // Mark this trade as fetched to prevent re-fetching
+        hasFetchedRef.current[params.id] = true;
       } catch (e) {
         setError('Failed to load trade');
         console.error('Trade load error:', e);
