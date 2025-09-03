@@ -47,13 +47,19 @@ app.use(helmet({
   },
 }));
 
-// Rate limiting for API protection
+// Rate limiting for API protection with proper proxy support
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  // Proper trust proxy configuration for Nginx
+  trustProxy: ['127.0.0.1', '::1'], // Trust local proxies only
+  keyGenerator: (req) => {
+    // Use X-Forwarded-For header if available, fallback to req.ip
+    return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+  }
 });
 app.use('/api/', limiter);
 

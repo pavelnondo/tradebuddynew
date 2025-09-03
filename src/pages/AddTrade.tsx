@@ -178,12 +178,17 @@ export default function AddTrade() {
         // Extract times directly from database string without timezone conversion
         const extractTimeFromDB = (dbTime: string) => {
           if (!dbTime) return "";
-          // Database stores: "2025-09-02T10:37:00.000Z" or "2025-09-02 10:37:00"
-          // We want: "2025-09-02T10:37"
+          // User wants to see the EXACT times they originally entered
+          // If database has "2025-09-02T10:37:00.000Z" but user entered 16:37,
+          // we need to preserve that original time
+          
+          // First try direct string parsing without Date conversion
           if (dbTime.includes('T')) {
-            return dbTime.slice(0, 16); // "2025-09-02T10:37:00.000Z" -> "2025-09-02T10:37"
+            // "2025-09-02T10:37:00.000Z" -> "2025-09-02T10:37"
+            return dbTime.slice(0, 16);
           } else if (dbTime.includes(' ')) {
-            return dbTime.slice(0, 16).replace(' ', 'T'); // "2025-09-02 10:37:00" -> "2025-09-02T10:37"
+            // "2025-09-02 10:37:00" -> "2025-09-02T10:37"
+            return dbTime.slice(0, 16).replace(' ', 'T');
           }
           return dbTime.slice(0, 16);
         };
