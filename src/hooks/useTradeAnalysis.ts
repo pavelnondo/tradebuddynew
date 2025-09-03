@@ -4,9 +4,7 @@ import { Trade } from '@/types';
 export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
   return useMemo(() => {
     // Ensure trades is always an array to prevent map/filter errors
-    console.log('useTradeAnalysis received:', trades, 'isArray:', Array.isArray(trades));
     const safeTrades = Array.isArray(trades) ? trades : [];
-    console.log('useTradeAnalysis safeTrades:', safeTrades, 'length:', safeTrades.length);
     
     // Basic metrics
     const totalTrades = safeTrades.length;
@@ -27,14 +25,6 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
       .reduce((sum, trade) => sum + trade.profitLoss, 0);
     
     const profitFactor = Math.abs(totalLoss) > 0 ? totalProfit / Math.abs(totalLoss) : totalProfit;
-    
-    // Debug logging
-    console.log('🔍 Profit Factor Debug:', {
-      totalProfit,
-      totalLoss,
-      profitFactor,
-      tradesCount: safeTrades.length
-    });
     
     const avgWin = profitableTrades > 0
       ? totalProfit / profitableTrades
