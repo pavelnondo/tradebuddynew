@@ -67,7 +67,7 @@ export default function TradeDetails() {
             checklistItems: Array.isArray(t.checklist_items) ? t.checklist_items : [],
             entryTime: t.entry_time,
             exitTime: t.exit_time,
-            duration: t.duration ? Number(t.duration) : (t.duration_minutes ? Number(t.duration_minutes) : null),
+            duration: t.duration != null ? Number(t.duration) : (t.duration_minutes != null ? Number(t.duration_minutes) : null),
           };
           
           console.log('🔍 Processed Trade Data:', tradeData);
