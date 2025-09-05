@@ -16,6 +16,7 @@ import TradeDetails from "./pages/TradeDetails";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Calendar from "./pages/Calendar";
 import Psychology from "./pages/Psychology";
+import AdvancedAnalytics from "./pages/AdvancedAnalytics";
 import Login from "./pages/Login";
 
 const queryClient = new QueryClient({
@@ -170,6 +171,17 @@ const AppRoutes = () => {
             <Layout>
               <Suspense fallback={<PageLoader />}>
                 <Psychology />
+              </Suspense>
+            </Layout>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      <Route path="/advanced-analytics" element={
+        <ProtectedRoute>
+          <ErrorBoundary>
+            <Layout>
+              <Suspense fallback={<PageLoader />}>
+                <AdvancedAnalytics />
               </Suspense>
             </Layout>
           </ErrorBoundary>
