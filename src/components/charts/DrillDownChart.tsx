@@ -10,24 +10,21 @@ import {
   DialogTitle, 
   DialogTrigger 
 } from "@/components/ui/dialog";
-import { 
-  Bar, 
-  Line, 
-  Pie 
-} from 'react-chartjs-2';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
   Legend,
-  Filler,
-  ArcElement,
-} from 'chart.js';
+  ResponsiveContainer,
+} from 'recharts';
 import { 
   ZoomIn, 
   ArrowLeft, 
@@ -39,18 +36,7 @@ import {
   Calendar
 } from "lucide-react";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-  ArcElement
-);
+// Recharts doesn't need registration
 
 interface DrillDownData {
   label: string;
@@ -86,93 +72,170 @@ export function DrillDownChart({
   };
 
   const getChartData = () => {
-    return {
-      labels: data.map(d => d.label),
-      datasets: [
-        {
-          label: title,
-          data: data.map(d => d.value),
-          backgroundColor: data.map((_, index) => {
-            const colors = [
-              'rgba(16, 185, 129, 0.8)',
-              'rgba(59, 130, 246, 0.8)',
-              'rgba(245, 101, 101, 0.8)',
-              'rgba(251, 191, 36, 0.8)',
-              'rgba(139, 92, 246, 0.8)',
-              'rgba(236, 72, 153, 0.8)',
-            ];
-            return colors[index % colors.length];
-          }),
-          borderColor: data.map((_, index) => {
-            const colors = [
-              'rgb(16, 185, 129)',
-              'rgb(59, 130, 246)',
-              'rgb(245, 101, 101)',
-              'rgb(251, 191, 36)',
-              'rgb(139, 92, 246)',
-              'rgb(236, 72, 153)',
-            ];
-            return colors[index % colors.length];
-          }),
-          borderWidth: 2,
-          borderRadius: 4,
-        },
-      ],
-    };
+    const colors = [
+      '#10b981', // emerald-500
+      '#3b82f6', // blue-500
+      '#f59e0b', // amber-500
+      '#ef4444', // red-500
+      '#8b5cf6', // violet-500
+      '#ec4899', // pink-500
+    ];
+
+    return data.map((d, index) => ({
+      name: d.label,
+      value: d.value,
+      trades: d.trades.length,
+      fill: colors[index % colors.length],
+    }));
   };
 
-  const getChartOptions = () => {
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: true, position: 'top' as const },
-        title: { display: true, text: title },
-        tooltip: {
-          callbacks: {
-            label: function(context: any) {
-              const dataPoint = data[context.dataIndex];
-              return [
-                `${dataPoint.label}: ${dataPoint.value}`,
-                `Trades: ${dataPoint.trades.length}`,
-                'Click to drill down',
-              ];
-            },
-          },
-        },
-      },
-      onClick: (event: any, elements: any) => {
-        if (elements.length > 0) {
-          const index = elements[0].index;
-          handleDataClick(data[index]);
-        }
-      },
-      scales: chartType === 'pie' ? {} : {
-        x: { 
-          title: { display: true, text: 'Category' },
-          ticks: { font: { size: 11 } },
-        },
-        y: {
-          title: { display: true, text: 'Value' },
-          ticks: { font: { size: 11 } },
-        },
-      },
-    };
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
+          <p className="font-medium">{label}</p>
+          <p className="text-sm text-muted-foreground">
+            Value: <span className="font-medium">{data.value}</span>
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Trades: <span className="font-medium">{data.trades}</span>
+          </p>
+          <p className="text-xs text-blue-600 mt-1">Click to drill down</p>
+        </div>
+      );
+    }
+    return null;
   };
 
   const renderChart = () => {
     const chartData = getChartData();
-    const options = getChartOptions();
 
     switch (chartType) {
       case 'bar':
-        return <Bar data={chartData} options={options} />;
+        return (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+              <XAxis 
+                dataKey="name" 
+                tick={{ fontSize: 12 }}
+                className="text-muted-foreground"
+              />
+              <YAxis 
+                tick={{ fontSize: 12 }}
+                className="text-muted-foreground"
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend />
+              <Bar 
+                dataKey="value" 
+                radius={[4, 4, 0, 0]}
+                onClick={(data) => {
+                  const originalData = data.find(d => d.name === data.name);
+                  if (originalData) {
+                    handleDataClick(originalData);
+                  }
+                }}
+                className="cursor-pointer"
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        );
       case 'line':
-        return <Line data={chartData} options={options} />;
+        return (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+              <XAxis 
+                dataKey="name" 
+                tick={{ fontSize: 12 }}
+                className="text-muted-foreground"
+              />
+              <YAxis 
+                tick={{ fontSize: 12 }}
+                className="text-muted-foreground"
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend />
+              <Line 
+                type="monotone" 
+                dataKey="value" 
+                stroke="#3b82f6" 
+                strokeWidth={3}
+                dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
+                onClick={(data) => {
+                  const originalData = data.find(d => d.name === data.name);
+                  if (originalData) {
+                    handleDataClick(originalData);
+                  }
+                }}
+                className="cursor-pointer"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        );
       case 'pie':
-        return <Pie data={chartData} options={options} />;
+        return (
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                outerRadius={120}
+                fill="#8884d8"
+                dataKey="value"
+                onClick={(data) => {
+                  const originalData = data.find(d => d.name === data.name);
+                  if (originalData) {
+                    handleDataClick(originalData);
+                  }
+                }}
+                className="cursor-pointer"
+              >
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomTooltip />} />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        );
       default:
-        return <Bar data={chartData} options={options} />;
+        return (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+              <XAxis 
+                dataKey="name" 
+                tick={{ fontSize: 12 }}
+                className="text-muted-foreground"
+              />
+              <YAxis 
+                tick={{ fontSize: 12 }}
+                className="text-muted-foreground"
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend />
+              <Bar 
+                dataKey="value" 
+                radius={[4, 4, 0, 0]}
+                onClick={(data) => {
+                  const originalData = data.find(d => d.name === data.name);
+                  if (originalData) {
+                    handleDataClick(originalData);
+                  }
+                }}
+                className="cursor-pointer"
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        );
     }
   };
 

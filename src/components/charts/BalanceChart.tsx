@@ -1,27 +1,15 @@
-import { Line } from 'react-chartjs-2';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
-  Legend,
-  Filler,
-} from 'chart.js';
+  ResponsiveContainer,
+  Area,
+  AreaChart,
+} from 'recharts';
 import { cn } from '@/lib/utils';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
 
 interface BalanceChartProps {
   balanceOverTime: Array<{ date: string; balance: number }>;
@@ -31,118 +19,29 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
   // Ensure balanceOverTime is always an array to prevent map errors
   const safeBalanceData = Array.isArray(balanceOverTime) ? balanceOverTime : [];
   
-  const data = {
-    labels: safeBalanceData.map(item => {
-      const date = new Date(item.date);
-      return date.toLocaleDateString('en-US', { 
+  const data = safeBalanceData.map(item => {
+    const date = new Date(item.date);
+    return {
+      date: date.toLocaleDateString('en-US', { 
         month: 'short', 
         day: 'numeric' 
-      });
-    }),
-    datasets: [
-      {
-        label: 'Account Balance',
-        data: safeBalanceData.map(item => item.balance),
-        borderColor: 'rgb(59, 130, 246)', // Blue
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        borderWidth: 2,
-        fill: true,
-        tension: 0.4,
-        pointBackgroundColor: 'rgb(59, 130, 246)',
-        pointBorderColor: '#ffffff',
-        pointBorderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-        pointHoverBackgroundColor: 'rgb(59, 130, 246)',
-        pointHoverBorderColor: '#ffffff',
-        pointHoverBorderWidth: 3,
-      },
-    ],
-  };
+      }),
+      balance: item.balance,
+    };
+  });
 
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-        borderWidth: 1,
-        cornerRadius: 12,
-        displayColors: false,
-        titleFont: {
-          size: 14,
-          weight: '600',
-        },
-        bodyFont: {
-          size: 13,
-        },
-        padding: 12,
-        callbacks: {
-          title: (context: any) => {
-            return `Balance on ${context[0].label}`;
-          },
-          label: (context: any) => {
-            return `$${context.parsed.y.toLocaleString()}`;
-          },
-        },
-      },
-    },
-    scales: {
-      x: {
-        display: true,
-        grid: {
-          display: false,
-        },
-        ticks: {
-          color: 'rgb(156, 163, 175)',
-          font: {
-            size: 12,
-            weight: '500',
-          },
-          maxTicksLimit: 6,
-        },
-        border: {
-          display: false,
-        },
-      },
-      y: {
-        display: true,
-        grid: {
-          color: 'rgba(156, 163, 175, 0.1)',
-          drawBorder: false,
-        },
-        ticks: {
-          color: 'rgb(156, 163, 175)',
-          font: {
-            size: 12,
-            weight: '500',
-          },
-          callback: (value: any) => {
-            return `$${value.toLocaleString()}`;
-          },
-        },
-        border: {
-          display: false,
-        },
-      },
-    },
-    interaction: {
-      intersect: false,
-      mode: 'index' as const,
-    },
-    elements: {
-      point: {
-        hoverBackgroundColor: 'rgb(59, 130, 246)',
-        hoverBorderColor: '#ffffff',
-        hoverBorderWidth: 3,
-      },
-    },
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
+          <p className="font-medium">Balance on {label}</p>
+          <p className="text-sm text-muted-foreground">
+            <span className="font-medium text-blue-600">${payload[0].value.toLocaleString()}</span>
+          </p>
+        </div>
+      );
+    }
+    return null;
   };
 
   if (balanceOverTime.length === 0) {
@@ -163,7 +62,37 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
 
   return (
     <div className="w-full h-full">
-      <Line data={data} options={options} />
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <defs>
+            <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+              <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+          <XAxis 
+            dataKey="date" 
+            tick={{ fontSize: 12 }}
+            className="text-muted-foreground"
+          />
+          <YAxis 
+            tick={{ fontSize: 12 }}
+            className="text-muted-foreground"
+            tickFormatter={(value) => `$${value.toLocaleString()}`}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Area
+            type="monotone"
+            dataKey="balance"
+            stroke="#3b82f6"
+            strokeWidth={3}
+            fill="url(#balanceGradient)"
+            dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+            activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   );
 }

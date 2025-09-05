@@ -9,22 +9,18 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { 
-  Bar, 
-  Line 
-} from 'react-chartjs-2';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
   Legend,
-  Filler,
-} from 'chart.js';
+  ResponsiveContainer,
+} from 'recharts';
 import { 
   GitCompare,
   TrendingUp,
@@ -36,17 +32,7 @@ import {
   Activity
 } from "lucide-react";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
+// Recharts doesn't need registration
 
 interface ComparisonData {
   period: string;
@@ -107,109 +93,64 @@ export function ComparisonTools({
   const getPerformanceChartData = () => {
     const filteredData = comparisonData.filter(d => selectedPeriods.includes(d.period));
     
-    return {
-      labels: filteredData.map(d => d.period),
-      datasets: [
-        {
-          label: 'Total P&L ($)',
-          data: filteredData.map(d => d.metrics.totalPnL),
-          backgroundColor: filteredData.map(d => 
-            d.metrics.totalPnL >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(245, 101, 101, 0.8)'
-          ),
-          borderColor: filteredData.map(d => 
-            d.metrics.totalPnL >= 0 ? 'rgb(16, 185, 129)' : 'rgb(245, 101, 101)'
-          ),
-          borderWidth: 2,
-          borderRadius: 4,
-          yAxisID: 'y',
-        },
-        {
-          label: 'Win Rate (%)',
-          data: filteredData.map(d => d.metrics.winRate),
-          backgroundColor: 'rgba(59, 130, 246, 0.8)',
-          borderColor: 'rgb(59, 130, 246)',
-          borderWidth: 2,
-          borderRadius: 4,
-          yAxisID: 'y1',
-        },
-      ],
-    };
+    return filteredData.map(d => ({
+      period: d.period,
+      totalPnL: d.metrics.totalPnL,
+      winRate: d.metrics.winRate,
+      totalTrades: d.metrics.totalTrades,
+      profitFactor: d.metrics.profitFactor,
+    }));
   };
 
   const getTrendsChartData = () => {
     const filteredData = comparisonData.filter(d => selectedPeriods.includes(d.period));
     
-    return {
-      labels: filteredData.map(d => d.period),
-      datasets: [
-        {
-          label: 'Total Trades',
-          data: filteredData.map(d => d.metrics.totalTrades),
-          backgroundColor: 'rgba(139, 92, 246, 0.8)',
-          borderColor: 'rgb(139, 92, 246)',
-          borderWidth: 2,
-          borderRadius: 4,
-          yAxisID: 'y',
-        },
-        {
-          label: 'Avg Duration (min)',
-          data: filteredData.map(d => d.metrics.avgDuration),
-          backgroundColor: 'rgba(251, 191, 36, 0.8)',
-          borderColor: 'rgb(251, 191, 36)',
-          borderWidth: 2,
-          borderRadius: 4,
-          yAxisID: 'y1',
-        },
-      ],
-    };
+    return filteredData.map(d => ({
+      period: d.period,
+      totalTrades: d.metrics.totalTrades,
+      avgDuration: d.metrics.avgDuration,
+      winRate: d.metrics.winRate,
+    }));
   };
 
-  const getChartOptions = () => {
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: true, position: 'top' as const },
-        title: { display: true, text: `Period Comparison - ${comparisonType}` },
-        tooltip: {
-          callbacks: {
-            label: function(context: any) {
-              const period = comparisonData.find(d => selectedPeriods.includes(d.period));
-              if (context.datasetIndex === 0) {
-                return [
-                  `Total P&L: $${period?.metrics.totalPnL.toFixed(2)}`,
-                  `Win Rate: ${period?.metrics.winRate.toFixed(1)}%`,
-                  `Total Trades: ${period?.metrics.totalTrades}`,
-                  `Profit Factor: ${period?.metrics.profitFactor.toFixed(2)}`,
-                ];
-              }
-              return `Win Rate: ${period?.metrics.winRate.toFixed(1)}%`;
-            },
-          },
-        },
-      },
-      scales: {
-        x: { 
-          title: { display: true, text: 'Period' },
-          ticks: { font: { size: 11 } },
-        },
-        y: {
-          type: 'linear' as const,
-          display: true,
-          position: 'left' as const,
-          title: { display: true, text: comparisonType === 'performance' ? 'P&L ($)' : 'Count' },
-          ticks: { font: { size: 11 } },
-        },
-        y1: {
-          type: 'linear' as const,
-          display: true,
-          position: 'right' as const,
-          title: { display: true, text: comparisonType === 'performance' ? 'Win Rate (%)' : 'Duration (min)' },
-          grid: { drawOnChartArea: false },
-          ticks: { font: { size: 11 } },
-        },
-      },
-    };
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
+          <p className="font-medium">{label}</p>
+          {comparisonType === 'performance' ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Total P&L: <span className="font-medium">${data.totalPnL?.toFixed(2)}</span>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Win Rate: <span className="font-medium">{data.winRate?.toFixed(1)}%</span>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Total Trades: <span className="font-medium">{data.totalTrades}</span>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Profit Factor: <span className="font-medium">{data.profitFactor?.toFixed(2)}</span>
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Total Trades: <span className="font-medium">{data.totalTrades}</span>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Avg Duration: <span className="font-medium">{data.avgDuration?.toFixed(0)}min</span>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Win Rate: <span className="font-medium">{data.winRate?.toFixed(1)}%</span>
+              </p>
+            </>
+          )}
+        </div>
+      );
+    }
+    return null;
   };
 
   if (isLoading) {
@@ -299,10 +240,81 @@ export function ComparisonTools({
             </CardHeader>
             <CardContent>
               <div className="h-96">
-                <Bar 
-                  data={comparisonType === 'performance' ? getPerformanceChartData() : getTrendsChartData()} 
-                  options={getChartOptions()} 
-                />
+                <ResponsiveContainer width="100%" height="100%">
+                  {comparisonType === 'performance' ? (
+                    <BarChart data={getPerformanceChartData()} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                      <XAxis 
+                        dataKey="period" 
+                        tick={{ fontSize: 12 }}
+                        className="text-muted-foreground"
+                      />
+                      <YAxis 
+                        yAxisId="left"
+                        tick={{ fontSize: 12 }}
+                        className="text-muted-foreground"
+                      />
+                      <YAxis 
+                        yAxisId="right" 
+                        orientation="right"
+                        tick={{ fontSize: 12 }}
+                        className="text-muted-foreground"
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend />
+                      <Bar 
+                        yAxisId="left"
+                        dataKey="totalPnL" 
+                        fill="#10b981"
+                        radius={[4, 4, 0, 0]}
+                        name="Total P&L ($)"
+                      />
+                      <Bar 
+                        yAxisId="right"
+                        dataKey="winRate" 
+                        fill="#3b82f6"
+                        radius={[4, 4, 0, 0]}
+                        name="Win Rate (%)"
+                      />
+                    </BarChart>
+                  ) : (
+                    <BarChart data={getTrendsChartData()} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                      <XAxis 
+                        dataKey="period" 
+                        tick={{ fontSize: 12 }}
+                        className="text-muted-foreground"
+                      />
+                      <YAxis 
+                        yAxisId="left"
+                        tick={{ fontSize: 12 }}
+                        className="text-muted-foreground"
+                      />
+                      <YAxis 
+                        yAxisId="right" 
+                        orientation="right"
+                        tick={{ fontSize: 12 }}
+                        className="text-muted-foreground"
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend />
+                      <Bar 
+                        yAxisId="left"
+                        dataKey="totalTrades" 
+                        fill="#8b5cf6"
+                        radius={[4, 4, 0, 0]}
+                        name="Total Trades"
+                      />
+                      <Bar 
+                        yAxisId="right"
+                        dataKey="avgDuration" 
+                        fill="#f59e0b"
+                        radius={[4, 4, 0, 0]}
+                        name="Avg Duration (min)"
+                      />
+                    </BarChart>
+                  )}
+                </ResponsiveContainer>
               </div>
             </CardContent>
           </Card>
