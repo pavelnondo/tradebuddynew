@@ -185,7 +185,7 @@ export const APP_CONFIG = {
   features: {
     darkMode: true,
     realTimeUpdates: true,
-    advancedAnalytics: true,
+    essentialAnalytics: true,
     multiAccountSupport: true,
     exportData: true,
     notifications: true,

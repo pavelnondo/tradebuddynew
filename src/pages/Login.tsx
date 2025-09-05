@@ -156,8 +156,8 @@ export default function Login() {
             <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mx-auto mb-2">
               <TrendingUp className="w-4 h-4 text-blue-600" />
             </div>
-            <h3 className="font-semibold text-sm mb-1">Advanced Analytics</h3>
-            <p className="text-xs text-muted-foreground">Deep insights into your trading patterns</p>
+            <h3 className="font-semibold text-sm mb-1">Essential Analytics</h3>
+            <p className="text-xs text-muted-foreground">Clear insights into your trading performance</p>
           </div>
           <div className="p-4 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
             <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mx-auto mb-2">

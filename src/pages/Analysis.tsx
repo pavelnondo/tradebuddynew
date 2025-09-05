@@ -33,13 +33,7 @@ import { BalanceChart } from "@/components/charts/BalanceChart";
 import { HourlyPerformanceChart } from "@/components/charts/HourlyPerformanceChart";
 import { EmotionsWinRateChart } from "@/components/charts/EmotionsWinRateChart";
 import { SetupPerformanceChart } from "@/components/charts/SetupPerformanceChart";
-import { TimeBasedAnalysis } from "@/components/charts/TimeBasedAnalysis";
-import { MarketConditionAnalysis } from "@/components/charts/MarketConditionAnalysis";
-import { DrillDownChart } from "@/components/charts/DrillDownChart";
-import { CustomTimeRange } from "@/components/CustomTimeRange";
-import { ComparisonTools } from "@/components/ComparisonTools";
 import { useUserSettings } from "@/hooks/useUserSettings";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Performance metric card
 const MetricCard = ({ 
@@ -220,7 +214,7 @@ export default function Analysis() {
     
     const setupStats = new Map();
     filteredTrades.forEach(trade => {
-      const setup = trade.setupType || trade.setup || 'Unknown';
+      const setup = trade.setup || 'Unknown';
       if (!setupStats.has(setup)) {
         setupStats.set(setup, {
           totalTrades: 0,
@@ -309,7 +303,7 @@ export default function Analysis() {
     
     const conditionStats = new Map();
     filteredTrades.forEach(trade => {
-      const condition = trade.marketCondition || 'Unknown';
+      const condition = 'Unknown'; // Market condition not available in current schema
       if (!conditionStats.has(condition)) {
         conditionStats.set(condition, {
           totalTrades: 0,
@@ -347,6 +341,7 @@ export default function Analysis() {
       maxDrawdown: 0, // Would need more complex calculation
     }));
   }, [filteredTrades]);
+
 
   if (isLoading) {
     return (
@@ -503,15 +498,8 @@ export default function Analysis() {
       </Card>
 
       {/* Interactive Dashboard Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="drilldown">Drill Down</TabsTrigger>
-          <TabsTrigger value="timerange">Time Range</TabsTrigger>
-          <TabsTrigger value="comparison">Comparison</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-6">
+      {/* Essential Analysis */}
+      <div className="space-y-6">
           {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard title="Total P&L" value={metrics.totalProfitLoss} icon={DollarSign} format="currency" color={metrics.totalProfitLoss >= 0 ? "green" : "red"} />
@@ -531,18 +519,8 @@ export default function Analysis() {
         </CardContent>
       </Card>
 
-      {/* Additional Charts */}
+      {/* Essential Charts Only */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="card-modern">
-          <CardHeader>
-            <CardTitle className="flex items-center"><Clock className="w-5 h-5 mr-2" /> Hourly Performance</CardTitle>
-            <CardDescription>Profit/Loss and win rate by hour</CardDescription>
-          </CardHeader>
-          <CardContent className="h-72">
-            <HourlyPerformanceChart data={tradesByHour} />
-          </CardContent>
-        </Card>
-
         <Card className="card-modern">
           <CardHeader>
             <CardTitle className="flex items-center"><Award className="w-5 h-5 mr-2" /> Emotion Impact</CardTitle>
@@ -552,74 +530,22 @@ export default function Analysis() {
             <EmotionsWinRateChart data={emotionPerformance} />
           </CardContent>
         </Card>
+
+        <Card className="card-modern">
+          <CardHeader>
+            <CardTitle className="flex items-center"><Clock className="w-5 h-5 mr-2" /> Hourly Performance</CardTitle>
+            <CardDescription>Profit/Loss and win rate by hour</CardDescription>
+          </CardHeader>
+          <CardContent className="h-72">
+            <HourlyPerformanceChart data={tradesByHour} />
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Performance Attribution Charts */}
+      {/* Setup Performance - Most Important Chart */}
       <SetupPerformanceChart data={setupPerformance} isLoading={isLoading} />
-      
-      <TimeBasedAnalysis data={timeBasedData} analysisType="daily" isLoading={isLoading} />
-      
-      <MarketConditionAnalysis data={marketConditionData} isLoading={isLoading} />
-        </TabsContent>
 
-        <TabsContent value="drilldown" className="space-y-6">
-          <DrillDownChart
-            title="Setup Performance Drill Down"
-            description="Click on any setup to see detailed breakdown"
-            data={setupPerformance.map(setup => ({
-              label: setup.setup,
-              value: setup.totalPnL,
-              trades: filteredTrades.filter(t => (t.setupType || t.setup || 'Unknown') === setup.setup),
-            }))}
-            chartType="bar"
-            onDrillDown={(data) => {
-              console.log('Drill down:', data);
-            }}
-            isLoading={isLoading}
-          />
-          
-          <DrillDownChart
-            title="Market Condition Drill Down"
-            description="Click on any market condition to see detailed breakdown"
-            data={marketConditionData.map(condition => ({
-              label: condition.condition,
-              value: condition.totalPnL,
-              trades: filteredTrades.filter(t => (t.marketCondition || 'Unknown') === condition.condition),
-            }))}
-            chartType="pie"
-            onDrillDown={(data) => {
-              console.log('Drill down:', data);
-            }}
-            isLoading={isLoading}
-          />
-        </TabsContent>
-
-        <TabsContent value="timerange" className="space-y-6">
-          <CustomTimeRange
-            onTimeRangeChange={(timeRange) => {
-              console.log('Time range changed:', timeRange);
-              // This would update the filtered trades based on the new time range
-            }}
-            currentTimeRange={{
-              start: new Date(),
-              end: new Date(),
-              label: 'Current Range',
-              type: 'custom',
-            }}
-          />
-        </TabsContent>
-
-        <TabsContent value="comparison" className="space-y-6">
-          <ComparisonTools
-            onCompare={(periods) => {
-              console.log('Comparing periods:', periods);
-              // This would generate comparison data for the selected periods
-            }}
-            comparisonData={[]}
-            isLoading={isLoading}
-          />
-        </TabsContent>
-      </Tabs>
+      </div>
     </div>
   );
 }
