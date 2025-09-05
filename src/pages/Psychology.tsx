@@ -84,7 +84,7 @@ export default function Psychology() {
 
     // Emotion trends
     const emotionTrends = filteredTrades.map(trade => ({
-      date: trade.date,
+      date: typeof trade.date === 'string' ? trade.date : new Date(trade.date).toISOString(),
       emotion: trade.emotion || 'neutral',
       confidence: trade.confidenceLevel || 5,
       profitLoss: trade.profitLoss || 0,
@@ -215,15 +215,18 @@ export default function Psychology() {
 
     const dailyStats = new Map();
     filteredTrades.forEach(trade => {
-      const date = trade.date.split('T')[0]; // Get just the date part
-      if (!dailyStats.has(date)) {
-        dailyStats.set(date, {
+      // Handle both string and Date object formats
+      const dateStr = typeof trade.date === 'string' 
+        ? trade.date.split('T')[0] 
+        : new Date(trade.date).toISOString().split('T')[0];
+      if (!dailyStats.has(dateStr)) {
+        dailyStats.set(dateStr, {
           trades: 0,
           profitLoss: 0,
           winCount: 0,
         });
       }
-      const stats = dailyStats.get(date);
+      const stats = dailyStats.get(dateStr);
       stats.trades += 1;
       stats.profitLoss += trade.profitLoss || 0;
       if ((trade.profitLoss || 0) >= 0) stats.winCount += 1;
@@ -259,7 +262,7 @@ export default function Psychology() {
       confidence: trade.confidenceLevel || 5,
       emotion: trade.emotion || 'neutral',
       asset: trade.asset || 'Unknown',
-      date: trade.date,
+      date: typeof trade.date === 'string' ? trade.date : new Date(trade.date).toISOString(),
     }));
   }, [filteredTrades]);
 
@@ -283,7 +286,7 @@ export default function Psychology() {
       const drawdown = peak > 0 ? ((peak - cumulativePnL) / peak) * 100 : 0;
 
       return {
-        date: trade.date,
+        date: typeof trade.date === 'string' ? trade.date : new Date(trade.date).toISOString(),
         cumulativePnL,
         tradePnL,
         drawdown,
