@@ -493,7 +493,7 @@ app.post('/api/trades', authenticateToken, async (req, res) => {
       RETURNING *`,
       [
         req.user.id, finalAccountId, symbol, type, tradeType, direction, entryPrice, exitPrice,
-        quantity, positionSize, entryTimeUTC, exitTimeUTC, emotion, confidenceLevel,
+        quantity, positionSize, entryTimeString, exitTimeString, emotion, confidenceLevel,
         executionQuality, setupType, marketCondition, notes, tags, calculatedPnL, duration, checklistId,
         checklistItems ? JSON.stringify(checklistItems) : null, screenshot || null
       ]
