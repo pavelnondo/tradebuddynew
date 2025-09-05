@@ -39,6 +39,10 @@ import { useApiTrades } from '@/hooks/useApiTrades';
 import { useToast } from "@/hooks/use-toast";
 import { tradeApi } from '@/services/tradeApi';
 import { cn } from "@/lib/utils";
+import { SavedFilterSets } from "@/components/SavedFilterSets";
+import { AdvancedSearch } from "@/components/AdvancedSearch";
+import { ExportOptions } from "@/components/ExportOptions";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Trade card component  
 const TradeCard = ({ 
@@ -602,7 +606,17 @@ export default function TradeHistory() {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Advanced Features Tabs */}
+      <Tabs defaultValue="trades" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="trades">Trade History</TabsTrigger>
+          <TabsTrigger value="filters">Saved Filters</TabsTrigger>
+          <TabsTrigger value="search">Advanced Search</TabsTrigger>
+          <TabsTrigger value="export">Export Data</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="trades" className="space-y-6">
+          {/* Stats */}
       <TradeStats trades={trades} />
 
       {/* Date Filter Indicator */}
@@ -687,6 +701,65 @@ export default function TradeHistory() {
           ))}
         </div>
       )}
+        </TabsContent>
+
+        <TabsContent value="filters" className="space-y-6">
+          <SavedFilterSets
+            onApplyFilterSet={(filters) => {
+              // Apply the filter set to current filters
+              console.log('Applying filter set:', filters);
+              // This would update the current filter state
+            }}
+            onSaveFilterSet={async (filterSet) => {
+              // Save filter set logic would go here
+              console.log('Saving filter set:', filterSet);
+            }}
+            onUpdateFilterSet={async (id, filterSet) => {
+              // Update filter set logic would go here
+              console.log('Updating filter set:', id, filterSet);
+            }}
+            onDeleteFilterSet={async (id) => {
+              // Delete filter set logic would go here
+              console.log('Deleting filter set:', id);
+            }}
+            currentFilters={{
+              timeframe: 'all',
+              symbol: '',
+              tradeType: '',
+              emotion: '',
+              setupType: '',
+              marketCondition: '',
+            }}
+          />
+        </TabsContent>
+
+        <TabsContent value="search" className="space-y-6">
+          <AdvancedSearch
+            onSearch={(criteria) => {
+              console.log('Advanced search:', criteria);
+              // This would trigger the search
+            }}
+            onClear={() => {
+              console.log('Clearing search');
+              // This would clear the search results
+            }}
+            searchResults={{
+              total: 0,
+              trades: [],
+            }}
+          />
+        </TabsContent>
+
+        <TabsContent value="export" className="space-y-6">
+          <ExportOptions
+            onExport={(options) => {
+              console.log('Exporting with options:', options);
+              // This would trigger the export
+            }}
+            isExporting={false}
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
