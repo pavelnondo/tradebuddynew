@@ -15,6 +15,7 @@ import Checklists from "./pages/Checklists";
 import TradeDetails from "./pages/TradeDetails";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Calendar from "./pages/Calendar";
+import Psychology from "./pages/Psychology";
 import Login from "./pages/Login";
 
 const queryClient = new QueryClient({
@@ -157,6 +158,18 @@ const AppRoutes = () => {
             <Layout>
               <Suspense fallback={<PageLoader />}>
                 <Calendar />
+              </Suspense>
+            </Layout>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/psychology" element={
+        <ProtectedRoute>
+          <ErrorBoundary>
+            <Layout>
+              <Suspense fallback={<PageLoader />}>
+                <Psychology />
               </Suspense>
             </Layout>
           </ErrorBoundary>

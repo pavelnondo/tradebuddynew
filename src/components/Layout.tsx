@@ -15,7 +15,8 @@ import {
   X,
   LogOut,
   Bell,
-  Search
+  Search,
+  Brain
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -85,6 +86,7 @@ export function Layout({ children }: LayoutProps) {
     { path: "/dashboard", label: "Dashboard", icon: Home },
     { path: "/trades", label: "Trades", icon: TrendingUp },
     { path: "/analysis", label: "Analysis", icon: BarChart3 },
+    { path: "/psychology", label: "Psychology", icon: Brain },
     { path: "/calendar", label: "Calendar", icon: Calendar },
     { path: "/checklists", label: "Checklists", icon: CheckSquare },
   ];
