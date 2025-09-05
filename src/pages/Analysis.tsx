@@ -32,6 +32,9 @@ import { cn } from "@/lib/utils";
 import { BalanceChart } from "@/components/charts/BalanceChart";
 import { HourlyPerformanceChart } from "@/components/charts/HourlyPerformanceChart";
 import { EmotionsWinRateChart } from "@/components/charts/EmotionsWinRateChart";
+import { SetupPerformanceChart } from "@/components/charts/SetupPerformanceChart";
+import { TimeBasedAnalysis } from "@/components/charts/TimeBasedAnalysis";
+import { MarketConditionAnalysis } from "@/components/charts/MarketConditionAnalysis";
 import { useUserSettings } from "@/hooks/useUserSettings";
 
 // Performance metric card
@@ -206,6 +209,140 @@ export default function Analysis() {
     const assets = [...new Set(trades.map(t => t.asset))];
     return assets.sort();
   }, [trades]);
+
+  // Generate setup performance data
+  const setupPerformance = useMemo(() => {
+    if (!Array.isArray(filteredTrades)) return [];
+    
+    const setupStats = new Map();
+    filteredTrades.forEach(trade => {
+      const setup = trade.setupType || trade.setup || 'Unknown';
+      if (!setupStats.has(setup)) {
+        setupStats.set(setup, {
+          totalTrades: 0,
+          winningTrades: 0,
+          losingTrades: 0,
+          totalPnL: 0,
+          totalDuration: 0,
+          totalProfit: 0,
+          totalLoss: 0,
+        });
+      }
+      const stats = setupStats.get(setup);
+      stats.totalTrades += 1;
+      stats.totalPnL += trade.profitLoss || 0;
+      stats.totalDuration += trade.duration || 0;
+      if ((trade.profitLoss || 0) >= 0) {
+        stats.winningTrades += 1;
+        stats.totalProfit += trade.profitLoss || 0;
+      } else {
+        stats.losingTrades += 1;
+        stats.totalLoss += Math.abs(trade.profitLoss || 0);
+      }
+    });
+
+    return Array.from(setupStats.entries()).map(([setup, stats]) => ({
+      setup,
+      totalTrades: stats.totalTrades,
+      winningTrades: stats.winningTrades,
+      losingTrades: stats.losingTrades,
+      totalPnL: stats.totalPnL,
+      avgPnL: stats.totalPnL / stats.totalTrades,
+      winRate: (stats.winningTrades / stats.totalTrades) * 100,
+      avgDuration: stats.totalDuration / stats.totalTrades,
+      profitFactor: stats.totalLoss > 0 ? stats.totalProfit / stats.totalLoss : stats.totalProfit > 0 ? 999 : 0,
+      maxDrawdown: 0, // Would need more complex calculation
+    }));
+  }, [filteredTrades]);
+
+  // Generate time-based data (daily)
+  const timeBasedData = useMemo(() => {
+    if (!Array.isArray(filteredTrades)) return [];
+    
+    const dailyStats = new Map();
+    filteredTrades.forEach(trade => {
+      const date = new Date(trade.date).toDateString();
+      if (!dailyStats.has(date)) {
+        dailyStats.set(date, {
+          totalTrades: 0,
+          winningTrades: 0,
+          losingTrades: 0,
+          totalPnL: 0,
+          totalDuration: 0,
+          totalProfit: 0,
+          totalLoss: 0,
+        });
+      }
+      const stats = dailyStats.get(date);
+      stats.totalTrades += 1;
+      stats.totalPnL += trade.profitLoss || 0;
+      stats.totalDuration += trade.duration || 0;
+      if ((trade.profitLoss || 0) >= 0) {
+        stats.winningTrades += 1;
+        stats.totalProfit += trade.profitLoss || 0;
+      } else {
+        stats.losingTrades += 1;
+        stats.totalLoss += Math.abs(trade.profitLoss || 0);
+      }
+    });
+
+    return Array.from(dailyStats.entries()).map(([date, stats]) => ({
+      period: new Date(date).toLocaleDateString(),
+      totalTrades: stats.totalTrades,
+      winningTrades: stats.winningTrades,
+      losingTrades: stats.losingTrades,
+      totalPnL: stats.totalPnL,
+      avgPnL: stats.totalPnL / stats.totalTrades,
+      winRate: (stats.winningTrades / stats.totalTrades) * 100,
+      avgDuration: stats.totalDuration / stats.totalTrades,
+      profitFactor: stats.totalLoss > 0 ? stats.totalProfit / stats.totalLoss : stats.totalProfit > 0 ? 999 : 0,
+    }));
+  }, [filteredTrades]);
+
+  // Generate market condition data
+  const marketConditionData = useMemo(() => {
+    if (!Array.isArray(filteredTrades)) return [];
+    
+    const conditionStats = new Map();
+    filteredTrades.forEach(trade => {
+      const condition = trade.marketCondition || 'Unknown';
+      if (!conditionStats.has(condition)) {
+        conditionStats.set(condition, {
+          totalTrades: 0,
+          winningTrades: 0,
+          losingTrades: 0,
+          totalPnL: 0,
+          totalDuration: 0,
+          totalProfit: 0,
+          totalLoss: 0,
+        });
+      }
+      const stats = conditionStats.get(condition);
+      stats.totalTrades += 1;
+      stats.totalPnL += trade.profitLoss || 0;
+      stats.totalDuration += trade.duration || 0;
+      if ((trade.profitLoss || 0) >= 0) {
+        stats.winningTrades += 1;
+        stats.totalProfit += trade.profitLoss || 0;
+      } else {
+        stats.losingTrades += 1;
+        stats.totalLoss += Math.abs(trade.profitLoss || 0);
+      }
+    });
+
+    return Array.from(conditionStats.entries()).map(([condition, stats]) => ({
+      condition,
+      totalTrades: stats.totalTrades,
+      winningTrades: stats.winningTrades,
+      losingTrades: stats.losingTrades,
+      totalPnL: stats.totalPnL,
+      avgPnL: stats.totalPnL / stats.totalTrades,
+      winRate: (stats.winningTrades / stats.totalTrades) * 100,
+      avgDuration: stats.totalDuration / stats.totalTrades,
+      profitFactor: stats.totalLoss > 0 ? stats.totalProfit / stats.totalLoss : stats.totalProfit > 0 ? 999 : 0,
+      maxDrawdown: 0, // Would need more complex calculation
+    }));
+  }, [filteredTrades]);
 
   if (isLoading) {
     return (
@@ -402,6 +539,13 @@ export default function Analysis() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Performance Attribution Charts */}
+      <SetupPerformanceChart data={setupPerformance} isLoading={isLoading} />
+      
+      <TimeBasedAnalysis data={timeBasedData} analysisType="daily" isLoading={isLoading} />
+      
+      <MarketConditionAnalysis data={marketConditionData} isLoading={isLoading} />
     </div>
   );
 }
