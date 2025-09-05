@@ -31,6 +31,10 @@ import { tradeApi } from "@/services/tradeApi";
 import { API_BASE_URL } from "@/config";
 import { cn } from "@/lib/utils";
 import { useChecklists } from "@/hooks/useChecklists";
+import { QuickTradeTemplates } from "@/components/QuickTradeTemplates";
+import { VoiceRecorder } from "@/components/VoiceRecorder";
+import { SmartSuggestions } from "@/components/SmartSuggestions";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Emotion selector component
 const EmotionSelector = ({ 
@@ -457,7 +461,18 @@ export default function AddTrade() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Smart Features Tabs */}
+      <Tabs defaultValue="form" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="form">Trade Form</TabsTrigger>
+          <TabsTrigger value="templates">Templates</TabsTrigger>
+          <TabsTrigger value="voice">Voice Notes</TabsTrigger>
+          <TabsTrigger value="suggestions">AI Suggestions</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="form" className="space-y-6">
+          {/* Main Form */}
+          <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Trade Information */}
         <Card className="card-modern">
           <CardHeader>
@@ -751,7 +766,81 @@ export default function AddTrade() {
             )}
           </Button>
         </div>
-      </form>
+          </form>
+        </TabsContent>
+
+        <TabsContent value="templates" className="space-y-6">
+          <QuickTradeTemplates
+            onSelectTemplate={(template) => {
+              setFormData({
+                ...formData,
+                asset: template.symbol,
+                tradeType: template.tradeType,
+                setupType: template.setupType,
+                marketCondition: template.marketCondition,
+                confidenceLevel: template.confidenceLevel,
+                notes: template.notes,
+              });
+              toast({
+                title: "Template Applied",
+                description: `${template.name} template loaded`,
+              });
+            }}
+            onSaveTemplate={async (template) => {
+              // Save template logic would go here
+              console.log('Saving template:', template);
+            }}
+            onUpdateTemplate={async (id, template) => {
+              // Update template logic would go here
+              console.log('Updating template:', id, template);
+            }}
+            onDeleteTemplate={async (id) => {
+              // Delete template logic would go here
+              console.log('Deleting template:', id);
+            }}
+          />
+        </TabsContent>
+
+        <TabsContent value="voice" className="space-y-6">
+          <VoiceRecorder
+            onSaveNote={(note) => {
+              console.log('Voice note saved:', note);
+              // Add voice note to trade notes
+              setFormData({
+                ...formData,
+                notes: formData.notes + `\n[Voice Note ${note.timestamp.toLocaleTimeString()}]: ${note.transcript || 'Audio recorded'}`,
+              });
+            }}
+            onDeleteNote={(id) => {
+              console.log('Voice note deleted:', id);
+            }}
+          />
+        </TabsContent>
+
+        <TabsContent value="suggestions" className="space-y-6">
+          <SmartSuggestions
+            currentTrade={{
+              symbol: formData.asset,
+              tradeType: formData.tradeType,
+              entryPrice: parseFloat(formData.entryPrice) || 0,
+              exitPrice: parseFloat(formData.exitPrice) || 0,
+              positionSize: parseFloat(formData.positionSize) || 0,
+              emotion: formData.emotion,
+              confidenceLevel: formData.confidenceLevel,
+              setupType: formData.setupType,
+              marketCondition: formData.marketCondition,
+            }}
+            recentTrades={[]} // This would come from your trades data
+            onApplySuggestion={(suggestion) => {
+              console.log('Applying suggestion:', suggestion);
+              // Apply suggestion logic would go here
+            }}
+            onDismissSuggestion={(id) => {
+              console.log('Dismissing suggestion:', id);
+            }}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

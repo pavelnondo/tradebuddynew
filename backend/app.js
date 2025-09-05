@@ -935,6 +935,116 @@ app.put('/api/user/settings', authenticateToken, async (req, res) => {
   }
 });
 
+// Trade Templates API endpoints
+app.get('/api/trade-templates', authenticateToken, async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT * FROM trade_templates WHERE user_id = $1 ORDER BY created_at DESC`,
+      [req.user.id]
+    );
+    res.json({ templates: result.rows });
+  } catch (error) {
+    console.error('Get trade templates error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/trade-templates', authenticateToken, async (req, res) => {
+  try {
+    const {
+      name,
+      description,
+      symbol,
+      tradeType,
+      setupType,
+      marketCondition,
+      confidenceLevel,
+      notes,
+      tags,
+      isActive
+    } = req.body;
+
+    const result = await db.query(
+      `INSERT INTO trade_templates (
+        user_id, name, description, symbol, trade_type, setup_type, 
+        market_condition, confidence_level, notes, tags, is_active
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
+      RETURNING *`,
+      [
+        req.user.id, name, description, symbol, tradeType, setupType,
+        marketCondition, confidenceLevel, notes, 
+        tags ? JSON.stringify(tags) : null, isActive
+      ]
+    );
+
+    res.status(201).json({ template: result.rows[0] });
+  } catch (error) {
+    console.error('Create trade template error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.put('/api/trade-templates/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      description,
+      symbol,
+      tradeType,
+      setupType,
+      marketCondition,
+      confidenceLevel,
+      notes,
+      tags,
+      isActive
+    } = req.body;
+
+    const result = await db.query(
+      `UPDATE trade_templates SET 
+        name = $1, description = $2, symbol = $3, trade_type = $4, 
+        setup_type = $5, market_condition = $6, confidence_level = $7, 
+        notes = $8, tags = $9, is_active = $10, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $11 AND user_id = $12 
+      RETURNING *`,
+      [
+        name, description, symbol, tradeType, setupType,
+        marketCondition, confidenceLevel, notes,
+        tags ? JSON.stringify(tags) : null, isActive, id, req.user.id
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+
+    res.json({ template: result.rows[0] });
+  } catch (error) {
+    console.error('Update trade template error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.delete('/api/trade-templates/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await db.query(
+      `DELETE FROM trade_templates WHERE id = $1 AND user_id = $2 RETURNING *`,
+      [id, req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+
+    res.json({ message: 'Template deleted successfully' });
+  } catch (error) {
+    console.error('Delete trade template error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Error handling middleware
 app.use((error, req, res, next) => {
   console.error('Unhandled error:', error);
