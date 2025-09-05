@@ -42,6 +42,8 @@ import { cn } from "@/lib/utils";
 import { SavedFilterSets } from "@/components/SavedFilterSets";
 import { AdvancedSearch } from "@/components/AdvancedSearch";
 import { ExportOptions } from "@/components/ExportOptions";
+import { BulkOperations } from "@/components/BulkOperations";
+import { DuplicateTrade } from "@/components/DuplicateTrade";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Trade card component  

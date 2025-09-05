@@ -1,6 +1,8 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { OfflineSupport } from "@/components/OfflineSupport";
+import { TouchGestures } from "@/components/TouchGestures";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Suspense } from "react";
@@ -16,7 +18,8 @@ import TradeDetails from "./pages/TradeDetails";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Calendar from "./pages/Calendar";
 import Psychology from "./pages/Psychology";
-import AdvancedAnalytics from "./pages/AdvancedAnalytics";
+import TradeManagement from "./pages/TradeManagement";
+import PlanningGoals from "./pages/PlanningGoals";
 import Login from "./pages/Login";
 
 const queryClient = new QueryClient({
@@ -176,17 +179,28 @@ const AppRoutes = () => {
           </ErrorBoundary>
         </ProtectedRoute>
       } />
-      <Route path="/advanced-analytics" element={
-        <ProtectedRoute>
-          <ErrorBoundary>
-            <Layout>
-              <Suspense fallback={<PageLoader />}>
-                <AdvancedAnalytics />
-              </Suspense>
-            </Layout>
-          </ErrorBoundary>
-        </ProtectedRoute>
-      } />
+            <Route path="/trade-management" element={
+              <ProtectedRoute>
+                <ErrorBoundary>
+                  <Layout>
+                    <Suspense fallback={<PageLoader />}>
+                      <TradeManagement />
+                    </Suspense>
+                  </Layout>
+                </ErrorBoundary>
+              </ProtectedRoute>
+            } />
+            <Route path="/planning-goals" element={
+              <ProtectedRoute>
+                <ErrorBoundary>
+                  <Layout>
+                    <Suspense fallback={<PageLoader />}>
+                      <PlanningGoals />
+                    </Suspense>
+                  </Layout>
+                </ErrorBoundary>
+              </ProtectedRoute>
+            } />
       
       {/* Catch all route */}
       <Route path="*" element={<NotFound />} />
@@ -198,11 +212,15 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
       <TooltipProvider>
-        <ErrorBoundary>
-          <Toaster />
-          <Sonner />
-          <AppRoutes />
-        </ErrorBoundary>
+        <OfflineSupport>
+          <TouchGestures>
+            <ErrorBoundary>
+              <Toaster />
+              <Sonner />
+              <AppRoutes />
+            </ErrorBoundary>
+          </TouchGestures>
+        </OfflineSupport>
       </TooltipProvider>
     </BrowserRouter>
   </QueryClientProvider>

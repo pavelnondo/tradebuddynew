@@ -25,14 +25,10 @@ import {
 import { useApiTrades } from '@/hooks/useApiTrades';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import { PsychologyDashboard } from '@/components/charts/PsychologyDashboard';
-import { HeatmapCalendar } from '@/components/charts/HeatmapCalendar';
-import { ScatterAnalysis } from '@/components/charts/ScatterAnalysis';
-import { CumulativePnLChart } from '@/components/charts/CumulativePnLChart';
 
 export default function Psychology() {
   const [timeframe, setTimeframe] = useState("all");
   const [selectedAsset, setSelectedAsset] = useState("all");
-  const [analysisType, setAnalysisType] = useState<'entry-exit' | 'duration-profit' | 'confidence-profit'>('confidence-profit');
   const { trades, isLoading, error } = useApiTrades();
   const { settings } = useUserSettings();
   const navigate = useNavigate();
@@ -209,92 +205,7 @@ export default function Psychology() {
     };
   }, [filteredTrades]);
 
-  // Generate heatmap data
-  const heatmapData = useMemo(() => {
-    if (!Array.isArray(filteredTrades)) return [];
 
-    const dailyStats = new Map();
-    filteredTrades.forEach(trade => {
-      // Handle both string and Date object formats
-      const dateStr = typeof trade.date === 'string' 
-        ? trade.date.split('T')[0] 
-        : new Date(trade.date).toISOString().split('T')[0];
-      if (!dailyStats.has(dateStr)) {
-        dailyStats.set(dateStr, {
-          trades: 0,
-          profitLoss: 0,
-          winCount: 0,
-        });
-      }
-      const stats = dailyStats.get(dateStr);
-      stats.trades += 1;
-      stats.profitLoss += trade.profitLoss || 0;
-      if ((trade.profitLoss || 0) >= 0) stats.winCount += 1;
-    });
-
-    return Array.from(dailyStats.entries()).map(([date, stats]) => {
-      const winRate = (stats.winCount / stats.trades) * 100;
-      let activity: 'high' | 'medium' | 'low' | 'none' = 'none';
-      
-      if (stats.trades >= 5) activity = 'high';
-      else if (stats.trades >= 2) activity = 'medium';
-      else if (stats.trades >= 1) activity = 'low';
-
-      return {
-        date,
-        trades: stats.trades,
-        profitLoss: stats.profitLoss,
-        winRate,
-        activity,
-      };
-    });
-  }, [filteredTrades]);
-
-  // Generate scatter plot data
-  const scatterData = useMemo(() => {
-    if (!Array.isArray(filteredTrades)) return [];
-
-    return filteredTrades.map(trade => ({
-      entryPrice: trade.entryPrice || 0,
-      exitPrice: trade.exitPrice || 0,
-      profitLoss: trade.profitLoss || 0,
-      duration: trade.duration || 0,
-      confidence: trade.confidenceLevel || 5,
-      emotion: trade.emotion || 'neutral',
-      asset: trade.asset || 'Unknown',
-      date: typeof trade.date === 'string' ? trade.date : new Date(trade.date).toISOString(),
-    }));
-  }, [filteredTrades]);
-
-  // Generate cumulative P&L data
-  const cumulativeData = useMemo(() => {
-    if (!Array.isArray(filteredTrades)) return [];
-
-    let cumulativePnL = 0;
-    let peak = 0;
-    let tradeCount = 0;
-
-    return filteredTrades.map(trade => {
-      const tradePnL = trade.profitLoss || 0;
-      cumulativePnL += tradePnL;
-      tradeCount += 1;
-
-      if (cumulativePnL > peak) {
-        peak = cumulativePnL;
-      }
-
-      const drawdown = peak > 0 ? ((peak - cumulativePnL) / peak) * 100 : 0;
-
-      return {
-        date: typeof trade.date === 'string' ? trade.date : new Date(trade.date).toISOString(),
-        cumulativePnL,
-        tradePnL,
-        drawdown,
-        peak,
-        tradeCount,
-      };
-    });
-  }, [filteredTrades]);
 
   if (isLoading) {
     return (
@@ -388,38 +299,12 @@ export default function Psychology() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block">Analysis Type</label>
-              <Select value={analysisType} onValueChange={(value: any) => setAnalysisType(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="confidence-profit">Confidence vs Profit</SelectItem>
-                  <SelectItem value="duration-profit">Duration vs Profit</SelectItem>
-                  <SelectItem value="entry-exit">Entry vs Exit Price</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Psychology Dashboard */}
+      {/* Psychology Dashboard - Essential Only */}
       <PsychologyDashboard data={psychologyData} isLoading={isLoading} />
-
-      {/* Heatmap Calendar */}
-      <HeatmapCalendar data={heatmapData} isLoading={isLoading} />
-
-      {/* Scatter Analysis */}
-      <ScatterAnalysis data={scatterData} analysisType={analysisType} isLoading={isLoading} />
-
-      {/* Cumulative P&L */}
-      <CumulativePnLChart 
-        data={cumulativeData} 
-        initialBalance={settings ? Number(settings.initial_balance) : 10000}
-        isLoading={isLoading} 
-      />
     </div>
   );
 }

@@ -17,7 +17,10 @@ import {
   Bell,
   Search,
   Brain,
-  Zap
+  Zap,
+  LineChart,
+  Briefcase,
+  Target
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -88,7 +91,8 @@ export function Layout({ children }: LayoutProps) {
     { path: "/trades", label: "Trades", icon: TrendingUp },
     { path: "/analysis", label: "Analysis", icon: BarChart3 },
     { path: "/psychology", label: "Psychology", icon: Brain },
-    { path: "/advanced-analytics", label: "Advanced Analytics", icon: Zap },
+    { path: "/trade-management", label: "Trade Management", icon: Briefcase },
+    { path: "/planning-goals", label: "Planning & Goals", icon: Target },
     { path: "/calendar", label: "Calendar", icon: Calendar },
     { path: "/checklists", label: "Checklists", icon: CheckSquare },
   ];
