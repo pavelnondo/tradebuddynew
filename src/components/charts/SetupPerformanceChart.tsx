@@ -1,32 +1,17 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Bar, Line } from 'react-chartjs-2';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
-  Legend,
-  Filler,
-} from 'chart.js';
+  ResponsiveContainer,
+  Cell,
+} from 'recharts';
 import { TrendingUp, TrendingDown, Target, Clock, DollarSign } from "lucide-react";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
 
 interface SetupPerformance {
   setup: string;
@@ -60,79 +45,46 @@ export function SetupPerformanceChart({ data, isLoading = false }: SetupPerforma
   // Sort data by total P&L for better visualization
   const sortedData = [...data].sort((a, b) => b.totalPnL - a.totalPnL);
 
-  const chartData = {
-    labels: sortedData.map(d => d.setup || 'Unknown'),
-    datasets: [
-      {
-        label: 'Total P&L ($)',
-        data: sortedData.map(d => d.totalPnL),
-        backgroundColor: sortedData.map(d => 
-          d.totalPnL >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(245, 101, 101, 0.8)'
-        ),
-        borderColor: sortedData.map(d => 
-          d.totalPnL >= 0 ? 'rgb(16, 185, 129)' : 'rgb(245, 101, 101)'
-        ),
-        borderWidth: 2,
-        borderRadius: 4,
-        yAxisID: 'y',
-      },
-      {
-        label: 'Win Rate (%)',
-        data: sortedData.map(d => d.winRate),
-        backgroundColor: 'rgba(59, 130, 246, 0.8)',
-        borderColor: 'rgb(59, 130, 246)',
-        borderWidth: 2,
-        borderRadius: 4,
-        yAxisID: 'y1',
-      },
-    ],
-  };
+  // Prepare clean chart data
+  const pnlChartData = sortedData.map(d => ({
+    setup: d.setup || 'Unknown',
+    pnl: d.totalPnL,
+    trades: d.totalTrades,
+  }));
 
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: true, position: 'top' as const },
-      title: { display: true, text: 'Setup Performance Analysis' },
-      tooltip: {
-        callbacks: {
-          label: function(context: any) {
-            const setup = sortedData[context.dataIndex];
-            if (context.datasetIndex === 0) {
-              return [
-                `Total P&L: $${setup.totalPnL.toFixed(2)}`,
-                `Avg P&L: $${setup.avgPnL.toFixed(2)}`,
-                `Trades: ${setup.totalTrades}`,
-                `Win Rate: ${setup.winRate.toFixed(1)}%`,
-                `Profit Factor: ${setup.profitFactor.toFixed(2)}`,
-              ];
-            }
-            return `Win Rate: ${setup.winRate.toFixed(1)}%`;
-          },
-        },
-      },
-    },
-    scales: {
-      x: { 
-        title: { display: true, text: 'Trading Setup' },
-        ticks: { font: { size: 11 } },
-      },
-      y: {
-        type: 'linear' as const,
-        display: true,
-        position: 'left' as const,
-        title: { display: true, text: 'P&L ($)' },
-        ticks: { font: { size: 11 } },
-      },
-      y1: {
-        type: 'linear' as const,
-        display: true,
-        position: 'right' as const,
-        title: { display: true, text: 'Win Rate (%)' },
-        grid: { drawOnChartArea: false },
-        ticks: { font: { size: 11 }, min: 0, max: 100 },
-      },
-    },
+  const winRateChartData = sortedData.map(d => ({
+    setup: d.setup || 'Unknown',
+    winRate: Math.min(d.winRate, 100), // Cap at 100% to prevent overflow
+    trades: d.totalTrades,
+  }));
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
+          <p className="font-medium">{label}</p>
+          <p className="text-sm text-muted-foreground">
+            {payload[0].dataKey === 'pnl' ? (
+              <>
+                P&L: <span className={`font-medium ${data.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  ${data.pnl.toFixed(2)}
+                </span>
+                <br />
+                Trades: <span className="font-medium">{data.trades}</span>
+              </>
+            ) : (
+              <>
+                Win Rate: <span className="font-medium text-blue-600">{data.winRate.toFixed(1)}%</span>
+                <br />
+                Trades: <span className="font-medium">{data.trades}</span>
+              </>
+            )}
+          </p>
+        </div>
+      );
+    }
+    return null;
   };
 
   // Calculate summary stats
@@ -208,17 +160,79 @@ export function SetupPerformanceChart({ data, isLoading = false }: SetupPerforma
         </Card>
       </div>
 
-      {/* Main Chart */}
+      {/* P&L Chart */}
       <Card className="card-modern">
         <CardHeader>
-          <CardTitle>Setup Performance Analysis</CardTitle>
+          <CardTitle>Setup P&L Performance</CardTitle>
           <CardDescription>
-            Compare the performance of different trading setups
+            Total profit/loss by trading setup
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-96">
-            <Bar data={chartData} options={chartOptions} />
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={pnlChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                <XAxis 
+                  dataKey="setup" 
+                  tick={{ fontSize: 12 }}
+                  className="text-muted-foreground"
+                />
+                <YAxis 
+                  tick={{ fontSize: 12 }}
+                  className="text-muted-foreground"
+                  tickFormatter={(value) => `$${value}`}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar 
+                  dataKey="pnl" 
+                  radius={[4, 4, 0, 0]}
+                >
+                  {pnlChartData.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} 
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Win Rate Chart */}
+      <Card className="card-modern">
+        <CardHeader>
+          <CardTitle>Setup Win Rate</CardTitle>
+          <CardDescription>
+            Win rate percentage by trading setup
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={winRateChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                <XAxis 
+                  dataKey="setup" 
+                  tick={{ fontSize: 12 }}
+                  className="text-muted-foreground"
+                />
+                <YAxis 
+                  tick={{ fontSize: 12 }}
+                  className="text-muted-foreground"
+                  domain={[0, 100]}
+                  tickFormatter={(value) => `${value}%`}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar 
+                  dataKey="winRate" 
+                  radius={[4, 4, 0, 0]}
+                  fill="#3b82f6"
+                />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
