@@ -1,5 +1,5 @@
 // Service Worker for TradeBuddy PWA
-const CACHE_NAME = 'tradebuddy-v1.0.2';
+const CACHE_NAME = 'tradebuddy-v1.0.3';
 const urlsToCache = [
   '/',
   '/manifest.json'
@@ -61,14 +61,13 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     Promise.all([
-      // Clear old caches
+      // Clear ALL old caches aggressively
       caches.keys().then((cacheNames) => {
+        console.log('Found caches:', cacheNames);
         return Promise.all(
           cacheNames.map((cacheName) => {
-            if (cacheName !== CACHE_NAME) {
-              console.log('Deleting old cache:', cacheName);
-              return caches.delete(cacheName);
-            }
+            console.log('Deleting cache:', cacheName);
+            return caches.delete(cacheName);
           })
         );
       }),
