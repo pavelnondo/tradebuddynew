@@ -91,7 +91,6 @@ export function Layout({ children }: LayoutProps) {
     { path: "/trades", label: "Trades", icon: TrendingUp },
     { path: "/analysis", label: "Analysis", icon: BarChart3 },
     { path: "/psychology", label: "Psychology", icon: Brain },
-    { path: "/trade-management", label: "Trade Management", icon: Briefcase },
     { path: "/planning-goals", label: "Planning & Goals", icon: Target },
     { path: "/calendar", label: "Calendar", icon: Calendar },
     { path: "/checklists", label: "Checklists", icon: CheckSquare },

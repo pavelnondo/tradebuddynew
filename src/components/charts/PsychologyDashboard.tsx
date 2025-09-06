@@ -12,7 +12,7 @@ import {
   XCircle,
   BarChart3
 } from "lucide-react";
-import { Line, Bar } from 'react-chartjs-2';
+import { Line, Bar, Scatter } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -86,13 +86,18 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
     );
   }
 
-  // Emotion Performance Chart
+  // Emotion Performance Chart - Scatter Plot
   const emotionChartData = {
-    labels: data.emotionPerformance.map(d => d.emotion),
     datasets: [
       {
-        label: 'Average P&L ($)',
-        data: data.emotionPerformance.map(d => d.avgProfitLoss),
+        label: 'Emotion Performance',
+        data: data.emotionPerformance.map(d => ({
+          x: d.winRate,
+          y: d.avgProfitLoss,
+          emotion: d.emotion,
+          tradeCount: d.tradeCount,
+          confidence: d.avgConfidence
+        })),
         backgroundColor: data.emotionPerformance.map(d => 
           d.avgProfitLoss >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(245, 101, 101, 0.8)'
         ),
@@ -100,17 +105,8 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
           d.avgProfitLoss >= 0 ? 'rgb(16, 185, 129)' : 'rgb(245, 101, 101)'
         ),
         borderWidth: 2,
-        borderRadius: 4,
-        yAxisID: 'y',
-      },
-      {
-        label: 'Win Rate (%)',
-        data: data.emotionPerformance.map(d => d.winRate),
-        backgroundColor: 'rgba(59, 130, 246, 0.8)',
-        borderColor: 'rgb(59, 130, 246)',
-        borderWidth: 2,
-        borderRadius: 4,
-        yAxisID: 'y1',
+        pointRadius: 8,
+        pointHoverRadius: 12,
       },
     ],
   };
@@ -120,15 +116,90 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
     maintainAspectRatio: false,
     plugins: {
       legend: { display: true, position: 'top' as const },
-      title: { display: true, text: 'Emotion vs Performance' },
+      title: { display: true, text: 'Emotion Performance Correlation' },
+      tooltip: {
+        callbacks: {
+          title: (context: any) => {
+            const dataPoint = context[0].raw;
+            return dataPoint.emotion;
+          },
+          label: (context: any) => {
+            const dataPoint = context.raw;
+            return [
+              `Win Rate: ${dataPoint.x.toFixed(1)}%`,
+              `Avg P&L: $${dataPoint.y.toFixed(2)}`,
+              `Trades: ${dataPoint.tradeCount}`,
+              `Confidence: ${dataPoint.confidence.toFixed(1)}/10`
+            ];
+          }
+        }
+      }
     },
     scales: {
-      x: { title: { display: true, text: 'Emotion' } },
+      x: { 
+        title: { display: true, text: 'Win Rate (%)' },
+        min: 0,
+        max: 100
+      },
       y: {
         type: 'linear' as const,
         display: true,
         position: 'left' as const,
-        title: { display: true, text: 'P&L ($)' },
+        title: { display: true, text: 'Average P&L ($)' },
+      },
+    },
+  };
+
+  // Confidence Analysis Chart - Line Chart
+  const confidenceChartData = {
+    labels: data.confidenceAnalysis.map(d => d.confidenceRange),
+    datasets: [
+      {
+        label: 'Average P&L ($)',
+        data: data.confidenceAnalysis.map(d => d.avgProfitLoss),
+        borderColor: 'rgb(59, 130, 246)',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderWidth: 3,
+        tension: 0.4,
+        fill: true,
+        pointBackgroundColor: data.confidenceAnalysis.map(d => 
+          d.avgProfitLoss >= 0 ? 'rgb(16, 185, 129)' : 'rgb(245, 101, 101)'
+        ),
+        pointBorderColor: data.confidenceAnalysis.map(d => 
+          d.avgProfitLoss >= 0 ? 'rgb(16, 185, 129)' : 'rgb(245, 101, 101)'
+        ),
+        pointRadius: 6,
+        pointHoverRadius: 8,
+      },
+      {
+        label: 'Win Rate (%)',
+        data: data.confidenceAnalysis.map(d => d.winRate),
+        borderColor: 'rgb(16, 185, 129)',
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        borderWidth: 3,
+        tension: 0.4,
+        fill: false,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        yAxisID: 'y1',
+      },
+    ],
+  };
+
+  const confidenceChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: true, position: 'top' as const },
+      title: { display: true, text: 'Confidence vs Performance Trends' },
+    },
+    scales: {
+      x: { title: { display: true, text: 'Confidence Level' } },
+      y: { 
+        type: 'linear' as const,
+        display: true,
+        position: 'left' as const,
+        title: { display: true, text: 'Average P&L ($)' } 
       },
       y1: {
         type: 'linear' as const,
@@ -139,38 +210,6 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
         min: 0,
         max: 100,
       },
-    },
-  };
-
-  // Confidence Analysis Chart
-  const confidenceChartData = {
-    labels: data.confidenceAnalysis.map(d => d.confidenceRange),
-    datasets: [
-      {
-        label: 'Average P&L ($)',
-        data: data.confidenceAnalysis.map(d => d.avgProfitLoss),
-        backgroundColor: data.confidenceAnalysis.map(d => 
-          d.avgProfitLoss >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(245, 101, 101, 0.8)'
-        ),
-        borderColor: data.confidenceAnalysis.map(d => 
-          d.avgProfitLoss >= 0 ? 'rgb(16, 185, 129)' : 'rgb(245, 101, 101)'
-        ),
-        borderWidth: 2,
-        borderRadius: 4,
-      },
-    ],
-  };
-
-  const confidenceChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: true, position: 'top' as const },
-      title: { display: true, text: 'Confidence vs Performance' },
-    },
-    scales: {
-      x: { title: { display: true, text: 'Confidence Level' } },
-      y: { title: { display: true, text: 'Average P&L ($)' } },
     },
   };
 
@@ -322,7 +361,7 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
           </CardHeader>
           <CardContent>
             <div className="h-80">
-              <Bar data={emotionChartData} options={emotionChartOptions} />
+              <Scatter data={emotionChartData} options={emotionChartOptions} />
             </div>
           </CardContent>
         </Card>
@@ -340,7 +379,7 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
           </CardHeader>
           <CardContent>
             <div className="h-80">
-              <Bar data={confidenceChartData} options={confidenceChartOptions} />
+              <Line data={confidenceChartData} options={confidenceChartOptions} />
             </div>
           </CardContent>
         </Card>

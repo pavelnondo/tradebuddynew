@@ -22,19 +22,23 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
   const data = safeBalanceData.map(item => {
     const date = new Date(item.date);
     return {
-      date: date.toLocaleDateString('en-US', { 
+      date: date.toISOString().split('T')[0], // Use ISO date format for proper sorting
+      displayDate: date.toLocaleDateString('en-US', { 
         month: 'short', 
-        day: 'numeric' 
+        day: 'numeric',
+        year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
       }),
       balance: item.balance,
+      timestamp: date.getTime(), // Add timestamp for proper ordering
     };
-  });
+  }).sort((a, b) => a.timestamp - b.timestamp); // Ensure proper chronological order
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      const dataPoint = payload[0].payload;
       return (
         <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
-          <p className="font-medium">Balance on {label}</p>
+          <p className="font-medium">Balance on {dataPoint.displayDate}</p>
           <p className="text-sm text-muted-foreground">
             <span className="font-medium text-blue-600">${payload[0].value.toLocaleString()}</span>
           </p>
@@ -75,6 +79,17 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
             dataKey="date" 
             tick={{ fontSize: 12 }}
             className="text-muted-foreground"
+            tickFormatter={(value) => {
+              const date = new Date(value);
+              return date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric' 
+              });
+            }}
+            scale="time"
+            type="number"
+            domain={['dataMin', 'dataMax']}
+            tickCount={Math.min(data.length, 8)} // Limit number of ticks for better readability
           />
           <YAxis 
             tick={{ fontSize: 12 }}
@@ -90,6 +105,7 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
             fill="url(#balanceGradient)"
             dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
             activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
+            connectNulls={false}
           />
         </AreaChart>
       </ResponsiveContainer>

@@ -18,7 +18,6 @@ import TradeDetails from "./pages/TradeDetails";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Calendar from "./pages/Calendar";
 import Psychology from "./pages/Psychology";
-import TradeManagement from "./pages/TradeManagement";
 import PlanningGoals from "./pages/PlanningGoals";
 import Login from "./pages/Login";
 
@@ -179,17 +178,6 @@ const AppRoutes = () => {
           </ErrorBoundary>
         </ProtectedRoute>
       } />
-            <Route path="/trade-management" element={
-              <ProtectedRoute>
-                <ErrorBoundary>
-                  <Layout>
-                    <Suspense fallback={<PageLoader />}>
-                      <TradeManagement />
-                    </Suspense>
-                  </Layout>
-                </ErrorBoundary>
-              </ProtectedRoute>
-            } />
             <Route path="/planning-goals" element={
               <ProtectedRoute>
                 <ErrorBoundary>
