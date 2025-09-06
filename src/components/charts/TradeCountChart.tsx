@@ -25,7 +25,17 @@ export function TradeCountChart({ data, isEmpty = false, isLoading = false }: Tr
   if (isLoading) {
     return <div className="chart-container" style={{ minHeight: 180 }}>Loading...</div>;
   }
-  if (isEmpty || data.length === 0) {
+  
+  // Ensure data is valid and filter out invalid entries
+  const safeData = Array.isArray(data) ? data.filter(item => 
+    item && 
+    typeof item.count === 'number' && 
+    !isNaN(item.count) && 
+    item.count >= 0 &&
+    item.date
+  ) : [];
+  
+  if (isEmpty || safeData.length === 0) {
     return <div className="chart-container" style={{ minHeight: 180 }}>No trading frequency data available yet.</div>;
   }
 
@@ -33,7 +43,7 @@ export function TradeCountChart({ data, isEmpty = false, isLoading = false }: Tr
     <div className="chart-container" style={{ minHeight: 180 }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart 
-          data={data}
+          data={safeData}
           margin={{ top: 15, right: 30, left: 10, bottom: 15 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
