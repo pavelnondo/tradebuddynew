@@ -5,6 +5,8 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
   return useMemo(() => {
     // Ensure trades is always an array to prevent map/filter errors
     const safeTrades = Array.isArray(trades) ? trades : [];
+    console.log('useTradeAnalysis - trades:', safeTrades);
+    console.log('useTradeAnalysis - initialBalance:', initialBalance);
     
     // Helper function to ensure valid numbers
     const safeNumber = (value: number, defaultValue: number = 0): number => {
@@ -82,7 +84,9 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
       }, [] as { date: string; balance: number; drawdown: number }[]);
       
       // Return initial balance point + trade points
-      return sortedTrades.length > 0 ? [startPoint, ...tradePoints] : [startPoint];
+      const result = sortedTrades.length > 0 ? [startPoint, ...tradePoints] : [startPoint];
+      console.log('balanceOverTime result:', result);
+      return result;
     })();
     
     // Generate trade count by date data

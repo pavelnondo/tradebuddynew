@@ -32,6 +32,7 @@ export function useApiTrades() {
         return;
       }
       // Map backend fields to frontend Trade type and parse dates with validation
+      console.log('Raw API data:', data);
       const mappedTrades = data.map((trade: any) => {
         // Helper function to safely convert to number
         const safeNumber = (value: any, defaultValue: number = 0): number => {
@@ -68,6 +69,7 @@ export function useApiTrades() {
           checklistItems: Array.isArray(trade.checklist_items) ? trade.checklist_items : undefined,
         };
       });
+      console.log('Mapped trades:', mappedTrades);
       setTrades(mappedTrades);
     } catch (err: any) {
       setError(err.message);
