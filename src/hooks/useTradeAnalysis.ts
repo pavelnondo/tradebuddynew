@@ -49,14 +49,14 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
       // Start with initial balance point
       const startPoint = {
         date: sortedTrades.length > 0 ? 
-          new Date(new Date(sortedTrades[0].date).getTime() - 24 * 60 * 60 * 1000).toLocaleDateString() : // Day before first trade
-          new Date().toLocaleDateString(), // Or today if no trades
+          new Date(new Date(sortedTrades[0].date).getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0] : // Day before first trade
+          new Date().toISOString().split('T')[0], // Or today if no trades
         balance: initialBalance,
         drawdown: 0
       };
       
       const tradePoints = sortedTrades.reduce((acc, trade, index) => {
-        const date = new Date(trade.date).toLocaleDateString();
+        const date = new Date(trade.date).toISOString().split('T')[0];
         const prevBalance = index > 0 ? acc[index - 1].balance : initialBalance;
         const currentBalance = prevBalance + trade.profitLoss;
         
@@ -88,11 +88,13 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
     const tradesByDate = safeTrades
       .filter(trade => trade.date) // Filter out trades without dates
       .reduce((acc, trade) => {
-        const date = new Date(trade.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        const tradeDate = new Date(trade.date);
+        const date = tradeDate.toISOString().split('T')[0]; // Use ISO format for consistency
+        const displayDate = tradeDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
         
         if (!acc[date]) {
           acc[date] = {
-            date,
+            date: displayDate, // Keep display format for UI
             count: 0
           };
         }
@@ -102,8 +104,9 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
         return acc;
       }, {} as Record<string, { date: string; count: number }>);
     
-    const tradeCountByDate = Object.values(tradesByDate)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    const tradeCountByDate = Object.entries(tradesByDate)
+      .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
+      .map(([_, data]) => data)
       .slice(-14); // Show just the last 14 days for a cleaner view
     
     // Analysis by asset
