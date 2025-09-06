@@ -1,9 +1,7 @@
 // Service Worker for TradeBuddy PWA
-const CACHE_NAME = 'tradebuddy-v1.0.0';
+const CACHE_NAME = 'tradebuddy-v1.0.1';
 const urlsToCache = [
   '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
   '/manifest.json',
   '/favicon.ico',
   '/favicon.svg'
@@ -11,11 +9,22 @@ const urlsToCache = [
 
 // Install event
 self.addEventListener('install', (event) => {
+  self.skipWaiting(); // Force the new service worker to activate immediately
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Opened cache');
-        return cache.addAll(urlsToCache);
+        return cache.addAll(urlsToCache).catch((error) => {
+          console.warn('Failed to cache some resources:', error);
+          // Cache individual resources that exist
+          return Promise.allSettled(
+            urlsToCache.map(url => 
+              cache.add(url).catch(err => 
+                console.warn(`Failed to cache ${url}:`, err)
+              )
+            )
+          );
+        });
       })
   );
 });
@@ -38,16 +47,21 @@ self.addEventListener('fetch', (event) => {
 // Activate event
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    Promise.all([
+      // Clear old caches
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheName !== CACHE_NAME) {
+              console.log('Deleting old cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      }),
+      // Take control of all clients immediately
+      self.clients.claim()
+    ])
   );
 });
 
