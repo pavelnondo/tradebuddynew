@@ -14,8 +14,15 @@ interface WinLossChartProps {
 }
 
 export function WinLossChart({ data }: WinLossChartProps) {
-  // Ensure data is always an array to prevent map errors
-  const safeData = Array.isArray(data) ? data : [];
+  // Ensure data is always an array and filter out invalid entries
+  const safeData = Array.isArray(data) ? data.filter(item => 
+    item && 
+    typeof item.value === 'number' && 
+    !isNaN(item.value) && 
+    item.value >= 0 &&
+    item.label &&
+    item.color
+  ) : [];
   
   const chartData = {
     labels: safeData.map(item => item.label),
