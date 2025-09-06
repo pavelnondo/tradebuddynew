@@ -8,28 +8,30 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
     console.log('useTradeAnalysis - trades:', safeTrades);
     console.log('useTradeAnalysis - initialBalance:', initialBalance);
     
-    // Helper function to ensure valid numbers
+    // Helper function to ensure valid numbers - only fix truly invalid values
     const safeNumber = (value: number, defaultValue: number = 0): number => {
-      return isNaN(value) || !isFinite(value) ? defaultValue : value;
+      if (typeof value !== 'number') return defaultValue;
+      if (isNaN(value) || !isFinite(value)) return defaultValue;
+      return value;
     };
 
-    // Basic metrics with validation
+    // Basic metrics - only validate final results
     const totalTrades = safeTrades.length;
-    const profitableTrades = safeTrades.filter((trade) => safeNumber(trade.profitLoss) > 0).length;
-    const lossTrades = safeTrades.filter((trade) => safeNumber(trade.profitLoss) < 0).length;
+    const profitableTrades = safeTrades.filter((trade) => trade.profitLoss > 0).length;
+    const lossTrades = safeTrades.filter((trade) => trade.profitLoss < 0).length;
     const winRate = safeNumber(totalTrades > 0 ? (profitableTrades / totalTrades) * 100 : 0);
-    const totalProfitLoss = safeNumber(safeTrades.reduce((sum, trade) => sum + safeNumber(trade.profitLoss), 0));
+    const totalProfitLoss = safeNumber(safeTrades.reduce((sum, trade) => sum + (trade.profitLoss || 0), 0));
     const currentBalance = safeNumber(initialBalance + totalProfitLoss);
     const percentageReturn = safeNumber(initialBalance > 0 ? (totalProfitLoss / initialBalance) * 100 : 0);
     
-    // Advanced metrics with validation
+    // Advanced metrics - only validate final results
     const totalProfit = safeNumber(safeTrades
-      .filter((trade) => safeNumber(trade.profitLoss) > 0)
-      .reduce((sum, trade) => sum + safeNumber(trade.profitLoss), 0));
+      .filter((trade) => trade.profitLoss > 0)
+      .reduce((sum, trade) => sum + (trade.profitLoss || 0), 0));
     
     const totalLoss = safeNumber(safeTrades
-      .filter((trade) => safeNumber(trade.profitLoss) < 0)
-      .reduce((sum, trade) => sum + safeNumber(trade.profitLoss), 0));
+      .filter((trade) => trade.profitLoss < 0)
+      .reduce((sum, trade) => sum + (trade.profitLoss || 0), 0));
     
     const profitFactor = safeNumber(Math.abs(totalLoss) > 0 ? totalProfit / Math.abs(totalLoss) : totalProfit);
     
@@ -61,14 +63,14 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
       const tradePoints = sortedTrades.reduce((acc, trade, index) => {
         const date = new Date(trade.date).toISOString().split('T')[0];
         const prevBalance = index > 0 ? acc[index - 1].balance : initialBalance;
-        const currentBalance = safeNumber(prevBalance + safeNumber(trade.profitLoss));
+        const currentBalance = prevBalance + (trade.profitLoss || 0);
         
         // Update peak and drawdown
         if (currentBalance > peak) {
           peak = currentBalance;
           currentDrawdown = 0;
         } else {
-          currentDrawdown = safeNumber(peak > 0 ? (peak - currentBalance) / peak * 100 : 0);
+          currentDrawdown = peak > 0 ? (peak - currentBalance) / peak * 100 : 0;
           if (currentDrawdown > maxDrawdown) {
             maxDrawdown = currentDrawdown;
           }
@@ -242,13 +244,13 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
         
         acc[hour].trades += 1;
         
-        if (safeNumber(trade.profitLoss) > 0) {
+        if (trade.profitLoss > 0) {
           acc[hour].wins += 1;
-        } else if (safeNumber(trade.profitLoss) < 0) {
+        } else if (trade.profitLoss < 0) {
           acc[hour].losses += 1;
         }
         
-        acc[hour].profitLoss += safeNumber(trade.profitLoss);
+        acc[hour].profitLoss += (trade.profitLoss || 0);
         
         return acc;
       }, {} as Record<number, {
@@ -270,17 +272,17 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
         totalTrades,
         profitableTrades,
         lossTrades,
-        winRate: safeNumber(winRate),
-        totalProfitLoss: safeNumber(totalProfitLoss),
-        totalProfit: safeNumber(totalProfit),
-        totalLoss: safeNumber(totalLoss),
-        profitFactor: safeNumber(profitFactor),
-        avgWin: safeNumber(avgWin),
-        avgLoss: safeNumber(avgLoss),
-        riskRewardRatio: safeNumber(riskRewardRatio),
-        currentBalance: safeNumber(currentBalance),
-        percentageReturn: safeNumber(percentageReturn),
-        maxDrawdown: safeNumber(maxDrawdown)
+        winRate,
+        totalProfitLoss,
+        totalProfit,
+        totalLoss,
+        profitFactor,
+        avgWin,
+        avgLoss,
+        riskRewardRatio,
+        currentBalance,
+        percentageReturn,
+        maxDrawdown
       },
       tradeCountByDate,
       assetPerformance: assetPerformanceArray,
