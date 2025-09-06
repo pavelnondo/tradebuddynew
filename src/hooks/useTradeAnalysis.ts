@@ -267,7 +267,7 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
       hourFormatted: `${item.hour}:00`
     }));
 
-    return {
+    const result = {
       metrics: {
         totalTrades,
         profitableTrades,
@@ -295,5 +295,8 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
         { label: 'Losses', value: lossTrades, color: '#EF4444' }
       ]
     };
+    
+    console.log('useTradeAnalysis final result:', result);
+    return result;
   }, [trades, initialBalance]);
 }
