@@ -31,27 +31,43 @@ export function useApiTrades() {
         setTrades([]);
         return;
       }
-      // Map backend fields to frontend Trade type and parse dates
-      const mappedTrades = data.map((trade: any) => ({
-        id: trade.id,
-        asset: trade.symbol,
-        tradeType: trade.trade_type || trade.type, // Prefer trade_type (Long/Short) over type (buy/sell)
-        type: trade.type, // Keep original type for backend compatibility
-        entryPrice: trade.entry_price !== undefined && trade.entry_price !== null ? Number(trade.entry_price) : 0,
-        exitPrice: trade.exit_price !== undefined && trade.exit_price !== null ? Number(trade.exit_price) : 0,
-        positionSize: trade.quantity !== undefined && trade.quantity !== null ? Number(trade.quantity) : 0,
-        date: trade.entry_time ? new Date(trade.entry_time) : null,
-        profitLoss: trade.pnl !== undefined && trade.pnl !== null ? Number(trade.pnl) : 0,
-        notes: trade.notes || '',
-        emotion: trade.emotion || '',
-        screenshot: trade.screenshot_url || trade.screenshot || '',
-        duration: trade.duration,
-        setup: trade.setup_type || trade.setup,
-        executionQuality: trade.execution_quality,
-        checklist_id: trade.checklist_id,
-        checklist_completed: trade.checklist_completed,
-        checklistItems: Array.isArray(trade.checklist_items) ? trade.checklist_items : undefined,
-      }));
+      // Map backend fields to frontend Trade type and parse dates with validation
+      const mappedTrades = data.map((trade: any) => {
+        // Helper function to safely convert to number
+        const safeNumber = (value: any, defaultValue: number = 0): number => {
+          if (value === undefined || value === null || value === '') return defaultValue;
+          const num = Number(value);
+          return isNaN(num) ? defaultValue : num;
+        };
+
+        // Helper function to safely parse date
+        const safeDate = (dateValue: any): Date | null => {
+          if (!dateValue) return null;
+          const date = new Date(dateValue);
+          return isNaN(date.getTime()) ? null : date;
+        };
+
+        return {
+          id: trade.id,
+          asset: trade.symbol || '',
+          tradeType: trade.trade_type || trade.type || '', // Prefer trade_type (Long/Short) over type (buy/sell)
+          type: trade.type || '', // Keep original type for backend compatibility
+          entryPrice: safeNumber(trade.entry_price, 0),
+          exitPrice: safeNumber(trade.exit_price, 0),
+          positionSize: safeNumber(trade.quantity, 0),
+          date: safeDate(trade.entry_time),
+          profitLoss: safeNumber(trade.pnl, 0),
+          notes: trade.notes || '',
+          emotion: trade.emotion || '',
+          screenshot: trade.screenshot_url || trade.screenshot || '',
+          duration: safeNumber(trade.duration, 0),
+          setup: trade.setup_type || trade.setup || '',
+          executionQuality: trade.execution_quality || '',
+          checklist_id: trade.checklist_id,
+          checklist_completed: trade.checklist_completed,
+          checklistItems: Array.isArray(trade.checklist_items) ? trade.checklist_items : undefined,
+        };
+      });
       setTrades(mappedTrades);
     } catch (err: any) {
       setError(err.message);
