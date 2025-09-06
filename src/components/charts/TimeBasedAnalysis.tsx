@@ -57,6 +57,42 @@ export function TimeBasedAnalysis({ data, analysisType, isLoading = false }: Tim
     );
   }
 
+  // Ensure data is valid and filter out invalid entries
+  const safeData = Array.isArray(data) ? data.filter(item => 
+    item && 
+    typeof item.totalPnL === 'number' && 
+    !isNaN(item.totalPnL) &&
+    typeof item.winRate === 'number' && 
+    !isNaN(item.winRate) &&
+    typeof item.totalTrades === 'number' && 
+    !isNaN(item.totalTrades) &&
+    typeof item.avgPnL === 'number' && 
+    !isNaN(item.avgPnL) &&
+    typeof item.profitFactor === 'number' && 
+    !isNaN(item.profitFactor) &&
+    item.period
+  ) : [];
+
+  if (safeData.length === 0) {
+    return (
+      <Card className="card-modern">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center h-96">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold mb-2">No Time-Based Data Available</h3>
+              <p className="text-muted-foreground">No valid time-based analysis data to display</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const getChartTitle = () => {
     switch (analysisType) {
       case 'hourly': return 'Hourly Trading Performance';
@@ -78,7 +114,7 @@ export function TimeBasedAnalysis({ data, analysisType, isLoading = false }: Tim
   };
 
   // Sort data by period for better visualization
-  const sortedData = [...data].sort((a, b) => {
+  const sortedData = [...safeData].sort((a, b) => {
     if (analysisType === 'hourly') {
       return parseInt(a.period) - parseInt(b.period);
     }
@@ -161,16 +197,16 @@ export function TimeBasedAnalysis({ data, analysisType, isLoading = false }: Tim
   };
 
   // Calculate summary stats
-  const totalTrades = data.reduce((sum, d) => sum + d.totalTrades, 0);
-  const totalPnL = data.reduce((sum, d) => sum + d.totalPnL, 0);
-  const avgWinRate = data.length > 0 ? data.reduce((sum, d) => sum + d.winRate, 0) / data.length : 0;
-  const bestPeriod = data.reduce((best, current) => 
+  const totalTrades = safeData.reduce((sum, d) => sum + d.totalTrades, 0);
+  const totalPnL = safeData.reduce((sum, d) => sum + d.totalPnL, 0);
+  const avgWinRate = safeData.length > 0 ? safeData.reduce((sum, d) => sum + d.winRate, 0) / safeData.length : 0;
+  const bestPeriod = safeData.reduce((best, current) => 
     current.totalPnL > best.totalPnL ? current : best, 
     { period: 'None', totalPnL: -Infinity, winRate: 0, totalTrades: 0, avgPnL: 0, profitFactor: 0, winningTrades: 0, losingTrades: 0, avgDuration: 0 }
   );
 
   // Find most active period
-  const mostActivePeriod = data.reduce((most, current) => 
+  const mostActivePeriod = safeData.reduce((most, current) => 
     current.totalTrades > most.totalTrades ? current : most, 
     { period: 'None', totalTrades: 0, totalPnL: 0, winRate: 0, avgPnL: 0, profitFactor: 0, winningTrades: 0, losingTrades: 0, avgDuration: 0 }
   );

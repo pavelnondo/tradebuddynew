@@ -27,7 +27,15 @@ export function HourlyPerformanceChart({
   isEmpty = false,
   isLoading = false
 }: HourlyPerformanceProps) {
-  const safeData = Array.isArray(data) ? data : [];
+  // Ensure data is valid and filter out invalid entries
+  const safeData = Array.isArray(data) ? data.filter(item => 
+    item && 
+    typeof item.profitLoss === 'number' && 
+    !isNaN(item.profitLoss) &&
+    typeof item.winRate === 'number' && 
+    !isNaN(item.winRate) &&
+    item.hourFormatted
+  ) : [];
   
   const chartData = {
     labels: safeData.map(d => d.hourFormatted),
@@ -93,7 +101,7 @@ export function HourlyPerformanceChart({
   if (isLoading) {
     return <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Loading...</div>;
   }
-  if (isEmpty || data.length === 0) {
+  if (isEmpty || safeData.length === 0) {
     return <div className="h-full flex items-center justify-center text-sm text-muted-foreground">No time-based analysis data available yet.</div>;
   }
 

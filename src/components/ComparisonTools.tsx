@@ -93,24 +93,43 @@ export function ComparisonTools({
   const getPerformanceChartData = () => {
     const filteredData = comparisonData.filter(d => selectedPeriods.includes(d.period));
     
-    return filteredData.map(d => ({
-      period: d.period,
-      totalPnL: d.metrics.totalPnL,
-      winRate: d.metrics.winRate,
-      totalTrades: d.metrics.totalTrades,
-      profitFactor: d.metrics.profitFactor,
-    }));
+    return filteredData
+      .filter(d => 
+        d && 
+        d.metrics &&
+        typeof d.metrics.totalPnL === 'number' && !isNaN(d.metrics.totalPnL) &&
+        typeof d.metrics.winRate === 'number' && !isNaN(d.metrics.winRate) &&
+        typeof d.metrics.totalTrades === 'number' && !isNaN(d.metrics.totalTrades) &&
+        typeof d.metrics.profitFactor === 'number' && !isNaN(d.metrics.profitFactor) &&
+        d.period
+      )
+      .map(d => ({
+        period: d.period,
+        totalPnL: d.metrics.totalPnL,
+        winRate: d.metrics.winRate,
+        totalTrades: d.metrics.totalTrades,
+        profitFactor: d.metrics.profitFactor,
+      }));
   };
 
   const getTrendsChartData = () => {
     const filteredData = comparisonData.filter(d => selectedPeriods.includes(d.period));
     
-    return filteredData.map(d => ({
-      period: d.period,
-      totalTrades: d.metrics.totalTrades,
-      avgDuration: d.metrics.avgDuration,
-      winRate: d.metrics.winRate,
-    }));
+    return filteredData
+      .filter(d => 
+        d && 
+        d.metrics &&
+        typeof d.metrics.totalTrades === 'number' && !isNaN(d.metrics.totalTrades) &&
+        typeof d.metrics.avgDuration === 'number' && !isNaN(d.metrics.avgDuration) &&
+        typeof d.metrics.winRate === 'number' && !isNaN(d.metrics.winRate) &&
+        d.period
+      )
+      .map(d => ({
+        period: d.period,
+        totalTrades: d.metrics.totalTrades,
+        avgDuration: d.metrics.avgDuration,
+        winRate: d.metrics.winRate,
+      }));
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {

@@ -25,7 +25,15 @@ interface EmotionsWinRateChartProps {
 }
 
 export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
-  const safeData = Array.isArray(data) ? data : [];
+  // Ensure data is valid and filter out invalid entries
+  const safeData = Array.isArray(data) ? data.filter(item => 
+    item && 
+    typeof item.winRate === 'number' && 
+    !isNaN(item.winRate) &&
+    typeof item.trades === 'number' && 
+    !isNaN(item.trades) &&
+    item.emotion
+  ) : [];
   
   const chartData = {
     labels: safeData.map((d) => d.emotion),
@@ -66,5 +74,21 @@ export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
       y: { title: { display: true, text: 'Win Rate (%)' }, min: 0, max: 100, grid: { color: 'rgba(156,163,175,0.1)' } },
     },
   };
+  if (safeData.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold mb-2">No Emotion Data Available</h3>
+          <p className="text-muted-foreground">No valid emotion performance data to display</p>
+        </div>
+      </div>
+    );
+  }
+
   return <Bar data={chartData} options={options} />;
 } 
