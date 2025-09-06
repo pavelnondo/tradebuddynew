@@ -21,6 +21,11 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
   
   const data = safeBalanceData.map(item => {
     const date = new Date(item.date);
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid date found:', item.date);
+      return null;
+    }
     return {
       date: date.toISOString().split('T')[0], // Use ISO date format for proper sorting
       displayDate: date.toLocaleDateString('en-US', { 
@@ -28,10 +33,10 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
         day: 'numeric',
         year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
       }),
-      balance: item.balance,
+      balance: typeof item.balance === 'number' && !isNaN(item.balance) ? item.balance : 0,
       timestamp: date.getTime(), // Add timestamp for proper ordering
     };
-  }).sort((a, b) => a.timestamp - b.timestamp); // Ensure proper chronological order
+  }).filter(item => item !== null).sort((a, b) => a.timestamp - b.timestamp); // Ensure proper chronological order
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -48,7 +53,7 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
     return null;
   };
 
-  if (balanceOverTime.length === 0) {
+  if (balanceOverTime.length === 0 || data.length === 0) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
@@ -81,6 +86,7 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
             className="text-muted-foreground"
             tickFormatter={(value) => {
               const date = new Date(value);
+              if (isNaN(date.getTime())) return '';
               return date.toLocaleDateString('en-US', { 
                 month: 'short', 
                 day: 'numeric' 
@@ -88,7 +94,7 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
             }}
             scale="time"
             type="number"
-            domain={['dataMin', 'dataMax']}
+            domain={data.length > 0 ? ['dataMin', 'dataMax'] : [0, 1]}
             tickCount={Math.min(data.length, 8)} // Limit number of ticks for better readability
           />
           <YAxis 
