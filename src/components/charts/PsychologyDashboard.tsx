@@ -86,22 +86,78 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
     );
   }
 
+  // Validate and filter data to prevent NaN errors
+  const safeEmotionPerformance = Array.isArray(data?.emotionPerformance) ? 
+    data.emotionPerformance.filter(item => 
+      item && 
+      typeof item.avgProfitLoss === 'number' && !isNaN(item.avgProfitLoss) &&
+      typeof item.winRate === 'number' && !isNaN(item.winRate) &&
+      typeof item.tradeCount === 'number' && !isNaN(item.tradeCount) &&
+      typeof item.avgConfidence === 'number' && !isNaN(item.avgConfidence) &&
+      item.emotion
+    ) : [];
+
+  const safeConfidenceAnalysis = Array.isArray(data?.confidenceAnalysis) ? 
+    data.confidenceAnalysis.filter(item => 
+      item && 
+      typeof item.avgProfitLoss === 'number' && !isNaN(item.avgProfitLoss) &&
+      typeof item.winRate === 'number' && !isNaN(item.winRate) &&
+      typeof item.tradeCount === 'number' && !isNaN(item.tradeCount) &&
+      item.confidenceRange
+    ) : [];
+
+  const safeEmotionTrends = Array.isArray(data?.emotionTrends) ? 
+    data.emotionTrends.filter(item => 
+      item && 
+      typeof item.confidence === 'number' && !isNaN(item.confidence) &&
+      typeof item.profitLoss === 'number' && !isNaN(item.profitLoss) &&
+      item.date && item.emotion
+    ) : [];
+
+  const safeStressIndicators = data?.stressIndicators ? {
+    consecutiveLosses: typeof data.stressIndicators.consecutiveLosses === 'number' && !isNaN(data.stressIndicators.consecutiveLosses) ? data.stressIndicators.consecutiveLosses : 0,
+    recentDrawdown: typeof data.stressIndicators.recentDrawdown === 'number' && !isNaN(data.stressIndicators.recentDrawdown) ? data.stressIndicators.recentDrawdown : 0,
+    emotionalVolatility: typeof data.stressIndicators.emotionalVolatility === 'number' && !isNaN(data.stressIndicators.emotionalVolatility) ? data.stressIndicators.emotionalVolatility : 0,
+    overtradingScore: typeof data.stressIndicators.overtradingScore === 'number' && !isNaN(data.stressIndicators.overtradingScore) ? data.stressIndicators.overtradingScore : 0,
+  } : { consecutiveLosses: 0, recentDrawdown: 0, emotionalVolatility: 0, overtradingScore: 0 };
+
+  // Check if we have any valid data
+  if (safeEmotionPerformance.length === 0 && safeConfidenceAnalysis.length === 0 && safeEmotionTrends.length === 0) {
+    return (
+      <Card className="card-modern">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center h-96">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold mb-2">No Psychology Data Available</h3>
+              <p className="text-muted-foreground">No valid psychology data to display</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   // Emotion Performance Chart - Scatter Plot
   const emotionChartData = {
     datasets: [
       {
         label: 'Emotion Performance',
-        data: data.emotionPerformance.map(d => ({
+        data: safeEmotionPerformance.map(d => ({
           x: d.winRate,
           y: d.avgProfitLoss,
           emotion: d.emotion,
           tradeCount: d.tradeCount,
           confidence: d.avgConfidence
         })),
-        backgroundColor: data.emotionPerformance.map(d => 
+        backgroundColor: safeEmotionPerformance.map(d => 
           d.avgProfitLoss >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(245, 101, 101, 0.8)'
         ),
-        borderColor: data.emotionPerformance.map(d => 
+        borderColor: safeEmotionPerformance.map(d => 
           d.avgProfitLoss >= 0 ? 'rgb(16, 185, 129)' : 'rgb(245, 101, 101)'
         ),
         borderWidth: 2,
@@ -152,20 +208,20 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
 
   // Confidence Analysis Chart - Line Chart
   const confidenceChartData = {
-    labels: data.confidenceAnalysis.map(d => d.confidenceRange),
+    labels: safeConfidenceAnalysis.map(d => d.confidenceRange),
     datasets: [
       {
         label: 'Average P&L ($)',
-        data: data.confidenceAnalysis.map(d => d.avgProfitLoss),
+        data: safeConfidenceAnalysis.map(d => d.avgProfitLoss),
         borderColor: 'rgb(59, 130, 246)',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         borderWidth: 3,
         tension: 0.4,
         fill: true,
-        pointBackgroundColor: data.confidenceAnalysis.map(d => 
+        pointBackgroundColor: safeConfidenceAnalysis.map(d => 
           d.avgProfitLoss >= 0 ? 'rgb(16, 185, 129)' : 'rgb(245, 101, 101)'
         ),
-        pointBorderColor: data.confidenceAnalysis.map(d => 
+        pointBorderColor: safeConfidenceAnalysis.map(d => 
           d.avgProfitLoss >= 0 ? 'rgb(16, 185, 129)' : 'rgb(245, 101, 101)'
         ),
         pointRadius: 6,
@@ -173,7 +229,7 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
       },
       {
         label: 'Win Rate (%)',
-        data: data.confidenceAnalysis.map(d => d.winRate),
+        data: safeConfidenceAnalysis.map(d => d.winRate),
         borderColor: 'rgb(16, 185, 129)',
         backgroundColor: 'rgba(16, 185, 129, 0.1)',
         borderWidth: 3,
@@ -215,11 +271,11 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
 
   // Emotion Trend Line Chart
   const emotionTrendData = {
-    labels: data.emotionTrends.map(d => d.date),
+    labels: safeEmotionTrends.map(d => d.date),
     datasets: [
       {
         label: 'Confidence Level',
-        data: data.emotionTrends.map(d => d.confidence),
+        data: safeEmotionTrends.map(d => d.confidence),
         borderColor: 'rgb(59, 130, 246)',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         tension: 0.4,
@@ -228,11 +284,11 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
       },
       {
         label: 'P&L ($)',
-        data: data.emotionTrends.map(d => d.profitLoss),
-        borderColor: data.emotionTrends.map(d => 
+        data: safeEmotionTrends.map(d => d.profitLoss),
+        borderColor: safeEmotionTrends.map(d => 
           d.profitLoss >= 0 ? 'rgb(16, 185, 129)' : 'rgb(245, 101, 101)'
         ),
-        backgroundColor: data.emotionTrends.map(d => 
+        backgroundColor: safeEmotionTrends.map(d => 
           d.profitLoss >= 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 101, 101, 0.1)'
         ),
         tension: 0.4,
@@ -274,7 +330,7 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
     return { level: 'Low', color: 'success', icon: CheckCircle };
   };
 
-  const stressLevel = getStressLevel(data.stressIndicators.overtradingScore);
+  const stressLevel = getStressLevel(safeStressIndicators.overtradingScore);
 
   return (
     <div className="space-y-6">
@@ -285,12 +341,12 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Consecutive Losses</p>
-                <p className="text-2xl font-bold">{data.stressIndicators.consecutiveLosses}</p>
+                <p className="text-2xl font-bold">{safeStressIndicators.consecutiveLosses}</p>
               </div>
               <div className={`p-2 rounded-full ${
-                data.stressIndicators.consecutiveLosses >= 3 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+                safeStressIndicators.consecutiveLosses >= 3 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
               }`}>
-                {data.stressIndicators.consecutiveLosses >= 3 ? <XCircle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
+                {safeStressIndicators.consecutiveLosses >= 3 ? <XCircle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
               </div>
             </div>
           </CardContent>
@@ -301,12 +357,12 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Recent Drawdown</p>
-                <p className="text-2xl font-bold">{data.stressIndicators.recentDrawdown.toFixed(1)}%</p>
+                <p className="text-2xl font-bold">{safeStressIndicators.recentDrawdown.toFixed(1)}%</p>
               </div>
               <div className={`p-2 rounded-full ${
-                data.stressIndicators.recentDrawdown >= 10 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+                safeStressIndicators.recentDrawdown >= 10 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
               }`}>
-                {data.stressIndicators.recentDrawdown >= 10 ? <TrendingDown className="w-5 h-5" /> : <TrendingUp className="w-5 h-5" />}
+                {safeStressIndicators.recentDrawdown >= 10 ? <TrendingDown className="w-5 h-5" /> : <TrendingUp className="w-5 h-5" />}
               </div>
             </div>
           </CardContent>
@@ -317,10 +373,10 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Emotional Volatility</p>
-                <p className="text-2xl font-bold">{data.stressIndicators.emotionalVolatility.toFixed(1)}</p>
+                <p className="text-2xl font-bold">{safeStressIndicators.emotionalVolatility.toFixed(1)}</p>
               </div>
               <div className={`p-2 rounded-full ${
-                data.stressIndicators.emotionalVolatility >= 7 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+                safeStressIndicators.emotionalVolatility >= 7 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
               }`}>
                 <Brain className="w-5 h-5" />
               </div>
@@ -333,7 +389,7 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Overtrading Risk</p>
-                <p className="text-2xl font-bold">{data.stressIndicators.overtradingScore.toFixed(1)}/10</p>
+                <p className="text-2xl font-bold">{safeStressIndicators.overtradingScore.toFixed(1)}/10</p>
               </div>
               <div className={`p-2 rounded-full ${
                 stressLevel.color === 'destructive' ? 'bg-red-100 text-red-600' : 
@@ -411,7 +467,7 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {data.emotionPerformance
+            {safeEmotionPerformance
               .sort((a, b) => b.avgProfitLoss - a.avgProfitLoss)
               .map((emotion, index) => (
                 <div key={emotion.emotion} className="p-4 border rounded-lg">
