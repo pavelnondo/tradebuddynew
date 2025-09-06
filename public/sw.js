@@ -1,10 +1,8 @@
 // Service Worker for TradeBuddy PWA
-const CACHE_NAME = 'tradebuddy-v1.0.1';
+const CACHE_NAME = 'tradebuddy-v1.0.2';
 const urlsToCache = [
   '/',
-  '/manifest.json',
-  '/favicon.ico',
-  '/favicon.svg'
+  '/manifest.json'
 ];
 
 // Install event
@@ -14,33 +12,48 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Opened cache');
-        return cache.addAll(urlsToCache).catch((error) => {
-          console.warn('Failed to cache some resources:', error);
-          // Cache individual resources that exist
-          return Promise.allSettled(
-            urlsToCache.map(url => 
-              cache.add(url).catch(err => 
-                console.warn(`Failed to cache ${url}:`, err)
-              )
-            )
-          );
-        });
+        // Cache each resource individually to handle failures gracefully
+        return Promise.allSettled(
+          urlsToCache.map(url => 
+            cache.add(url).catch(err => {
+              console.warn(`Failed to cache ${url}:`, err);
+              return null; // Continue with other resources
+            })
+          )
+        );
+      })
+      .catch((error) => {
+        console.warn('Failed to open cache:', error);
       })
   );
 });
 
 // Fetch event
 self.addEventListener('fetch', (event) => {
+  // Only handle GET requests
+  if (event.request.method !== 'GET') {
+    return;
+  }
+  
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        // Return cached version or fetch from network
+        // Return cached version if available
         if (response) {
           return response;
         }
+        // Otherwise fetch from network
+        return fetch(event.request).catch((error) => {
+          console.warn('Fetch failed:', error);
+          // Return a basic offline page or let the browser handle it
+          return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+        });
+      })
+      .catch((error) => {
+        console.warn('Cache match failed:', error);
+        // Fallback to network fetch
         return fetch(event.request);
-      }
-    )
+      })
   );
 });
 
