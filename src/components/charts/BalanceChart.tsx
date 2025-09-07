@@ -97,6 +97,26 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
     return path;
   };
 
+  // Create smooth curve path for better line appearance
+  const createSmoothLinePath = () => {
+    if (pointPositions.length < 2) return '';
+    
+    let path = `M ${pointPositions[0].x}% ${pointPositions[0].y}%`;
+    
+    for (let i = 1; i < pointPositions.length; i++) {
+      const prevPoint = pointPositions[i - 1];
+      const currentPoint = pointPositions[i];
+      const controlPoint1X = prevPoint.x + (currentPoint.x - prevPoint.x) / 3;
+      const controlPoint1Y = prevPoint.y;
+      const controlPoint2X = currentPoint.x - (currentPoint.x - prevPoint.x) / 3;
+      const controlPoint2Y = currentPoint.y;
+      
+      path += ` C ${controlPoint1X}% ${controlPoint1Y}%, ${controlPoint2X}% ${controlPoint2Y}%, ${currentPoint.x}% ${currentPoint.y}%`;
+    }
+    
+    return path;
+  };
+
   return (
     <div className="chart-container">
       <div className="chart-title">Balance Over Time</div>
@@ -160,11 +180,14 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
             
             {/* Line */}
             <path
-              d={createLinePath()}
+              d={createSmoothLinePath()}
               fill="none"
               stroke="hsl(var(--primary))"
-              strokeWidth="0.8"
+              strokeWidth="2"
               className="transition-all duration-300"
+              style={{
+                filter: 'drop-shadow(0 0 3px hsl(var(--primary)))'
+              }}
             />
             
             {/* Data points */}
@@ -173,11 +196,16 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
                 key={index}
                 cx={`${point.x}%`}
                 cy={`${point.y}%`}
-                r={hoveredPoint === index ? "2" : "1.5"}
+                r={hoveredPoint === index ? "3" : "2"}
                 fill="hsl(var(--primary))"
                 stroke="hsl(var(--background))"
-                strokeWidth="1"
+                strokeWidth="2"
                 className="cursor-pointer transition-all duration-200"
+                style={{
+                  filter: hoveredPoint === index 
+                    ? 'drop-shadow(0 0 8px hsl(var(--primary)))' 
+                    : 'drop-shadow(0 0 3px hsl(var(--primary)))'
+                }}
                 onMouseEnter={() => setHoveredPoint(index)}
                 onMouseLeave={() => setHoveredPoint(null)}
               />
