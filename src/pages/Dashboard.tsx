@@ -345,8 +345,8 @@ export default function Dashboard() {
               Your account balance progression
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="h-80">
+          <CardContent className="h-[22rem] overflow-hidden">
+            <div className="h-full">
               <Suspense fallback={<div className="h-full bg-muted/50 rounded-lg shimmer"></div>}>
                 <BalanceChart balanceOverTime={analysisData.balanceOverTime} />
               </Suspense>
@@ -364,8 +364,8 @@ export default function Dashboard() {
               Your trading performance breakdown
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="h-80">
+          <CardContent className="h-[22rem] overflow-hidden">
+            <div className="h-full">
               <Suspense fallback={<div className="h-full bg-muted/50 rounded-lg shimmer"></div>}>
                 <WinLossChart data={analysisData.winLossData} />
               </Suspense>
