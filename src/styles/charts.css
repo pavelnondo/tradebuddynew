@@ -72,7 +72,7 @@
   transition: all var(--transition-normal);
   position: relative;
   overflow: hidden;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 .dark .chart-container {
