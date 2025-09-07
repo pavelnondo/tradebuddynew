@@ -124,8 +124,8 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
           return;
         }
         
-        const x = (index / (points.length - 1)) * 380 + 10;
-        const y = 190 - ((point.balance - yMin) / (yMax - yMin)) * 180;
+        const x = (index / (points.length - 1)) * 360 + 20;
+        const y = 10 + ((yMax - point.balance) / (yMax - yMin)) * 180;
         
         if (index === 0) {
           path += `M ${x} ${y}`;
@@ -136,8 +136,8 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
             return;
           }
           
-          const prevX = ((index - 1) / (points.length - 1)) * 380 + 10;
-          const prevY = 190 - ((prevPoint.balance - yMin) / (yMax - yMin)) * 180;
+          const prevX = ((index - 1) / (points.length - 1)) * 360 + 20;
+          const prevY = 10 + ((yMax - prevPoint.balance) / (yMax - yMin)) * 180;
           
           // Revolutionary smooth curves
           const cp1x = prevX + (x - prevX) * 0.3;
@@ -171,9 +171,9 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
       const yMin = Math.max(0, minBalance - padding);
       const yMax = maxBalance + padding;
       
-      const firstX = 10;
-      const lastX = 390;
-      const bottomY = 190 - ((yMin - yMin) / (yMax - yMin)) * 180;
+      const firstX = 20;
+      const lastX = 380;
+      const bottomY = 10 + ((yMax - yMin) / (yMax - yMin)) * 180;
       
       return `${linePath} L ${lastX} ${bottomY} L ${firstX} ${bottomY} Z`;
     } catch (error) {
@@ -247,7 +247,7 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
       </div>
 
       {/* Revolutionary Chart */}
-      <div className="absolute inset-0 pt-20">
+      <div className="absolute inset-0 pt-20 pb-12 pl-12 pr-4">
         <svg 
           ref={svgRef}
           className="w-full h-full" 
@@ -307,6 +307,67 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
             />
           )}
 
+          {/* Revolutionary Y-Axis Grid Lines and Labels */}
+          {[0, 0.25, 0.5, 0.75, 1].map((ratio, index) => {
+            const value = yMin + (yMax - yMin) * (1 - ratio);
+            const y = 10 + ratio * 180;
+            
+            return (
+              <g key={index}>
+                {/* Grid Line */}
+                <line
+                  x1="20"
+                  y1={y}
+                  x2="380"
+                  y2={y}
+                  stroke="rgba(255, 255, 255, 0.1)"
+                  strokeWidth="1"
+                />
+                {/* Y-Axis Label */}
+                <text
+                  x="15"
+                  y={y + 4}
+                  textAnchor="end"
+                  className="text-xs fill-white/60 font-light"
+                >
+                  ${value.toLocaleString()}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Revolutionary X-Axis Grid Lines and Labels */}
+          {animatedData.length > 1 && animatedData.map((point, index) => {
+            if (index % Math.ceil(animatedData.length / 5) === 0 || index === animatedData.length - 1) {
+              const x = (index / (animatedData.length - 1)) * 360 + 20;
+              const date = new Date(point.date);
+              
+              return (
+                <g key={index}>
+                  {/* Grid Line */}
+                  <line
+                    x1={x}
+                    y1="10"
+                    x2={x}
+                    y2="190"
+                    stroke="rgba(255, 255, 255, 0.1)"
+                    strokeWidth="1"
+                  />
+                  {/* X-Axis Label */}
+                  <text
+                    x={x}
+                    y="205"
+                    textAnchor="middle"
+                    className="text-xs fill-white/60 font-light"
+                  >
+                    {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </text>
+                </g>
+              );
+            }
+            return null;
+          })}
+
           {/* Revolutionary Data Points */}
           {animatedData.map((point, index) => {
             if (!point || typeof point.balance !== 'number' || isNaN(point.balance)) {
@@ -315,8 +376,8 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
             }
             
             try {
-              const x = (index / (animatedData.length - 1)) * 380 + 10;
-              const y = 190 - ((point.balance - yMin) / (yMax - yMin)) * 180;
+              const x = (index / (animatedData.length - 1)) * 360 + 20;
+              const y = 10 + ((yMax - point.balance) / (yMax - yMin)) * 180;
               const isHovered = hoveredPoint === index;
               const isLatest = index === animatedData.length - 1;
               
@@ -350,6 +411,14 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
             }
           })}
         </svg>
+      </div>
+
+      {/* Revolutionary Axis Labels */}
+      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
+        <div className="text-xs text-white/60 font-light">Time</div>
+      </div>
+      <div className="absolute left-2 top-1/2 transform -translate-y-1/2 -rotate-90">
+        <div className="text-xs text-white/60 font-light">Balance ($)</div>
       </div>
 
       {/* Revolutionary Tooltip */}
