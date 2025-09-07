@@ -1,0 +1,362 @@
+/* Charts.css-inspired theme system for TradeBuddy */
+
+:root {
+  /* Color Scheme */
+  --color-primary: #3b82f6;
+  --color-primary-dark: #2563eb;
+  --color-primary-light: #60a5fa;
+  --color-profit: #10b981;
+  --color-profit-dark: #059669;
+  --color-loss: #ef4444;
+  --color-loss-dark: #dc2626;
+  --color-warning: #f59e0b;
+  --color-background: #f9fafb;
+  --color-surface: #ffffff;
+  --color-axis: #d1d5db;
+  --color-text: #374151;
+  --color-text-muted: #6b7280;
+  
+  /* Chart-specific colors */
+  --color-chart-1: var(--color-primary);
+  --color-chart-2: var(--color-profit);
+  --color-chart-3: var(--color-loss);
+  --color-chart-4: var(--color-warning);
+  --color-chart-5: #8b5cf6;
+  --color-chart-6: #06b6d4;
+  
+  /* Spacing and sizing */
+  --chart-height: 300px;
+  --chart-min-height: 200px;
+  --chart-padding: 1rem;
+  --chart-border-radius: 8px;
+  --chart-bar-height: 2rem;
+  
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+}
+
+/* Base chart container */
+.chart-container {
+  width: 100%;
+  min-height: var(--chart-min-height);
+  background: var(--color-surface);
+  border-radius: var(--chart-border-radius);
+  padding: var(--chart-padding);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  transition: box-shadow var(--transition-normal);
+}
+
+.chart-container:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Chart title and labels */
+.chart-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 0.5rem;
+}
+
+.chart-subtitle {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin-bottom: 1rem;
+}
+
+/* Bar Chart Styles */
+.charts-css.bar {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0.5rem 0.25rem;
+}
+
+.charts-css.bar tbody tr {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.charts-css.bar tbody tr td {
+  position: relative;
+  background: var(--color-chart-1);
+  border-radius: 4px;
+  transition: all var(--transition-normal);
+  cursor: pointer;
+  min-height: var(--chart-bar-height);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 0.75rem;
+  color: white;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.charts-css.bar tbody tr td:hover {
+  transform: scale(1.02);
+  opacity: 0.9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.charts-css.bar tbody tr td .data {
+  position: absolute;
+  right: 0.75rem;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.charts-css.bar tbody tr td .label {
+  position: absolute;
+  left: -6rem;
+  width: 5rem;
+  text-align: right;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Color variants for bars */
+.charts-css.bar .profit { --color-chart-1: var(--color-profit); }
+.charts-css.bar .loss { --color-chart-1: var(--color-loss); }
+.charts-css.bar .warning { --color-chart-1: var(--color-warning); }
+.charts-css.bar .primary { --color-chart-1: var(--color-primary); }
+
+/* Doughnut Chart Styles */
+.doughnut-chart {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: conic-gradient(
+    var(--color-profit) 0% var(--win-percentage, 70%),
+    var(--color-loss) var(--win-percentage, 70%) 100%
+  );
+  transition: all var(--transition-normal);
+}
+
+.doughnut-chart:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.doughnut-chart::before {
+  content: '';
+  position: absolute;
+  width: 60%;
+  height: 60%;
+  background: var(--color-surface);
+  border-radius: 50%;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.doughnut-center {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  color: var(--color-text);
+}
+
+.doughnut-center .percentage {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.doughnut-center .label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-top: 0.25rem;
+}
+
+/* Area Chart Styles */
+.area-chart {
+  position: relative;
+  width: 100%;
+  height: var(--chart-height);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  border-radius: var(--chart-border-radius);
+  overflow: hidden;
+}
+
+.area-chart::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to top,
+    rgba(59, 130, 246, 0.3) 0%,
+    rgba(59, 130, 246, 0.1) 50%,
+    transparent 100%
+  );
+}
+
+.area-chart .data-point {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--color-primary);
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: all var(--transition-normal);
+  cursor: pointer;
+}
+
+.area-chart .data-point:hover {
+  transform: translate(-50%, -50%) scale(1.5);
+  background: var(--color-primary-dark);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+}
+
+/* Scatter Plot Styles */
+.scatter-plot {
+  position: relative;
+  width: 100%;
+  height: var(--chart-height);
+  background: var(--color-surface);
+  border: 1px solid var(--color-axis);
+  border-radius: var(--chart-border-radius);
+  overflow: hidden;
+}
+
+.scatter-plot .point {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  transform: translate(-50%, -50%);
+  transition: all var(--transition-normal);
+  cursor: pointer;
+}
+
+.scatter-plot .point:hover {
+  transform: translate(-50%, -50%) scale(1.5);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+  z-index: 10;
+}
+
+.scatter-plot .point::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-text);
+  color: var(--color-surface);
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
+  z-index: 20;
+}
+
+.scatter-plot .point:hover::after {
+  opacity: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  :root {
+    --chart-height: 250px;
+    --chart-min-height: 180px;
+    --chart-padding: 0.75rem;
+  }
+  
+  .charts-css.bar tbody tr td .label {
+    left: -4rem;
+    width: 3.5rem;
+    font-size: 0.625rem;
+  }
+  
+  .doughnut-chart {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .doughnut-center .percentage {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --chart-height: 200px;
+    --chart-min-height: 150px;
+    --chart-padding: 0.5rem;
+  }
+  
+  .charts-css.bar tbody tr {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+  }
+  
+  .charts-css.bar tbody tr td .label {
+    position: static;
+    width: auto;
+    text-align: left;
+    margin-bottom: 0.25rem;
+  }
+}
+
+/* Animation keyframes */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.chart-container {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.charts-css.bar tbody tr td {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Loading states */
+.chart-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--chart-min-height);
+  color: var(--color-text-muted);
+}
+
+.chart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--chart-min-height);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.chart-empty .icon {
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
