@@ -103,6 +103,8 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
             tick={{ fontSize: 12 }}
             className="text-muted-foreground"
             tickFormatter={(value) => `$${value.toLocaleString()}`}
+            domain={[0, 6000]}
+            tickCount={7}
           />
           <Tooltip content={<CustomTooltip />} />
           <Area
