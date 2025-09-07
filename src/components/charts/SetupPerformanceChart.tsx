@@ -1,17 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-} from 'recharts';
-import { TrendingUp, TrendingDown, Target, Clock, DollarSign } from "lucide-react";
+import { TrendingUp, TrendingDown, Target, Clock, DollarSign, Zap } from "lucide-react";
 
 interface SetupPerformance {
   setup: string;
@@ -30,6 +20,15 @@ interface SetupPerformanceChartProps {
   data: SetupPerformance[];
   isLoading?: boolean;
 }
+
+const setupIcons = {
+  'breakout': Zap,
+  'pullback': TrendingDown,
+  'reversal': TrendingUp,
+  'momentum': Target,
+  'scalp': Clock,
+  'swing': DollarSign,
+};
 
 export function SetupPerformanceChart({ data, isLoading = false }: SetupPerformanceChartProps) {
   if (isLoading) {
@@ -58,272 +57,152 @@ export function SetupPerformanceChart({ data, isLoading = false }: SetupPerforma
     return (
       <Card className="card-modern">
         <CardContent className="p-6">
-          <div className="flex items-center justify-center h-96">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold mb-2">No Setup Data Available</h3>
-              <p className="text-muted-foreground">No valid setup performance data to display</p>
-            </div>
+          <div className="chart-empty">
+            <Target className="icon" />
+            <div>No setup performance data available yet.</div>
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  // Sort data by total P&L for better visualization
+  // Sort by total P&L for better visualization
   const sortedData = [...safeData].sort((a, b) => b.totalPnL - a.totalPnL);
-
-  // Prepare clean chart data
-  const pnlChartData = sortedData.map(d => ({
-    setup: d.setup || 'Unknown',
-    pnl: d.totalPnL,
-    trades: d.totalTrades,
-  }));
-
-  const winRateChartData = sortedData.map(d => ({
-    setup: d.setup || 'Unknown',
-    winRate: Math.min(d.winRate, 100), // Cap at 100% to prevent overflow
-    trades: d.totalTrades,
-  }));
-
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
-          <p className="font-medium">{label}</p>
-          <p className="text-sm text-muted-foreground">
-            {payload[0].dataKey === 'pnl' ? (
-              <>
-                P&L: <span className={`font-medium ${data.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  ${data.pnl.toFixed(2)}
-                </span>
-                <br />
-                Trades: <span className="font-medium">{data.trades}</span>
-              </>
-            ) : (
-              <>
-                Win Rate: <span className="font-medium text-blue-600">{data.winRate.toFixed(1)}%</span>
-                <br />
-                Trades: <span className="font-medium">{data.trades}</span>
-              </>
-            )}
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  // Calculate summary stats
-  const totalTrades = data.reduce((sum, d) => sum + d.totalTrades, 0);
-  const totalPnL = data.reduce((sum, d) => sum + d.totalPnL, 0);
-  const avgWinRate = data.length > 0 ? data.reduce((sum, d) => sum + d.winRate, 0) / data.length : 0;
-  const bestSetup = data.reduce((best, current) => 
-    current.totalPnL > best.totalPnL ? current : best, 
-    { setup: 'None', totalPnL: -Infinity, winRate: 0, totalTrades: 0, avgPnL: 0, profitFactor: 0, maxDrawdown: 0, winningTrades: 0, losingTrades: 0, avgDuration: 0 }
-  );
+  const maxPnL = Math.max(...sortedData.map(item => Math.abs(item.totalPnL)));
+  const totalPnL = sortedData.reduce((sum, item) => sum + item.totalPnL, 0);
+  const bestSetup = sortedData[0];
 
   return (
-    <div className="space-y-6">
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="card-modern">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Trades</p>
-                <p className="text-2xl font-bold">{totalTrades}</p>
-              </div>
-              <Target className="w-8 h-8 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-modern">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total P&L</p>
-                <p className={`text-2xl font-bold ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  ${totalPnL.toFixed(2)}
-                </p>
-              </div>
-              {totalPnL >= 0 ? (
-                <TrendingUp className="w-8 h-8 text-green-600" />
-              ) : (
-                <TrendingDown className="w-8 h-8 text-red-600" />
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-modern">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Avg Win Rate</p>
-                <p className="text-2xl font-bold">{avgWinRate.toFixed(1)}%</p>
-              </div>
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <span className="text-sm font-bold text-primary">{avgWinRate.toFixed(0)}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-modern">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Best Setup</p>
-                <p className="text-lg font-bold">{bestSetup.setup}</p>
-                <p className="text-sm text-muted-foreground">${bestSetup.totalPnL.toFixed(2)}</p>
-              </div>
-              <div className="p-2 rounded-full bg-green-100 text-green-600">
-                <TrendingUp className="w-5 h-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* P&L Chart */}
-      <Card className="card-modern">
-        <CardHeader>
-          <CardTitle>Setup P&L Performance</CardTitle>
-          <CardDescription>
-            Total profit/loss by trading setup
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={pnlChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis 
-                  dataKey="setup" 
-                  tick={{ fontSize: 12 }}
-                  className="text-muted-foreground"
-                />
-                <YAxis 
-                  tick={{ fontSize: 12 }}
-                  className="text-muted-foreground"
-                  tickFormatter={(value) => `$${value}`}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar 
-                  dataKey="pnl" 
-                  radius={[4, 4, 0, 0]}
-                >
-                  {pnlChartData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} 
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+    <Card className="card-modern">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Target className="w-5 h-5" />
+          Setup Performance Analysis
+        </CardTitle>
+        <CardDescription>
+          Performance breakdown by trading setup and strategy
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="chart-container">
+          <div className="chart-title">Setup Performance Ranking</div>
+          <div className="chart-subtitle">
+            Total P&L: 
+            <span className={`ml-1 font-medium ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              ${totalPnL.toLocaleString()}
+            </span>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Win Rate Chart */}
-      <Card className="card-modern">
-        <CardHeader>
-          <CardTitle>Setup Win Rate</CardTitle>
-          <CardDescription>
-            Win rate percentage by trading setup
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={winRateChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis 
-                  dataKey="setup" 
-                  tick={{ fontSize: 12 }}
-                  className="text-muted-foreground"
-                />
-                <YAxis 
-                  tick={{ fontSize: 12 }}
-                  className="text-muted-foreground"
-                  domain={[0, 100]}
-                  tickFormatter={(value) => `${value}%`}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar 
-                  dataKey="winRate" 
-                  radius={[4, 4, 0, 0]}
-                  fill="#3b82f6"
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Detailed Setup Analysis */}
-      <Card className="card-modern">
-        <CardHeader>
-          <CardTitle>Setup Performance Details</CardTitle>
-          <CardDescription>Detailed breakdown of each trading setup</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sortedData.map((setup, index) => (
-              <div key={setup.setup} className="p-4 border rounded-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <Badge variant={index === 0 ? "default" : "secondary"}>
-                    {setup.setup || 'Unknown'}
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    {setup.totalTrades} trades
-                  </span>
+          
+          <table className="charts-css bar" role="chart">
+            <tbody>
+              {sortedData.map((item, index) => {
+                const percentage = maxPnL > 0 ? (Math.abs(item.totalPnL) / maxPnL) * 100 : 0;
+                const isProfit = item.totalPnL >= 0;
+                const colorClass = isProfit ? 'profit' : 'loss';
+                const IconComponent = setupIcons[item.setup.toLowerCase() as keyof typeof setupIcons] || Target;
+                
+                return (
+                  <tr key={index}>
+                    <td 
+                      className={colorClass}
+                      style={{ 
+                        '--size': `${percentage}%`,
+                        '--color-chart-1': isProfit ? 'var(--color-profit)' : 'var(--color-loss)'
+                      } as React.CSSProperties}
+                    >
+                      <span className="data">
+                        {isProfit ? '+' : ''}${item.totalPnL.toLocaleString()}
+                      </span>
+                      <span className="label">
+                        <IconComponent className="w-3 h-3 inline mr-1" />
+                        {item.setup}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          
+          {/* Best Setup Highlight */}
+          {bestSetup && (
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg border-l-4 border-green-500">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-green-100 rounded-full">
+                    <TrendingUp className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <div className="font-semibold">Best Performing Setup</div>
+                    <div className="text-sm text-muted-foreground">
+                      {bestSetup.setup} • {bestSetup.totalTrades} trades
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Total P&L:</span>
-                    <span className={setup.totalPnL >= 0 ? "text-green-600" : "text-red-600"}>
-                      ${setup.totalPnL.toFixed(2)}
-                    </span>
+                <div className="text-right">
+                  <div className="text-lg font-bold text-green-600">
+                    +${bestSetup.totalPnL.toLocaleString()}
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Avg P&L:</span>
-                    <span className={setup.avgPnL >= 0 ? "text-green-600" : "text-red-600"}>
-                      ${setup.avgPnL.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Win Rate:</span>
-                    <span>{setup.winRate.toFixed(1)}%</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Profit Factor:</span>
-                    <span className={setup.profitFactor >= 1 ? "text-green-600" : "text-red-600"}>
-                      {setup.profitFactor.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Avg Duration:</span>
-                    <span>{setup.avgDuration.toFixed(0)}min</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Max Drawdown:</span>
-                    <span className="text-red-600">{setup.maxDrawdown.toFixed(1)}%</span>
+                  <div className="text-sm text-muted-foreground">
+                    {bestSetup.winRate.toFixed(1)}% win rate
                   </div>
                 </div>
               </div>
-            ))}
+            </div>
+          )}
+          
+          {/* Setup Details Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+            {sortedData.slice(0, 6).map((item, index) => {
+              const IconComponent = setupIcons[item.setup.toLowerCase() as keyof typeof setupIcons] || Target;
+              return (
+                <div key={index} className="p-4 border rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <IconComponent className="w-4 h-4 text-muted-foreground" />
+                      <Badge variant={index === 0 ? "default" : "secondary"}>
+                        {item.setup}
+                      </Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      #{index + 1}
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Total P&L:</span>
+                      <span className={`font-medium ${item.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {item.totalPnL >= 0 ? '+' : ''}${item.totalPnL.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Win Rate:</span>
+                      <span>{item.winRate.toFixed(1)}%</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Trades:</span>
+                      <span>{item.totalTrades}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Avg P&L:</span>
+                      <span className={item.avgPnL >= 0 ? 'text-green-600' : 'text-red-600'}>
+                        {item.avgPnL >= 0 ? '+' : ''}${item.avgPnL.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Profit Factor:</span>
+                      <span className={item.profitFactor >= 1 ? 'text-green-600' : 'text-red-600'}>
+                        {item.profitFactor.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

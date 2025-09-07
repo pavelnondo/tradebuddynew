@@ -1,32 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Bar, Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-} from 'chart.js';
-import { Clock, Calendar, TrendingUp, TrendingDown, Target } from "lucide-react";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
+import { Clock, Calendar, TrendingUp, TrendingDown, Target, BarChart3 } from "lucide-react";
 
 interface TimeBasedData {
   period: string;
@@ -45,6 +20,13 @@ interface TimeBasedAnalysisProps {
   analysisType: 'hourly' | 'daily' | 'weekly' | 'monthly';
   isLoading?: boolean;
 }
+
+const timeIcons = {
+  'hourly': Clock,
+  'daily': Calendar,
+  'weekly': BarChart3,
+  'monthly': Target,
+};
 
 export function TimeBasedAnalysis({ data, analysisType, isLoading = false }: TimeBasedAnalysisProps) {
   if (isLoading) {
@@ -77,271 +59,184 @@ export function TimeBasedAnalysis({ data, analysisType, isLoading = false }: Tim
     return (
       <Card className="card-modern">
         <CardContent className="p-6">
-          <div className="flex items-center justify-center h-96">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold mb-2">No Time-Based Data Available</h3>
-              <p className="text-muted-foreground">No valid time-based analysis data to display</p>
-            </div>
+          <div className="chart-empty">
+            <Clock className="icon" />
+            <div>No time-based data available yet.</div>
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  const getChartTitle = () => {
-    switch (analysisType) {
-      case 'hourly': return 'Hourly Trading Performance';
-      case 'daily': return 'Daily Trading Performance';
-      case 'weekly': return 'Weekly Trading Performance';
-      case 'monthly': return 'Monthly Trading Performance';
-      default: return 'Time-Based Performance';
-    }
-  };
+  // Sort by total P&L for better visualization
+  const sortedData = [...safeData].sort((a, b) => b.totalPnL - a.totalPnL);
+  const maxPnL = Math.max(...sortedData.map(item => Math.abs(item.totalPnL)));
+  const totalPnL = sortedData.reduce((sum, item) => sum + item.totalPnL, 0);
+  const totalTrades = sortedData.reduce((sum, item) => sum + item.totalTrades, 0);
+  const bestPeriod = sortedData[0];
 
-  const getPeriodLabel = () => {
-    switch (analysisType) {
-      case 'hourly': return 'Hour';
-      case 'daily': return 'Day';
-      case 'weekly': return 'Week';
-      case 'monthly': return 'Month';
-      default: return 'Period';
-    }
-  };
-
-  // Sort data by period for better visualization
-  const sortedData = [...safeData].sort((a, b) => {
-    if (analysisType === 'hourly') {
-      return parseInt(a.period) - parseInt(b.period);
-    }
-    return a.period.localeCompare(b.period);
-  });
-
-  const chartData = {
-    labels: sortedData.map(d => d.period),
-    datasets: [
-      {
-        label: 'Total P&L ($)',
-        data: sortedData.map(d => d.totalPnL),
-        backgroundColor: sortedData.map(d => 
-          d.totalPnL >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(245, 101, 101, 0.8)'
-        ),
-        borderColor: sortedData.map(d => 
-          d.totalPnL >= 0 ? 'rgb(16, 185, 129)' : 'rgb(245, 101, 101)'
-        ),
-        borderWidth: 2,
-        borderRadius: 4,
-        yAxisID: 'y',
-      },
-      {
-        label: 'Win Rate (%)',
-        data: sortedData.map(d => d.winRate),
-        backgroundColor: 'rgba(59, 130, 246, 0.8)',
-        borderColor: 'rgb(59, 130, 246)',
-        borderWidth: 2,
-        borderRadius: 4,
-        yAxisID: 'y1',
-      },
-    ],
-  };
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: true, position: 'top' as const },
-      title: { display: true, text: getChartTitle() },
-      tooltip: {
-        callbacks: {
-          label: function(context: any) {
-            const period = sortedData[context.dataIndex];
-            if (context.datasetIndex === 0) {
-              return [
-                `Total P&L: $${period.totalPnL.toFixed(2)}`,
-                `Avg P&L: $${period.avgPnL.toFixed(2)}`,
-                `Trades: ${period.totalTrades}`,
-                `Win Rate: ${period.winRate.toFixed(1)}%`,
-                `Profit Factor: ${period.profitFactor.toFixed(2)}`,
-              ];
-            }
-            return `Win Rate: ${period.winRate.toFixed(1)}%`;
-          },
-        },
-      },
-    },
-    scales: {
-      x: { 
-        title: { display: true, text: getPeriodLabel() },
-        ticks: { font: { size: 11 } },
-      },
-      y: {
-        type: 'linear' as const,
-        display: true,
-        position: 'left' as const,
-        title: { display: true, text: 'P&L ($)' },
-        ticks: { font: { size: 11 } },
-      },
-      y1: {
-        type: 'linear' as const,
-        display: true,
-        position: 'right' as const,
-        title: { display: true, text: 'Win Rate (%)' },
-        grid: { drawOnChartArea: false },
-        ticks: { font: { size: 11 }, min: 0, max: 100 },
-      },
-    },
-  };
-
-  // Calculate summary stats
-  const totalTrades = safeData.reduce((sum, d) => sum + d.totalTrades, 0);
-  const totalPnL = safeData.reduce((sum, d) => sum + d.totalPnL, 0);
-  const avgWinRate = safeData.length > 0 ? safeData.reduce((sum, d) => sum + d.winRate, 0) / safeData.length : 0;
-  const bestPeriod = safeData.reduce((best, current) => 
-    current.totalPnL > best.totalPnL ? current : best, 
-    { period: 'None', totalPnL: -Infinity, winRate: 0, totalTrades: 0, avgPnL: 0, profitFactor: 0, winningTrades: 0, losingTrades: 0, avgDuration: 0 }
-  );
-
-  // Find most active period
-  const mostActivePeriod = safeData.reduce((most, current) => 
-    current.totalTrades > most.totalTrades ? current : most, 
-    { period: 'None', totalTrades: 0, totalPnL: 0, winRate: 0, avgPnL: 0, profitFactor: 0, winningTrades: 0, losingTrades: 0, avgDuration: 0 }
-  );
+  const IconComponent = timeIcons[analysisType] || Clock;
 
   return (
-    <div className="space-y-6">
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="card-modern">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Trades</p>
-                <p className="text-2xl font-bold">{totalTrades}</p>
-              </div>
-              <Target className="w-8 h-8 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-modern">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total P&L</p>
-                <p className={`text-2xl font-bold ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  ${totalPnL.toFixed(2)}
-                </p>
-              </div>
-              {totalPnL >= 0 ? (
-                <TrendingUp className="w-8 h-8 text-green-600" />
-              ) : (
-                <TrendingDown className="w-8 h-8 text-red-600" />
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-modern">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Best {getPeriodLabel()}</p>
-                <p className="text-lg font-bold">{bestPeriod.period}</p>
-                <p className="text-sm text-muted-foreground">${bestPeriod.totalPnL.toFixed(2)}</p>
-              </div>
-              <div className="p-2 rounded-full bg-green-100 text-green-600">
-                <TrendingUp className="w-5 h-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-modern">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Most Active</p>
-                <p className="text-lg font-bold">{mostActivePeriod.period}</p>
-                <p className="text-sm text-muted-foreground">{mostActivePeriod.totalTrades} trades</p>
-              </div>
-              <div className="p-2 rounded-full bg-blue-100 text-blue-600">
-                <Clock className="w-5 h-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Chart */}
-      <Card className="card-modern">
-        <CardHeader>
-          <CardTitle>{getChartTitle()}</CardTitle>
-          <CardDescription>
-            Analyze your trading performance across different time periods
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-96">
-            <Bar data={chartData} options={chartOptions} />
+    <Card className="card-modern">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <IconComponent className="w-5 h-5" />
+          {analysisType.charAt(0).toUpperCase() + analysisType.slice(1)} Performance Analysis
+        </CardTitle>
+        <CardDescription>
+          Performance breakdown by {analysisType} periods
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="chart-container">
+          <div className="chart-title">{analysisType.charAt(0).toUpperCase() + analysisType.slice(1)} Performance Ranking</div>
+          <div className="chart-subtitle">
+            Total P&L: 
+            <span className={`ml-1 font-medium ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              ${totalPnL.toLocaleString()}
+            </span>
+            • Total Trades: <span className="font-medium">{totalTrades}</span>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Detailed Period Analysis */}
-      <Card className="card-modern">
-        <CardHeader>
-          <CardTitle>{getPeriodLabel()} Performance Details</CardTitle>
-          <CardDescription>Detailed breakdown of each time period</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sortedData.slice(0, 12).map((period, index) => (
-              <div key={period.period} className="p-4 border rounded-lg">
+          
+          <table className="charts-css bar" role="chart">
+            <tbody>
+              {sortedData.map((item, index) => {
+                const percentage = maxPnL > 0 ? (Math.abs(item.totalPnL) / maxPnL) * 100 : 0;
+                const isProfit = item.totalPnL >= 0;
+                const colorClass = isProfit ? 'profit' : 'loss';
+                
+                return (
+                  <tr key={index}>
+                    <td 
+                      className={colorClass}
+                      style={{ 
+                        '--size': `${percentage}%`,
+                        '--color-chart-1': isProfit ? 'var(--color-profit)' : 'var(--color-loss)'
+                      } as React.CSSProperties}
+                    >
+                      <span className="data">
+                        {isProfit ? '+' : ''}${item.totalPnL.toLocaleString()}
+                      </span>
+                      <span className="label">
+                        <IconComponent className="w-3 h-3 inline mr-1" />
+                        {item.period}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          
+          {/* Best Period Highlight */}
+          {bestPeriod && (
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg border-l-4 border-green-500">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-green-100 rounded-full">
+                    <TrendingUp className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <div className="font-semibold">Best {analysisType.charAt(0).toUpperCase() + analysisType.slice(1)} Period</div>
+                    <div className="text-sm text-muted-foreground">
+                      {bestPeriod.period} • {bestPeriod.totalTrades} trades
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-lg font-bold text-green-600">
+                    +${bestPeriod.totalPnL.toLocaleString()}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {bestPeriod.winRate.toFixed(1)}% win rate
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Summary Statistics */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+            <div className="p-3 bg-muted/30 rounded text-center">
+              <div className="text-xs text-muted-foreground">Avg P&L</div>
+              <div className={`font-semibold ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {totalPnL >= 0 ? '+' : ''}${(totalPnL / sortedData.length).toFixed(2)}
+              </div>
+            </div>
+            <div className="p-3 bg-muted/30 rounded text-center">
+              <div className="text-xs text-muted-foreground">Avg Win Rate</div>
+              <div className="font-semibold">
+                {(sortedData.reduce((sum, item) => sum + item.winRate, 0) / sortedData.length).toFixed(1)}%
+              </div>
+            </div>
+            <div className="p-3 bg-muted/30 rounded text-center">
+              <div className="text-xs text-muted-foreground">Avg Trades</div>
+              <div className="font-semibold">
+                {(totalTrades / sortedData.length).toFixed(1)}
+              </div>
+            </div>
+            <div className="p-3 bg-muted/30 rounded text-center">
+              <div className="text-xs text-muted-foreground">Avg Profit Factor</div>
+              <div className="font-semibold">
+                {(sortedData.reduce((sum, item) => sum + item.profitFactor, 0) / sortedData.length).toFixed(2)}
+              </div>
+            </div>
+          </div>
+          
+          {/* Period Details Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+            {sortedData.slice(0, 6).map((item, index) => (
+              <div key={index} className="p-4 border rounded-lg">
                 <div className="flex items-center justify-between mb-3">
-                  <Badge variant={index === 0 ? "default" : "secondary"}>
-                    {period.period}
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    {period.totalTrades} trades
+                  <div className="flex items-center space-x-2">
+                    <IconComponent className="w-4 h-4 text-muted-foreground" />
+                    <Badge variant={index === 0 ? "default" : "secondary"}>
+                      {item.period}
+                    </Badge>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    #{index + 1}
                   </span>
                 </div>
+                
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Total P&L:</span>
-                    <span className={period.totalPnL >= 0 ? "text-green-600" : "text-red-600"}>
-                      ${period.totalPnL.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Avg P&L:</span>
-                    <span className={period.avgPnL >= 0 ? "text-green-600" : "text-red-600"}>
-                      ${period.avgPnL.toFixed(2)}
+                    <span className={`font-medium ${item.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {item.totalPnL >= 0 ? '+' : ''}${item.totalPnL.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Win Rate:</span>
-                    <span>{period.winRate.toFixed(1)}%</span>
+                    <span>{item.winRate.toFixed(1)}%</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Trades:</span>
+                    <span>{item.totalTrades}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Avg P&L:</span>
+                    <span className={item.avgPnL >= 0 ? 'text-green-600' : 'text-red-600'}>
+                      {item.avgPnL >= 0 ? '+' : ''}${item.avgPnL.toFixed(2)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Profit Factor:</span>
-                    <span className={period.profitFactor >= 1 ? "text-green-600" : "text-red-600"}>
-                      {period.profitFactor.toFixed(2)}
+                    <span className={item.profitFactor >= 1 ? 'text-green-600' : 'text-red-600'}>
+                      {item.profitFactor.toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Avg Duration:</span>
-                    <span>{period.avgDuration.toFixed(0)}min</span>
+                    <span>{item.avgDuration.toFixed(1)}h</span>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
