@@ -1,34 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Bar, Pie } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-  ArcElement,
-} from 'chart.js';
-import { TrendingUp, TrendingDown, Activity, Target, BarChart3 } from "lucide-react";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-  ArcElement
-);
+import { TrendingUp, TrendingDown, Activity, Target, BarChart3, Cloud, Sun, CloudRain } from "lucide-react";
 
 interface MarketConditionData {
   condition: string;
@@ -47,6 +20,24 @@ interface MarketConditionAnalysisProps {
   data: MarketConditionData[];
   isLoading?: boolean;
 }
+
+const conditionIcons = {
+  'bullish': Sun,
+  'bearish': CloudRain,
+  'sideways': Cloud,
+  'volatile': Activity,
+  'trending': TrendingUp,
+  'ranging': BarChart3,
+};
+
+const conditionColors = {
+  'bullish': 'var(--color-profit)',
+  'bearish': 'var(--color-loss)',
+  'sideways': 'var(--color-primary)',
+  'volatile': 'var(--color-warning)',
+  'trending': 'var(--color-profit)',
+  'ranging': 'var(--color-primary)',
+};
 
 export function MarketConditionAnalysis({ data, isLoading = false }: MarketConditionAnalysisProps) {
   if (isLoading) {
@@ -68,6 +59,18 @@ export function MarketConditionAnalysis({ data, isLoading = false }: MarketCondi
     !isNaN(item.winRate) &&
     typeof item.totalTrades === 'number' && 
     !isNaN(item.totalTrades) &&
+    typeof item.avgPnL === 'number' && 
+    !isNaN(item.avgPnL) &&
+    typeof item.profitFactor === 'number' && 
+    !isNaN(item.profitFactor) &&
+    typeof item.maxDrawdown === 'number' && 
+    !isNaN(item.maxDrawdown) &&
+    typeof item.avgDuration === 'number' && 
+    !isNaN(item.avgDuration) &&
+    typeof item.winningTrades === 'number' && 
+    !isNaN(item.winningTrades) &&
+    typeof item.losingTrades === 'number' && 
+    !isNaN(item.losingTrades) &&
     item.condition
   ) : [];
 
@@ -75,313 +78,211 @@ export function MarketConditionAnalysis({ data, isLoading = false }: MarketCondi
     return (
       <Card className="card-modern">
         <CardContent className="p-6">
-          <div className="flex items-center justify-center h-96">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold mb-2">No Market Condition Data Available</h3>
-              <p className="text-muted-foreground">No valid market condition data to display</p>
-            </div>
+          <div className="chart-empty">
+            <Activity className="icon" />
+            <div>No market condition data available yet.</div>
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  // Sort data by total P&L for better visualization
+  // Sort by total P&L for better visualization
   const sortedData = [...safeData].sort((a, b) => b.totalPnL - a.totalPnL);
+  const maxPnL = Math.max(...sortedData.map(item => Math.abs(item.totalPnL)));
+  const totalPnL = sortedData.reduce((sum, item) => sum + item.totalPnL, 0);
+  const totalTrades = sortedData.reduce((sum, item) => sum + item.totalTrades, 0);
+  const bestCondition = sortedData[0];
 
-  const barChartData = {
-    labels: sortedData.map(d => d.condition || 'Unknown'),
-    datasets: [
-      {
-        label: 'Total P&L ($)',
-        data: sortedData.map(d => d.totalPnL),
-        backgroundColor: sortedData.map(d => 
-          d.totalPnL >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(245, 101, 101, 0.8)'
-        ),
-        borderColor: sortedData.map(d => 
-          d.totalPnL >= 0 ? 'rgb(16, 185, 129)' : 'rgb(245, 101, 101)'
-        ),
-        borderWidth: 2,
-        borderRadius: 4,
-        yAxisID: 'y',
-      },
-      {
-        label: 'Win Rate (%)',
-        data: sortedData.map(d => d.winRate),
-        backgroundColor: 'rgba(59, 130, 246, 0.8)',
-        borderColor: 'rgb(59, 130, 246)',
-        borderWidth: 2,
-        borderRadius: 4,
-        yAxisID: 'y1',
-      },
-    ],
-  };
-
-  const pieChartData = {
-    labels: sortedData.map(d => d.condition || 'Unknown'),
-    datasets: [
-      {
-        data: sortedData.map(d => d.totalTrades),
-        backgroundColor: [
-          'rgba(16, 185, 129, 0.8)',
-          'rgba(59, 130, 246, 0.8)',
-          'rgba(245, 101, 101, 0.8)',
-          'rgba(251, 191, 36, 0.8)',
-          'rgba(139, 92, 246, 0.8)',
-          'rgba(236, 72, 153, 0.8)',
-        ],
-        borderColor: [
-          'rgb(16, 185, 129)',
-          'rgb(59, 130, 246)',
-          'rgb(245, 101, 101)',
-          'rgb(251, 191, 36)',
-          'rgb(139, 92, 246)',
-          'rgb(236, 72, 153)',
-        ],
-        borderWidth: 2,
-      },
-    ],
-  };
-
-  const barChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: true, position: 'top' as const },
-      title: { display: true, text: 'Market Condition Performance' },
-      tooltip: {
-        callbacks: {
-          label: function(context: any) {
-            const condition = sortedData[context.dataIndex];
-            if (context.datasetIndex === 0) {
-              return [
-                `Total P&L: $${condition.totalPnL.toFixed(2)}`,
-                `Avg P&L: $${condition.avgPnL.toFixed(2)}`,
-                `Trades: ${condition.totalTrades}`,
-                `Win Rate: ${condition.winRate.toFixed(1)}%`,
-                `Profit Factor: ${condition.profitFactor.toFixed(2)}`,
-              ];
-            }
-            return `Win Rate: ${condition.winRate.toFixed(1)}%`;
-          },
-        },
-      },
-    },
-    scales: {
-      x: { 
-        title: { display: true, text: 'Market Condition' },
-        ticks: { font: { size: 11 } },
-      },
-      y: {
-        type: 'linear' as const,
-        display: true,
-        position: 'left' as const,
-        title: { display: true, text: 'P&L ($)' },
-        ticks: { font: { size: 11 } },
-      },
-      y1: {
-        type: 'linear' as const,
-        display: true,
-        position: 'right' as const,
-        title: { display: true, text: 'Win Rate (%)' },
-        grid: { drawOnChartArea: false },
-        ticks: { font: { size: 11 }, min: 0, max: 100 },
-      },
-    },
-  };
-
-  const pieChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: true, position: 'right' as const },
-      title: { display: true, text: 'Trade Distribution by Market Condition' },
-      tooltip: {
-        callbacks: {
-          label: function(context: any) {
-            const condition = sortedData[context.dataIndex];
-            const total = sortedData.reduce((sum, d) => sum + d.totalTrades, 0);
-            const percentage = ((condition.totalTrades / total) * 100).toFixed(1);
-            return `${condition.condition}: ${condition.totalTrades} trades (${percentage}%)`;
-          },
-        },
-      },
-    },
-  };
-
-  // Calculate summary stats
-  const totalTrades = data.reduce((sum, d) => sum + d.totalTrades, 0);
-  const totalPnL = data.reduce((sum, d) => sum + d.totalPnL, 0);
-  const avgWinRate = data.length > 0 ? data.reduce((sum, d) => sum + d.winRate, 0) / data.length : 0;
-  const bestCondition = data.reduce((best, current) => 
-    current.totalPnL > best.totalPnL ? current : best, 
-    { condition: 'None', totalPnL: -Infinity, winRate: 0, totalTrades: 0, avgPnL: 0, profitFactor: 0, maxDrawdown: 0, winningTrades: 0, losingTrades: 0, avgDuration: 0 }
-  );
-
-  // Find most traded condition
-  const mostTradedCondition = data.reduce((most, current) => 
-    current.totalTrades > most.totalTrades ? current : most, 
-    { condition: 'None', totalTrades: 0, totalPnL: 0, winRate: 0, avgPnL: 0, profitFactor: 0, maxDrawdown: 0, winningTrades: 0, losingTrades: 0, avgDuration: 0 }
-  );
+  // Calculate pie chart data
+  const pieData = sortedData.map(item => ({
+    condition: item.condition,
+    trades: item.totalTrades,
+    percentage: (item.totalTrades / totalTrades) * 100
+  }));
 
   return (
-    <div className="space-y-6">
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="card-modern">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Trades</p>
-                <p className="text-2xl font-bold">{totalTrades}</p>
-              </div>
-              <Target className="w-8 h-8 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-modern">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total P&L</p>
-                <p className={`text-2xl font-bold ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  ${totalPnL.toFixed(2)}
-                </p>
-              </div>
-              {totalPnL >= 0 ? (
-                <TrendingUp className="w-8 h-8 text-green-600" />
-              ) : (
-                <TrendingDown className="w-8 h-8 text-red-600" />
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-modern">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Best Condition</p>
-                <p className="text-lg font-bold">{bestCondition.condition}</p>
-                <p className="text-sm text-muted-foreground">${bestCondition.totalPnL.toFixed(2)}</p>
-              </div>
-              <div className="p-2 rounded-full bg-green-100 text-green-600">
-                <TrendingUp className="w-5 h-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-modern">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Most Traded</p>
-                <p className="text-lg font-bold">{mostTradedCondition.condition}</p>
-                <p className="text-sm text-muted-foreground">{mostTradedCondition.totalTrades} trades</p>
-              </div>
-              <div className="p-2 rounded-full bg-blue-100 text-blue-600">
-                <Activity className="w-5 h-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Performance Chart */}
-        <Card className="card-modern">
-          <CardHeader>
-            <CardTitle>Market Condition Performance</CardTitle>
-            <CardDescription>
-              Compare performance across different market conditions
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <Bar data={barChartData} options={barChartOptions} />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Distribution Chart */}
-        <Card className="card-modern">
-          <CardHeader>
-            <CardTitle>Trade Distribution</CardTitle>
-            <CardDescription>
-              How your trades are distributed across market conditions
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <Pie data={pieChartData} options={pieChartOptions} />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Detailed Condition Analysis */}
-      <Card className="card-modern">
-        <CardHeader>
-          <CardTitle>Market Condition Analysis</CardTitle>
-          <CardDescription>Detailed breakdown of each market condition</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sortedData.map((condition, index) => (
-              <div key={condition.condition} className="p-4 border rounded-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <Badge variant={index === 0 ? "default" : "secondary"}>
-                    {condition.condition || 'Unknown'}
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    {condition.totalTrades} trades
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Total P&L:</span>
-                    <span className={condition.totalPnL >= 0 ? "text-green-600" : "text-red-600"}>
-                      ${condition.totalPnL.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Avg P&L:</span>
-                    <span className={condition.avgPnL >= 0 ? "text-green-600" : "text-red-600"}>
-                      ${condition.avgPnL.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Win Rate:</span>
-                    <span>{condition.winRate.toFixed(1)}%</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Profit Factor:</span>
-                    <span className={condition.profitFactor >= 1 ? "text-green-600" : "text-red-600"}>
-                      {condition.profitFactor.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Avg Duration:</span>
-                    <span>{condition.avgDuration.toFixed(0)}min</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Max Drawdown:</span>
-                    <span className="text-red-600">{condition.maxDrawdown.toFixed(1)}%</span>
-                  </div>
-                </div>
-              </div>
-            ))}
+    <Card className="card-modern">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Activity className="w-5 h-5" />
+          Market Condition Analysis
+        </CardTitle>
+        <CardDescription>
+          Performance analysis across different market conditions
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="chart-container">
+          <div className="chart-title">Performance by Market Condition</div>
+          <div className="chart-subtitle">
+            Total P&L: 
+            <span className={`ml-1 font-medium ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              ${totalPnL.toLocaleString()}
+            </span>
+            • Total Trades: <span className="font-medium">{totalTrades}</span>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+          
+          <table className="charts-css bar" role="chart">
+            <tbody>
+              {sortedData.map((item, index) => {
+                const percentage = maxPnL > 0 ? (Math.abs(item.totalPnL) / maxPnL) * 100 : 0;
+                const isProfit = item.totalPnL >= 0;
+                const colorClass = isProfit ? 'profit' : 'loss';
+                const IconComponent = conditionIcons[item.condition.toLowerCase() as keyof typeof conditionIcons] || Activity;
+                const color = conditionColors[item.condition.toLowerCase() as keyof typeof conditionColors] || 'var(--color-primary)';
+                
+                return (
+                  <tr key={index}>
+                    <td 
+                      className={colorClass}
+                      style={{ 
+                        '--size': `${percentage}%`,
+                        '--color-chart-1': color
+                      } as React.CSSProperties}
+                    >
+                      <span className="data">
+                        {isProfit ? '+' : ''}${item.totalPnL.toLocaleString()}
+                      </span>
+                      <span className="label">
+                        <IconComponent className="w-3 h-3 inline mr-1" />
+                        {item.condition}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          
+          {/* Best Condition Highlight */}
+          {bestCondition && (
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg border-l-4 border-green-500">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-green-100 rounded-full">
+                    <TrendingUp className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <div className="font-semibold">Best Market Condition</div>
+                    <div className="text-sm text-muted-foreground">
+                      {bestCondition.condition} • {bestCondition.totalTrades} trades
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-lg font-bold text-green-600">
+                    +${bestCondition.totalPnL.toLocaleString()}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {bestCondition.winRate.toFixed(1)}% win rate
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Trade Distribution Pie Chart */}
+          <div className="mt-6">
+            <div className="chart-title">Trade Distribution by Condition</div>
+            <div className="flex items-center justify-center">
+              <div className="relative w-48 h-48">
+                <div className="doughnut-chart w-full h-full" style={{
+                  background: `conic-gradient(${pieData.map((item, index) => {
+                    const startAngle = pieData.slice(0, index).reduce((sum, d) => sum + d.percentage, 0);
+                    const endAngle = startAngle + item.percentage;
+                    const color = conditionColors[item.condition.toLowerCase() as keyof typeof conditionColors] || 'var(--color-primary)';
+                    return `${color} ${startAngle}% ${endAngle}%`;
+                  }).join(', ')})`
+                }}>
+                  <div className="doughnut-center">
+                    <div className="percentage">{totalTrades}</div>
+                    <div className="label">Total Trades</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Legend */}
+            <div className="flex flex-wrap justify-center gap-4 mt-4">
+              {pieData.map((item, index) => {
+                const IconComponent = conditionIcons[item.condition.toLowerCase() as keyof typeof conditionIcons] || Activity;
+                const color = conditionColors[item.condition.toLowerCase() as keyof typeof conditionColors] || 'var(--color-primary)';
+                return (
+                  <div key={index} className="flex items-center space-x-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: color }}
+                    />
+                    <IconComponent className="w-3 h-3 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      {item.condition}: {item.trades} ({item.percentage.toFixed(1)}%)
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          
+          {/* Condition Details Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+            {sortedData.map((item, index) => {
+              const IconComponent = conditionIcons[item.condition.toLowerCase() as keyof typeof conditionIcons] || Activity;
+              const color = conditionColors[item.condition.toLowerCase() as keyof typeof conditionColors] || 'var(--color-primary)';
+              return (
+                <div key={index} className="p-4 border rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <IconComponent className="w-4 h-4" style={{ color }} />
+                      <Badge variant={index === 0 ? "default" : "secondary"}>
+                        {item.condition}
+                      </Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      #{index + 1}
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Total P&L:</span>
+                      <span className={`font-medium ${item.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {item.totalPnL >= 0 ? '+' : ''}${item.totalPnL.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Win Rate:</span>
+                      <span>{item.winRate.toFixed(1)}%</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Trades:</span>
+                      <span>{item.totalTrades}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Avg P&L:</span>
+                      <span className={item.avgPnL >= 0 ? 'text-green-600' : 'text-red-600'}>
+                        {item.avgPnL >= 0 ? '+' : ''}${item.avgPnL.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Profit Factor:</span>
+                      <span className={item.profitFactor >= 1 ? 'text-green-600' : 'text-red-600'}>
+                        {item.profitFactor.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Max Drawdown:</span>
+                      <span className="text-red-600">
+                        {item.maxDrawdown.toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

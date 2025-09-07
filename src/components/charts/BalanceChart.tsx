@@ -1,14 +1,5 @@
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Area,
-  AreaChart,
-} from 'recharts';
+import React, { useState } from 'react';
+import { TrendingUp, TrendingDown, DollarSign, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface BalanceChartProps {
@@ -16,6 +7,8 @@ interface BalanceChartProps {
 }
 
 export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
+  const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
+  
   // Ensure balanceOverTime is always an array to prevent map errors
   const safeBalanceData = Array.isArray(balanceOverTime) ? balanceOverTime : [];
   console.log('BalanceChart received data:', balanceOverTime);
@@ -52,83 +45,191 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
 
   console.log('Balance range:', { minBalance, maxBalance, yAxisMin, yAxisMax });
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const dataPoint = payload[0].payload;
-      return (
-        <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
-          <p className="font-medium">Balance on {dataPoint.displayDate}</p>
-          <p className="text-sm text-muted-foreground">
-            <span className="font-medium text-blue-600">${payload[0].value.toLocaleString()}</span>
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
   if (balanceOverTime.length === 0 || data.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold mb-2">No Data Available</h3>
-          <p className="text-muted-foreground">Add some trades to see your balance progression</p>
+      <div className="chart-container">
+        <div className="chart-empty">
+          <DollarSign className="icon" />
+          <div>Add some trades to see your balance progression</div>
         </div>
       </div>
     );
   }
 
+  const totalChange = data.length > 1 ? data[data.length - 1].balance - data[0].balance : 0;
+  const percentageChange = data.length > 1 && data[0].balance > 0 ? (totalChange / data[0].balance) * 100 : 0;
+  const isPositive = totalChange >= 0;
+
+  // Calculate positions for data points
+  const chartWidth = 100; // percentage
+  const chartHeight = 100; // percentage
+  const pointPositions = data.map((point, index) => {
+    const x = (index / (data.length - 1)) * chartWidth;
+    const y = chartHeight - ((point.balance - yAxisMin) / (yAxisMax - yAxisMin)) * chartHeight;
+    return { ...point, x, y };
+  });
+
+  // Create SVG path for the area
+  const createAreaPath = () => {
+    if (pointPositions.length === 0) return '';
+    
+    let path = `M ${pointPositions[0].x}% ${chartHeight}%`;
+    path += ` L ${pointPositions[0].x}% ${pointPositions[0].y}%`;
+    
+    for (let i = 1; i < pointPositions.length; i++) {
+      path += ` L ${pointPositions[i].x}% ${pointPositions[i].y}%`;
+    }
+    
+    path += ` L ${pointPositions[pointPositions.length - 1].x}% ${chartHeight}% Z`;
+    return path;
+  };
+
+  // Create SVG path for the line
+  const createLinePath = () => {
+    if (pointPositions.length === 0) return '';
+    
+    let path = `M ${pointPositions[0].x}% ${pointPositions[0].y}%`;
+    
+    for (let i = 1; i < pointPositions.length; i++) {
+      path += ` L ${pointPositions[i].x}% ${pointPositions[i].y}%`;
+    }
+    
+    return path;
+  };
+
   return (
-    <div className="w-full h-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-          <defs>
-            <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-              <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-          <XAxis 
-            dataKey="date" 
-            tick={{ fontSize: 12 }}
-            className="text-muted-foreground"
-            tickFormatter={(value) => {
-              const date = new Date(value);
-              if (isNaN(date.getTime())) return '';
-              return date.toLocaleDateString('en-US', { 
-                month: 'short', 
-                day: 'numeric' 
-              });
-            }}
-            type="category"
-            tickCount={Math.min(data.length, 8)}
-          />
-          <YAxis 
-            tick={{ fontSize: 12 }}
-            className="text-muted-foreground"
-            tickFormatter={(value) => `$${value.toLocaleString()}`}
-            domain={[yAxisMin, yAxisMax]}
-            tickCount={7}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Area
-            type="monotone"
-            dataKey="balance"
-            stroke="#3b82f6"
-            strokeWidth={3}
-            fill="url(#balanceGradient)"
-            dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-            activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
-            connectNulls={false}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+    <div className="chart-container">
+      <div className="chart-title">Balance Over Time</div>
+      <div className="chart-subtitle">
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-1">
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm">
+              {data.length > 0 && `${data[0].displayDate} - ${data[data.length - 1].displayDate}`}
+            </span>
+          </div>
+          <div className={`flex items-center space-x-1 ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+            {isPositive ? (
+              <TrendingUp className="w-4 h-4" />
+            ) : (
+              <TrendingDown className="w-4 h-4" />
+            )}
+            <span className="font-medium">
+              {isPositive ? '+' : ''}${totalChange.toLocaleString()} ({percentageChange.toFixed(1)}%)
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      <div className="relative" style={{ height: '300px' }}>
+        {/* Y-axis labels */}
+        <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-muted-foreground pr-2">
+          <span>${yAxisMax.toLocaleString()}</span>
+          <span>${((yAxisMax + yAxisMin) / 2).toLocaleString()}</span>
+          <span>${yAxisMin.toLocaleString()}</span>
+        </div>
+        
+        {/* Chart area */}
+        <div className="ml-8 mr-4 h-full relative">
+          <svg 
+            className="w-full h-full" 
+            viewBox="0 0 100 100" 
+            preserveAspectRatio="none"
+            style={{ overflow: 'visible' }}
+          >
+            {/* Grid lines */}
+            <defs>
+              <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="var(--color-axis)" strokeWidth="0.5" opacity="0.3"/>
+              </pattern>
+              <linearGradient id="balanceGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.3"/>
+                <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0"/>
+              </linearGradient>
+            </defs>
+            
+            {/* Grid */}
+            <rect width="100" height="100" fill="url(#grid)" />
+            
+            {/* Area */}
+            <path
+              d={createAreaPath()}
+              fill="url(#balanceGradient)"
+              className="transition-all duration-300"
+            />
+            
+            {/* Line */}
+            <path
+              d={createLinePath()}
+              fill="none"
+              stroke="var(--color-primary)"
+              strokeWidth="0.5"
+              className="transition-all duration-300"
+            />
+            
+            {/* Data points */}
+            {pointPositions.map((point, index) => (
+              <circle
+                key={index}
+                cx={`${point.x}%`}
+                cy={`${point.y}%`}
+                r={hoveredPoint === index ? "1.5" : "1"}
+                fill="var(--color-primary)"
+                stroke="var(--color-surface)"
+                strokeWidth="0.5"
+                className="cursor-pointer transition-all duration-200 hover:r-2"
+                onMouseEnter={() => setHoveredPoint(index)}
+                onMouseLeave={() => setHoveredPoint(null)}
+              />
+            ))}
+          </svg>
+          
+          {/* Tooltip */}
+          {hoveredPoint !== null && (
+            <div 
+              className="absolute bg-background border border-border rounded-lg p-3 shadow-lg z-10 pointer-events-none"
+              style={{
+                left: `${pointPositions[hoveredPoint].x}%`,
+                top: `${pointPositions[hoveredPoint].y}%`,
+                transform: 'translate(-50%, -100%)',
+                marginTop: '-10px'
+              }}
+            >
+              <div className="text-sm font-medium">
+                {pointPositions[hoveredPoint].displayDate}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                <span className="font-medium text-primary">
+                  ${pointPositions[hoveredPoint].balance.toLocaleString()}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* X-axis labels */}
+        <div className="absolute bottom-0 left-8 right-4 flex justify-between text-xs text-muted-foreground">
+          {pointPositions.filter((_, index) => index % Math.ceil(pointPositions.length / 5) === 0).map((point, index) => (
+            <span key={index}>{point.displayDate}</span>
+          ))}
+        </div>
+      </div>
+      
+      {/* Summary stats */}
+      <div className="grid grid-cols-3 gap-4 mt-4 text-center">
+        <div className="p-2 bg-muted/30 rounded">
+          <div className="text-xs text-muted-foreground">Current</div>
+          <div className="font-semibold">${data[data.length - 1]?.balance.toLocaleString()}</div>
+        </div>
+        <div className="p-2 bg-muted/30 rounded">
+          <div className="text-xs text-muted-foreground">Peak</div>
+          <div className="font-semibold">${maxBalance.toLocaleString()}</div>
+        </div>
+        <div className="p-2 bg-muted/30 rounded">
+          <div className="text-xs text-muted-foreground">Low</div>
+          <div className="font-semibold">${minBalance.toLocaleString()}</div>
+        </div>
+      </div>
     </div>
   );
 }

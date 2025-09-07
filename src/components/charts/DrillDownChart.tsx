@@ -10,21 +10,6 @@ import {
   DialogTitle, 
   DialogTrigger 
 } from "@/components/ui/dialog";
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
 import { 
   ZoomIn, 
   ArrowLeft, 
@@ -33,10 +18,11 @@ import {
   DollarSign,
   Target,
   Clock,
-  Calendar
+  Calendar,
+  BarChart3,
+  PieChart,
+  LineChart
 } from "lucide-react";
-
-// Recharts doesn't need registration
 
 interface DrillDownData {
   label: string;
@@ -53,6 +39,12 @@ interface DrillDownChartProps {
   onDrillDown: (data: DrillDownData) => void;
   isLoading?: boolean;
 }
+
+const chartIcons = {
+  'bar': BarChart3,
+  'line': LineChart,
+  'pie': PieChart,
+};
 
 export function DrillDownChart({ 
   title, 
@@ -71,199 +63,6 @@ export function DrillDownChart({
     onDrillDown(dataPoint);
   };
 
-  const getChartData = () => {
-    const colors = [
-      '#10b981', // emerald-500
-      '#3b82f6', // blue-500
-      '#f59e0b', // amber-500
-      '#ef4444', // red-500
-      '#8b5cf6', // violet-500
-      '#ec4899', // pink-500
-    ];
-
-    return data.map((d, index) => ({
-      name: d.label,
-      value: d.value,
-      trades: d.trades.length,
-      fill: colors[index % colors.length],
-    }));
-  };
-
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
-          <p className="font-medium">{label}</p>
-          <p className="text-sm text-muted-foreground">
-            Value: <span className="font-medium">{data.value}</span>
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Trades: <span className="font-medium">{data.trades}</span>
-          </p>
-          <p className="text-xs text-blue-600 mt-1">Click to drill down</p>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const renderChart = () => {
-    const chartData = getChartData();
-    
-    // Ensure chartData is valid and filter out invalid entries
-    const safeChartData = Array.isArray(chartData) ? chartData.filter(item => 
-      item && 
-      typeof item.value === 'number' && 
-      !isNaN(item.value) &&
-      item.name
-    ) : [];
-    
-    // If no valid data, return empty state
-    if (safeChartData.length === 0) {
-      return (
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold mb-2">No Data Available</h3>
-            <p className="text-muted-foreground">No valid data to display</p>
-          </div>
-        </div>
-      );
-    }
-
-    switch (chartType) {
-      case 'bar':
-        return (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={safeChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis 
-                dataKey="name" 
-                tick={{ fontSize: 12 }}
-                className="text-muted-foreground"
-              />
-              <YAxis 
-                tick={{ fontSize: 12 }}
-                className="text-muted-foreground"
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend />
-              <Bar 
-                dataKey="value" 
-                radius={[4, 4, 0, 0]}
-                onClick={(data) => {
-                  const originalData = data.find(d => d.name === data.name);
-                  if (originalData) {
-                    handleDataClick(originalData);
-                  }
-                }}
-                className="cursor-pointer"
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        );
-      case 'line':
-        return (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={safeChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis 
-                dataKey="name" 
-                tick={{ fontSize: 12 }}
-                className="text-muted-foreground"
-              />
-              <YAxis 
-                tick={{ fontSize: 12 }}
-                className="text-muted-foreground"
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend />
-              <Line 
-                type="monotone" 
-                dataKey="value" 
-                stroke="#3b82f6" 
-                strokeWidth={3}
-                dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
-                onClick={(data) => {
-                  const originalData = data.find(d => d.name === data.name);
-                  if (originalData) {
-                    handleDataClick(originalData);
-                  }
-                }}
-                className="cursor-pointer"
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        );
-      case 'pie':
-        return (
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={safeChartData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={120}
-                fill="#8884d8"
-                dataKey="value"
-                onClick={(data) => {
-                  const originalData = data.find(d => d.name === data.name);
-                  if (originalData) {
-                    handleDataClick(originalData);
-                  }
-                }}
-                className="cursor-pointer"
-              >
-                {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.fill} />
-                ))}
-              </Pie>
-              <Tooltip content={<CustomTooltip />} />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        );
-      default:
-        return (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis 
-                dataKey="name" 
-                tick={{ fontSize: 12 }}
-                className="text-muted-foreground"
-              />
-              <YAxis 
-                tick={{ fontSize: 12 }}
-                className="text-muted-foreground"
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend />
-              <Bar 
-                dataKey="value" 
-                radius={[4, 4, 0, 0]}
-                onClick={(data) => {
-                  const originalData = data.find(d => d.name === data.name);
-                  if (originalData) {
-                    handleDataClick(originalData);
-                  }
-                }}
-                className="cursor-pointer"
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        );
-    }
-  };
-
   if (isLoading) {
     return (
       <Card className="card-modern">
@@ -274,31 +73,220 @@ export function DrillDownChart({
     );
   }
 
-  return (
-    <>
+  // Ensure data is valid and filter out invalid entries
+  const safeData = Array.isArray(data) ? data.filter(item => 
+    item && 
+    item.label &&
+    typeof item.value === 'number' && 
+    !isNaN(item.value) &&
+    Array.isArray(item.trades)
+  ) : [];
+
+  if (safeData.length === 0) {
+    return (
       <Card className="card-modern">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            {title}
-            <ZoomIn className="w-4 h-4 ml-2 text-muted-foreground" />
-          </CardTitle>
-          <CardDescription>
-            {description} - Click on any data point to drill down
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-96">
-            {renderChart()}
+        <CardContent className="p-6">
+          <div className="chart-empty">
+            <Target className="icon" />
+            <div>No drill-down data available yet.</div>
           </div>
         </CardContent>
       </Card>
+    );
+  }
+
+  // Sort by value for better visualization
+  const sortedData = [...safeData].sort((a, b) => b.value - a.value);
+  const maxValue = Math.max(...sortedData.map(item => Math.abs(item.value)));
+  const totalValue = sortedData.reduce((sum, item) => sum + item.value, 0);
+  const totalTrades = sortedData.reduce((sum, item) => sum + item.trades.length, 0);
+
+  const IconComponent = chartIcons[chartType] || BarChart3;
+
+  const renderChart = () => {
+    switch (chartType) {
+      case 'bar':
+        return (
+          <table className="charts-css bar" role="chart">
+            <tbody>
+              {sortedData.map((item, index) => {
+                const percentage = maxValue > 0 ? (Math.abs(item.value) / maxValue) * 100 : 0;
+                const isPositive = item.value >= 0;
+                const colorClass = isPositive ? 'profit' : 'loss';
+                
+                return (
+                  <tr key={index}>
+                    <td 
+                      className={colorClass}
+                      style={{ 
+                        '--size': `${percentage}%`,
+                        '--color-chart-1': isPositive ? 'var(--color-profit)' : 'var(--color-loss)'
+                      } as React.CSSProperties}
+                      onClick={() => handleDataClick(item)}
+                    >
+                      <span className="data">
+                        {isPositive ? '+' : ''}{item.value.toLocaleString()}
+                      </span>
+                      <span className="label">
+                        <Target className="w-3 h-3 inline mr-1" />
+                        {item.label}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        );
+
+      case 'pie':
+        const pieData = sortedData.map((item, index) => ({
+          ...item,
+          percentage: (item.value / totalValue) * 100,
+          startAngle: sortedData.slice(0, index).reduce((sum, d) => sum + (d.value / totalValue) * 100, 0)
+        }));
+
+        return (
+          <div className="flex items-center justify-center">
+            <div className="relative w-48 h-48">
+              <div className="doughnut-chart w-full h-full" style={{
+                background: `conic-gradient(${pieData.map((item, index) => {
+                  const startAngle = item.startAngle;
+                  const endAngle = startAngle + item.percentage;
+                  const colors = ['var(--color-profit)', 'var(--color-primary)', 'var(--color-warning)', 'var(--color-loss)', 'var(--color-chart-5)', 'var(--color-chart-6)'];
+                  return `${colors[index % colors.length]} ${startAngle}% ${endAngle}%`;
+                }).join(', ')})`
+              }}>
+                <div className="doughnut-center">
+                  <div className="percentage">{totalValue.toLocaleString()}</div>
+                  <div className="label">Total Value</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'line':
+        return (
+          <div className="space-y-3">
+            {sortedData.map((item, index) => {
+              const isPositive = item.value >= 0;
+              return (
+                <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 rounded-full" style={{ 
+                      backgroundColor: isPositive ? 'var(--color-profit)' : 'var(--color-loss)',
+                      opacity: 0.2 
+                    }}>
+                      <TrendingUp className="w-4 h-4" style={{ 
+                        color: isPositive ? 'var(--color-profit)' : 'var(--color-loss)' 
+                      }} />
+                    </div>
+                    <div>
+                      <div className="font-medium">{item.label}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {item.trades.length} trades
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`font-semibold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                      {isPositive ? '+' : ''}{item.value.toLocaleString()}
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleDataClick(item)}
+                      className="text-xs"
+                    >
+                      <ZoomIn className="w-3 h-3 mr-1" />
+                      Drill Down
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Card className="card-modern">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <IconComponent className="w-5 h-5" />
+          {title}
+        </CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="chart-container">
+          <div className="chart-title">{title}</div>
+          <div className="chart-subtitle">
+            Total Value: 
+            <span className={`ml-1 font-medium ${totalValue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {totalValue >= 0 ? '+' : ''}{totalValue.toLocaleString()}
+            </span>
+            • Total Trades: <span className="font-medium">{totalTrades}</span>
+          </div>
+          
+          {renderChart()}
+          
+          {/* Legend for pie chart */}
+          {chartType === 'pie' && (
+            <div className="flex flex-wrap justify-center gap-4 mt-4">
+              {sortedData.map((item, index) => {
+                const colors = ['var(--color-profit)', 'var(--color-primary)', 'var(--color-warning)', 'var(--color-loss)', 'var(--color-chart-5)', 'var(--color-chart-6)'];
+                const color = colors[index % colors.length];
+                return (
+                  <div key={index} className="flex items-center space-x-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: color }}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {item.label}: {item.value.toLocaleString()}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          
+          {/* Summary Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+            <div className="p-3 bg-muted/30 rounded text-center">
+              <div className="text-xs text-muted-foreground">Total Value</div>
+              <div className={`font-semibold ${totalValue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {totalValue >= 0 ? '+' : ''}{totalValue.toLocaleString()}
+              </div>
+            </div>
+            <div className="p-3 bg-muted/30 rounded text-center">
+              <div className="text-xs text-muted-foreground">Total Trades</div>
+              <div className="font-semibold">{totalTrades}</div>
+            </div>
+            <div className="p-3 bg-muted/30 rounded text-center">
+              <div className="text-xs text-muted-foreground">Categories</div>
+              <div className="font-semibold">{sortedData.length}</div>
+            </div>
+            <div className="p-3 bg-muted/30 rounded text-center">
+              <div className="text-xs text-muted-foreground">Best Category</div>
+              <div className="font-semibold text-sm">{sortedData[0]?.label}</div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
 
       {/* Drill Down Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center">
-              <ArrowLeft className="w-5 h-5 mr-2" />
+            <DialogTitle className="flex items-center gap-2">
+              <ZoomIn className="w-5 h-5" />
               Drill Down: {selectedData?.label}
             </DialogTitle>
             <DialogDescription>
@@ -307,140 +295,52 @@ export function DrillDownChart({
           </DialogHeader>
           
           {selectedData && (
-            <div className="space-y-6">
-              {/* Summary Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Total Trades</p>
-                        <p className="text-2xl font-bold">{selectedData.trades.length}</p>
-                      </div>
-                      <Target className="w-8 h-8 text-muted-foreground" />
+            <div className="space-y-4">
+              {/* Summary */}
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-semibold">{selectedData.label}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {selectedData.trades.length} trades • Value: {selectedData.value.toLocaleString()}
                     </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Total P&L</p>
-                        <p className={`text-2xl font-bold ${
-                          selectedData.value >= 0 ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          ${selectedData.value.toFixed(2)}
-                        </p>
-                      </div>
-                      {selectedData.value >= 0 ? (
-                        <TrendingUp className="w-8 h-8 text-green-600" />
-                      ) : (
-                        <TrendingDown className="w-8 h-8 text-red-600" />
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Win Rate</p>
-                        <p className="text-2xl font-bold">
-                          {selectedData.trades.length > 0 
-                            ? ((selectedData.trades.filter(t => (t.profitLoss || 0) > 0).length / selectedData.trades.length) * 100).toFixed(1)
-                            : 0}%
-                        </p>
-                      </div>
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="text-sm font-bold text-primary">
-                          {selectedData.trades.length > 0 
-                            ? ((selectedData.trades.filter(t => (t.profitLoss || 0) > 0).length / selectedData.trades.length) * 100).toFixed(0)
-                            : 0}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Avg Duration</p>
-                        <p className="text-2xl font-bold">
-                          {selectedData.trades.length > 0 
-                            ? (selectedData.trades.reduce((sum, t) => sum + (t.duration || 0), 0) / selectedData.trades.length).toFixed(0)
-                            : 0}min
-                        </p>
-                      </div>
-                      <Clock className="w-8 h-8 text-muted-foreground" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Trades List */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Individual Trades</CardTitle>
-                  <CardDescription>
-                    Detailed breakdown of each trade in this category
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {selectedData.trades.map((trade, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center space-x-4">
-                          <div className="flex items-center space-x-2">
-                            <Calendar className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm">
-                              {typeof trade.date === 'string' 
-                                ? new Date(trade.date).toLocaleDateString()
-                                : trade.date.toLocaleDateString()}
-                            </span>
-                          </div>
-                          <Badge variant="outline">{trade.asset}</Badge>
-                          <Badge variant={trade.tradeType === 'Buy' ? 'default' : 'secondary'}>
-                            {trade.tradeType}
-                          </Badge>
-                          {trade.emotion && (
-                            <Badge variant="outline" className="capitalize">
-                              {trade.emotion}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-4">
-                          <div className="text-right">
-                            <div className={`font-medium ${
-                              (trade.profitLoss || 0) >= 0 ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              ${(trade.profitLoss || 0).toFixed(2)}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {trade.duration || 0}min
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-sm font-medium">
-                              {trade.entryPrice} → {trade.exitPrice}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {trade.positionSize || 1} units
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
                   </div>
-                </CardContent>
-              </Card>
+                  <Badge variant="outline">
+                    {chartType.toUpperCase()} Chart
+                  </Badge>
+                </div>
+              </div>
+              
+              {/* Trades List */}
+              <div className="space-y-2">
+                <h4 className="font-medium">Trades</h4>
+                <div className="max-h-60 overflow-y-auto space-y-2">
+                  {selectedData.trades.map((trade, index) => (
+                    <div key={index} className="p-3 border rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">{trade.asset || trade.symbol || 'Unknown'}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {trade.date ? new Date(trade.date).toLocaleDateString() : 'No date'}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className={`font-semibold ${trade.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {trade.profitLoss >= 0 ? '+' : ''}${trade.profitLoss?.toFixed(2) || '0.00'}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {trade.tradeType || trade.type || 'Unknown'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
-    </>
+    </Card>
   );
 }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -10,33 +10,11 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
-  BarChart3
+  BarChart3,
+  Smile,
+  Frown,
+  Meh
 } from "lucide-react";
-import { Line, Bar, Scatter } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-} from 'chart.js';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
 
 interface PsychologyData {
   emotionTrends: {
@@ -71,7 +49,21 @@ interface PsychologyDashboardProps {
   isLoading?: boolean;
 }
 
+const emotionIcons = {
+  'confident': Smile,
+  'calm': Smile,
+  'excited': Smile,
+  'fearful': Frown,
+  'anxious': Frown,
+  'frustrated': Frown,
+  'neutral': Meh,
+  'greedy': Brain,
+  'fomo': Brain,
+};
+
 export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashboardProps) {
+  const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -126,203 +118,14 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
     return (
       <Card className="card-modern">
         <CardContent className="p-6">
-          <div className="flex items-center justify-center h-96">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold mb-2">No Psychology Data Available</h3>
-              <p className="text-muted-foreground">No valid psychology data to display</p>
-            </div>
+          <div className="chart-empty">
+            <Brain className="icon" />
+            <div>No psychology data available yet.</div>
           </div>
         </CardContent>
       </Card>
     );
   }
-
-  // Emotion Performance Chart - Scatter Plot
-  const emotionChartData = {
-    datasets: [
-      {
-        label: 'Emotion Performance',
-        data: safeEmotionPerformance.map(d => ({
-          x: d.winRate,
-          y: d.avgProfitLoss,
-          emotion: d.emotion,
-          tradeCount: d.tradeCount,
-          confidence: d.avgConfidence
-        })),
-        backgroundColor: safeEmotionPerformance.map(d => 
-          d.avgProfitLoss >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(245, 101, 101, 0.8)'
-        ),
-        borderColor: safeEmotionPerformance.map(d => 
-          d.avgProfitLoss >= 0 ? 'rgb(16, 185, 129)' : 'rgb(245, 101, 101)'
-        ),
-        borderWidth: 2,
-        pointRadius: 8,
-        pointHoverRadius: 12,
-      },
-    ],
-  };
-
-  const emotionChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: true, position: 'top' as const },
-      title: { display: true, text: 'Emotion Performance Correlation' },
-      tooltip: {
-        callbacks: {
-          title: (context: any) => {
-            const dataPoint = context[0].raw;
-            return dataPoint.emotion;
-          },
-          label: (context: any) => {
-            const dataPoint = context.raw;
-            return [
-              `Win Rate: ${dataPoint.x.toFixed(1)}%`,
-              `Avg P&L: $${dataPoint.y.toFixed(2)}`,
-              `Trades: ${dataPoint.tradeCount}`,
-              `Confidence: ${dataPoint.confidence.toFixed(1)}/10`
-            ];
-          }
-        }
-      }
-    },
-    scales: {
-      x: { 
-        title: { display: true, text: 'Win Rate (%)' },
-        min: 0,
-        max: 100
-      },
-      y: {
-        type: 'linear' as const,
-        display: true,
-        position: 'left' as const,
-        title: { display: true, text: 'Average P&L ($)' },
-      },
-    },
-  };
-
-  // Confidence Analysis Chart - Line Chart
-  const confidenceChartData = {
-    labels: safeConfidenceAnalysis.map(d => d.confidenceRange),
-    datasets: [
-      {
-        label: 'Average P&L ($)',
-        data: safeConfidenceAnalysis.map(d => d.avgProfitLoss),
-        borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        borderWidth: 3,
-        tension: 0.4,
-        fill: true,
-        pointBackgroundColor: safeConfidenceAnalysis.map(d => 
-          d.avgProfitLoss >= 0 ? 'rgb(16, 185, 129)' : 'rgb(245, 101, 101)'
-        ),
-        pointBorderColor: safeConfidenceAnalysis.map(d => 
-          d.avgProfitLoss >= 0 ? 'rgb(16, 185, 129)' : 'rgb(245, 101, 101)'
-        ),
-        pointRadius: 6,
-        pointHoverRadius: 8,
-      },
-      {
-        label: 'Win Rate (%)',
-        data: safeConfidenceAnalysis.map(d => d.winRate),
-        borderColor: 'rgb(16, 185, 129)',
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-        borderWidth: 3,
-        tension: 0.4,
-        fill: false,
-        pointRadius: 6,
-        pointHoverRadius: 8,
-        yAxisID: 'y1',
-      },
-    ],
-  };
-
-  const confidenceChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: true, position: 'top' as const },
-      title: { display: true, text: 'Confidence vs Performance Trends' },
-    },
-    scales: {
-      x: { title: { display: true, text: 'Confidence Level' } },
-      y: { 
-        type: 'linear' as const,
-        display: true,
-        position: 'left' as const,
-        title: { display: true, text: 'Average P&L ($)' } 
-      },
-      y1: {
-        type: 'linear' as const,
-        display: true,
-        position: 'right' as const,
-        title: { display: true, text: 'Win Rate (%)' },
-        grid: { drawOnChartArea: false },
-        min: 0,
-        max: 100,
-      },
-    },
-  };
-
-  // Emotion Trend Line Chart
-  const emotionTrendData = {
-    labels: safeEmotionTrends.map(d => d.date),
-    datasets: [
-      {
-        label: 'Confidence Level',
-        data: safeEmotionTrends.map(d => d.confidence),
-        borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        tension: 0.4,
-        fill: true,
-        yAxisID: 'y',
-      },
-      {
-        label: 'P&L ($)',
-        data: safeEmotionTrends.map(d => d.profitLoss),
-        borderColor: safeEmotionTrends.map(d => 
-          d.profitLoss >= 0 ? 'rgb(16, 185, 129)' : 'rgb(245, 101, 101)'
-        ),
-        backgroundColor: safeEmotionTrends.map(d => 
-          d.profitLoss >= 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 101, 101, 0.1)'
-        ),
-        tension: 0.4,
-        yAxisID: 'y1',
-      },
-    ],
-  };
-
-  const emotionTrendOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: true, position: 'top' as const },
-      title: { display: true, text: 'Emotion & Performance Trends' },
-    },
-    scales: {
-      x: { title: { display: true, text: 'Date' } },
-      y: {
-        type: 'linear' as const,
-        display: true,
-        position: 'left' as const,
-        title: { display: true, text: 'Confidence (1-10)' },
-        min: 0,
-        max: 10,
-      },
-      y1: {
-        type: 'linear' as const,
-        display: true,
-        position: 'right' as const,
-        title: { display: true, text: 'P&L ($)' },
-        grid: { drawOnChartArea: false },
-      },
-    },
-  };
 
   const getStressLevel = (score: number) => {
     if (score >= 8) return { level: 'High', color: 'destructive', icon: AlertTriangle };
@@ -331,6 +134,24 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
   };
 
   const stressLevel = getStressLevel(safeStressIndicators.overtradingScore);
+
+  // Calculate scatter plot positions
+  const scatterData = safeEmotionPerformance.map((item, index) => {
+    const maxWinRate = Math.max(...safeEmotionPerformance.map(d => d.winRate));
+    const minWinRate = Math.min(...safeEmotionPerformance.map(d => d.winRate));
+    const maxProfit = Math.max(...safeEmotionPerformance.map(d => Math.abs(d.avgProfitLoss)));
+    const minProfit = Math.min(...safeEmotionPerformance.map(d => Math.abs(d.avgProfitLoss)));
+    
+    const x = ((item.winRate - minWinRate) / (maxWinRate - minWinRate)) * 100;
+    const y = 100 - ((Math.abs(item.avgProfitLoss) - minProfit) / (maxProfit - minProfit)) * 100;
+    
+    return {
+      ...item,
+      x,
+      y,
+      isProfit: item.avgProfitLoss >= 0
+    };
+  });
 
   return (
     <div className="space-y-6">
@@ -404,7 +225,7 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Emotion Performance */}
+        {/* Emotion Performance Scatter Plot */}
         <Card className="card-modern">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -416,8 +237,71 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-80">
-              <Scatter data={emotionChartData} options={emotionChartOptions} />
+            <div className="chart-container">
+              <div className="chart-title">Emotion vs Performance Correlation</div>
+              <div className="relative" style={{ height: '300px' }}>
+                {/* Y-axis labels */}
+                <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-muted-foreground pr-2">
+                  <span>High P&L</span>
+                  <span>Low P&L</span>
+                </div>
+                
+                {/* Scatter plot area */}
+                <div className="ml-8 mr-4 h-full relative">
+                  <div className="scatter-plot w-full h-full">
+                    {scatterData.map((point, index) => {
+                      const IconComponent = emotionIcons[point.emotion.toLowerCase() as keyof typeof emotionIcons] || Brain;
+                      return (
+                        <div
+                          key={index}
+                          className="point"
+                          style={{
+                            '--x': `${point.x}%`,
+                            '--y': `${point.y}%`,
+                          } as React.CSSProperties}
+                          data-tooltip={`${point.emotion}: ${point.winRate.toFixed(1)}% win rate, $${point.avgProfitLoss.toFixed(2)} avg P&L`}
+                          onMouseEnter={() => setHoveredPoint(index)}
+                          onMouseLeave={() => setHoveredPoint(null)}
+                        >
+                          <IconComponent className="w-3 h-3" />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Tooltip */}
+                  {hoveredPoint !== null && (
+                    <div 
+                      className="absolute bg-background border border-border rounded-lg p-3 shadow-lg z-10 pointer-events-none"
+                      style={{
+                        left: `${scatterData[hoveredPoint].x}%`,
+                        top: `${scatterData[hoveredPoint].y}%`,
+                        transform: 'translate(-50%, -100%)',
+                        marginTop: '-10px'
+                      }}
+                    >
+                      <div className="text-sm font-medium">
+                        {scatterData[hoveredPoint].emotion}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Win Rate: {scatterData[hoveredPoint].winRate.toFixed(1)}%
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Avg P&L: ${scatterData[hoveredPoint].avgProfitLoss.toFixed(2)}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Trades: {scatterData[hoveredPoint].tradeCount}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* X-axis labels */}
+                <div className="absolute bottom-0 left-8 right-4 flex justify-between text-xs text-muted-foreground">
+                  <span>Low Win Rate</span>
+                  <span>High Win Rate</span>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -434,8 +318,49 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-80">
-              <Line data={confidenceChartData} options={confidenceChartOptions} />
+            <div className="chart-container">
+              <div className="chart-title">Confidence Performance Trends</div>
+              <table className="charts-css bar" role="chart">
+                <tbody>
+                  {safeConfidenceAnalysis.map((item, index) => {
+                    const maxProfit = Math.max(...safeConfidenceAnalysis.map(d => Math.abs(d.avgProfitLoss)));
+                    const percentage = maxProfit > 0 ? (Math.abs(item.avgProfitLoss) / maxProfit) * 100 : 0;
+                    const isProfit = item.avgProfitLoss >= 0;
+                    const colorClass = isProfit ? 'profit' : 'loss';
+                    
+                    return (
+                      <tr key={index}>
+                        <td 
+                          className={colorClass}
+                          style={{ 
+                            '--size': `${percentage}%`,
+                            '--color-chart-1': isProfit ? 'var(--color-profit)' : 'var(--color-loss)'
+                          } as React.CSSProperties}
+                        >
+                          <span className="data">
+                            {isProfit ? '+' : ''}${item.avgProfitLoss.toFixed(2)}
+                          </span>
+                          <span className="label">{item.confidenceRange}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              
+              <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                {safeConfidenceAnalysis.slice(0, 2).map((item, index) => (
+                  <div key={index} className="p-2 bg-muted/30 rounded text-center">
+                    <div className="font-medium">{item.confidenceRange}</div>
+                    <div className={`text-sm ${item.avgProfitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      ${item.avgProfitLoss.toFixed(2)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {item.winRate.toFixed(1)}% win rate
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -453,8 +378,38 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-80">
-            <Line data={emotionTrendData} options={emotionTrendOptions} />
+          <div className="chart-container">
+            <div className="chart-title">Emotion Trends Over Time</div>
+            <div className="space-y-3">
+              {safeEmotionTrends.slice(0, 10).map((item, index) => {
+                const date = new Date(item.date);
+                const formattedDate = date.toLocaleDateString('en-US', { 
+                  month: 'short', 
+                  day: 'numeric' 
+                });
+                const IconComponent = emotionIcons[item.emotion.toLowerCase() as keyof typeof emotionIcons] || Brain;
+                
+                return (
+                  <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <IconComponent className="w-4 h-4 text-muted-foreground" />
+                      <div>
+                        <div className="font-medium">{item.emotion}</div>
+                        <div className="text-xs text-muted-foreground">{formattedDate}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <div className="text-sm">
+                        Confidence: <span className="font-medium">{item.confidence.toFixed(1)}/10</span>
+                      </div>
+                      <div className={`text-sm font-medium ${item.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {item.profitLoss >= 0 ? '+' : ''}${item.profitLoss.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -469,34 +424,40 @@ export function PsychologyDashboard({ data, isLoading = false }: PsychologyDashb
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {safeEmotionPerformance
               .sort((a, b) => b.avgProfitLoss - a.avgProfitLoss)
-              .map((emotion, index) => (
-                <div key={emotion.emotion} className="p-4 border rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge variant={index === 0 ? "default" : "secondary"}>
-                      {emotion.emotion}
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {emotion.tradeCount} trades
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Avg P&L:</span>
-                      <span className={emotion.avgProfitLoss >= 0 ? "text-green-600" : "text-red-600"}>
-                        ${emotion.avgProfitLoss.toFixed(2)}
+              .map((emotion, index) => {
+                const IconComponent = emotionIcons[emotion.emotion.toLowerCase() as keyof typeof emotionIcons] || Brain;
+                return (
+                  <div key={emotion.emotion} className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <IconComponent className="w-4 h-4" />
+                        <Badge variant={index === 0 ? "default" : "secondary"}>
+                          {emotion.emotion}
+                        </Badge>
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {emotion.tradeCount} trades
                       </span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Win Rate:</span>
-                      <span>{emotion.winRate.toFixed(1)}%</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Avg Confidence:</span>
-                      <span>{emotion.avgConfidence.toFixed(1)}/10</span>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Avg P&L:</span>
+                        <span className={emotion.avgProfitLoss >= 0 ? "text-green-600" : "text-red-600"}>
+                          ${emotion.avgProfitLoss.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Win Rate:</span>
+                        <span>{emotion.winRate.toFixed(1)}%</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Avg Confidence:</span>
+                        <span>{emotion.avgConfidence.toFixed(1)}/10</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
           </div>
         </CardContent>
       </Card>
