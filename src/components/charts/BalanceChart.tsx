@@ -141,7 +141,7 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
         </div>
       </div>
       
-      <div className="relative bg-muted/20 rounded-lg p-4" style={{ height: '360px' }}>
+      <div className="relative" style={{ height: '320px' }}>
         {/* Y-axis labels */}
         <div className="absolute left-2 top-4 h-full flex flex-col justify-between text-xs text-muted-foreground pr-2 z-10">
           <span className="bg-background/80 px-1 rounded">${yAxisMax.toLocaleString()}</span>
@@ -150,7 +150,7 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
         </div>
         
         {/* Chart area */}
-        <div className="ml-12 mr-4 h-full relative">
+        <div className="ml-10 mr-2 h-full relative">
           <svg 
             className="w-full h-full" 
             viewBox="0 0 100 100" 
@@ -160,10 +160,10 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
             {/* Grid lines */}
             <defs>
               <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth="0.25" opacity="0.15"/>
+                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" strokeWidth="0.2" opacity="0.08"/>
               </pattern>
               <linearGradient id="balanceGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.25"/>
+                <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.18"/>
                 <stop offset="100%" stopColor="#60a5fa" stopOpacity="0"/>
               </linearGradient>
             </defs>
@@ -183,11 +183,11 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
               d={createSmoothLinePath()}
               fill="none"
               stroke="#60a5fa"
-              strokeWidth="3"
+              strokeWidth="2.25"
               strokeLinecap="round"
               className="transition-all duration-300"
               style={{
-                filter: 'drop-shadow(0 0 6px rgba(96,165,250,0.6))'
+                filter: 'none'
               }}
             />
             
@@ -197,15 +197,13 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
                 key={index}
                 cx={`${point.x}%`}
                 cy={`${point.y}%`}
-                r={hoveredPoint === index ? "3.5" : "2.5"}
+                r={hoveredPoint === index ? "3" : "2"}
                 fill="#60a5fa"
-                stroke="hsl(var(--background))"
-                strokeWidth="1.5"
+                stroke="transparent"
+                strokeWidth="1"
                 className="cursor-pointer transition-all duration-200"
                 style={{
-                  filter: hoveredPoint === index 
-                    ? 'drop-shadow(0 0 10px rgba(96,165,250,0.75))' 
-                    : 'drop-shadow(0 0 4px rgba(96,165,250,0.5))'
+                  filter: 'none'
                 }}
                 onMouseEnter={() => setHoveredPoint(index)}
                 onMouseLeave={() => setHoveredPoint(null)}
