@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 interface RevolutionaryBalanceChartProps {
-  balanceOverTime: Array<{ date: string; balance: number }>;
+  balanceOverTime: Array<{ date: string; balance: number; drawdown?: number }>;
 }
 
 export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBalanceChartProps) {
@@ -37,11 +37,19 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
         
         return isValid;
       })
-      .map(item => ({
-        date: new Date(item.date).toISOString(),
-        balance: Math.round(item.balance * 100) / 100
-      }))
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      .map(item => {
+        try {
+          return {
+            date: new Date(item.date).toISOString(),
+            balance: Math.round(item.balance * 100) / 100
+          };
+        } catch (error) {
+          console.error('RevolutionaryBalanceChart - error processing item:', item, error);
+          return null;
+        }
+      })
+      .filter(item => item !== null)
+      .sort((a, b) => new Date(a!.date).getTime() - new Date(b!.date).getTime());
     
     console.log('RevolutionaryBalanceChart - safeData:', filtered);
     return filtered;
@@ -122,8 +130,14 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
         if (index === 0) {
           path += `M ${x} ${y}`;
         } else {
+          const prevPoint = points[index - 1];
+          if (!prevPoint || typeof prevPoint.balance !== 'number' || isNaN(prevPoint.balance)) {
+            console.warn('RevolutionaryBalanceChart - invalid previous point:', prevPoint);
+            return;
+          }
+          
           const prevX = ((index - 1) / (points.length - 1)) * 380 + 10;
-          const prevY = 190 - ((points[index - 1].balance - yMin) / (yMax - yMin)) * 180;
+          const prevY = 190 - ((prevPoint.balance - yMin) / (yMax - yMin)) * 180;
           
           // Revolutionary smooth curves
           const cp1x = prevX + (x - prevX) * 0.3;
@@ -147,8 +161,11 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
     if (!linePath) return '';
     
     try {
-      const minBalance = Math.min(...points.map(p => p.balance));
-      const maxBalance = Math.max(...points.map(p => p.balance));
+      const validPoints = points.filter(p => p && typeof p.balance === 'number' && !isNaN(p.balance));
+      if (validPoints.length === 0) return '';
+      
+      const minBalance = Math.min(...validPoints.map(p => p.balance));
+      const maxBalance = Math.max(...validPoints.map(p => p.balance));
       const range = maxBalance - minBalance;
       const padding = range * 0.1;
       const yMin = Math.max(0, minBalance - padding);
@@ -181,7 +198,9 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
     );
   }
 
-  if (safeData.length === 0) {
+  const validBalances = safeData.filter(p => p && typeof p.balance === 'number' && !isNaN(p.balance)).map(p => p.balance);
+  
+  if (safeData.length === 0 || validBalances.length === 0) {
     return (
       <div className="flex items-center justify-center h-80 bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 rounded-3xl">
         <div className="text-center">
@@ -196,9 +215,8 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
       </div>
     );
   }
-
-  const minBalance = safeData.length > 0 ? Math.min(...safeData.map(p => p.balance)) : 0;
-  const maxBalance = safeData.length > 0 ? Math.max(...safeData.map(p => p.balance)) : 10000;
+  const minBalance = validBalances.length > 0 ? Math.min(...validBalances) : 0;
+  const maxBalance = validBalances.length > 0 ? Math.max(...validBalances) : 10000;
   const range = maxBalance - minBalance;
   const padding = range * 0.1;
   const yMin = Math.max(0, minBalance - padding);
@@ -296,35 +314,40 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
               return null;
             }
             
-            const x = (index / (animatedData.length - 1)) * 380 + 10;
-            const y = 190 - ((point.balance - yMin) / (yMax - yMin)) * 180;
-            const isHovered = hoveredPoint === index;
-            const isLatest = index === animatedData.length - 1;
-            
-            return (
-              <g key={index}>
-                {/* Revolutionary Point Glow */}
-                <circle
-                  cx={x}
-                  cy={y}
-                  r={isHovered ? "8" : isLatest ? "6" : "4"}
-                  fill="url(#revolutionaryGradient)"
-                  filter={isHovered ? "url(#revolutionaryPulse)" : "url(#revolutionaryGlow)"}
-                  className="transition-all duration-300 ease-out cursor-pointer"
-                  onMouseEnter={() => setHoveredPoint(index)}
-                  onMouseLeave={() => setHoveredPoint(null)}
-                />
-                
-                {/* Revolutionary Point Core */}
-                <circle
-                  cx={x}
-                  cy={y}
-                  r={isHovered ? "4" : isLatest ? "3" : "2"}
-                  fill="white"
-                  className="transition-all duration-300 ease-out"
-                />
-              </g>
-            );
+            try {
+              const x = (index / (animatedData.length - 1)) * 380 + 10;
+              const y = 190 - ((point.balance - yMin) / (yMax - yMin)) * 180;
+              const isHovered = hoveredPoint === index;
+              const isLatest = index === animatedData.length - 1;
+              
+              return (
+                <g key={index}>
+                  {/* Revolutionary Point Glow */}
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r={isHovered ? "8" : isLatest ? "6" : "4"}
+                    fill="url(#revolutionaryGradient)"
+                    filter={isHovered ? "url(#revolutionaryPulse)" : "url(#revolutionaryGlow)"}
+                    className="transition-all duration-300 ease-out cursor-pointer"
+                    onMouseEnter={() => setHoveredPoint(index)}
+                    onMouseLeave={() => setHoveredPoint(null)}
+                  />
+                  
+                  {/* Revolutionary Point Core */}
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r={isHovered ? "4" : isLatest ? "3" : "2"}
+                    fill="white"
+                    className="transition-all duration-300 ease-out"
+                  />
+                </g>
+              );
+            } catch (error) {
+              console.error('RevolutionaryBalanceChart - error rendering point:', point, error);
+              return null;
+            }
           })}
         </svg>
       </div>
