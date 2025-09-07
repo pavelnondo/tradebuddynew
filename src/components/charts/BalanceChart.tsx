@@ -42,6 +42,16 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
   
   console.log('BalanceChart processed data:', data);
 
+  // Calculate dynamic Y-axis range based on actual data
+  const minBalance = data.length > 0 ? Math.min(...data.map(d => d.balance)) : 0;
+  const maxBalance = data.length > 0 ? Math.max(...data.map(d => d.balance)) : 6000;
+  const balanceRange = maxBalance - minBalance;
+  const padding = balanceRange * 0.1; // 10% padding
+  const yAxisMin = Math.max(0, minBalance - padding);
+  const yAxisMax = maxBalance + padding;
+
+  console.log('Balance range:', { minBalance, maxBalance, yAxisMin, yAxisMax });
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const dataPoint = payload[0].payload;
@@ -103,7 +113,7 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
             tick={{ fontSize: 12 }}
             className="text-muted-foreground"
             tickFormatter={(value) => `$${value.toLocaleString()}`}
-            domain={[0, 6000]}
+            domain={[yAxisMin, yAxisMax]}
             tickCount={7}
           />
           <Tooltip content={<CustomTooltip />} />
