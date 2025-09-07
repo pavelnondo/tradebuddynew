@@ -5,7 +5,13 @@ interface WinLossChartProps {
 }
 
 export function WinLossChart({ data }: WinLossChartProps) {
-  const total = data.reduce((sum, item) => sum + item.value, 0);
+  const safeData = Array.isArray(data) ? data.filter(item => 
+    item && 
+    typeof item.value === 'number' && 
+    !isNaN(item.value)
+  ) : [];
+  
+  const total = safeData.reduce((sum, item) => sum + item.value, 0);
   
   if (total === 0) {
     return (
@@ -18,8 +24,8 @@ export function WinLossChart({ data }: WinLossChartProps) {
     );
   }
 
-  const winData = data.find(item => item.label.toLowerCase().includes('win')) || { value: 0 };
-  const lossData = data.find(item => item.label.toLowerCase().includes('loss')) || { value: 0 };
+  const winData = safeData.find(item => item.label.toLowerCase().includes('win')) || { value: 0 };
+  const lossData = safeData.find(item => item.label.toLowerCase().includes('loss')) || { value: 0 };
   
   const winPercentage = (winData.value / total) * 100;
   const lossPercentage = (lossData.value / total) * 100;

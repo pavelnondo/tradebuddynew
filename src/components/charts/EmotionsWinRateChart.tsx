@@ -5,7 +5,17 @@ interface EmotionsWinRateChartProps {
 }
 
 export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
-  if (!data || data.length === 0) {
+  const safeData = Array.isArray(data) ? data.filter(item => 
+    item && 
+    typeof item.winRate === 'number' && 
+    typeof item.totalTrades === 'number' && 
+    typeof item.totalPnL === 'number' &&
+    !isNaN(item.winRate) && 
+    !isNaN(item.totalTrades) && 
+    !isNaN(item.totalPnL)
+  ) : [];
+  
+  if (safeData.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
         <div className="text-center">
@@ -16,13 +26,13 @@ export function EmotionsWinRateChart({ data }: EmotionsWinRateChartProps) {
     );
   }
 
-  const maxWinRate = Math.max(...data.map(d => d.winRate));
-  const maxTrades = Math.max(...data.map(d => d.totalTrades));
+  const maxWinRate = safeData.length > 0 ? Math.max(...safeData.map(d => d.winRate)) : 0;
+  const maxTrades = safeData.length > 0 ? Math.max(...safeData.map(d => d.totalTrades)) : 0;
 
   return (
     <div className="w-full h-full p-4">
       <div className="space-y-4">
-        {data.slice(0, 6).map((item, index) => {
+        {safeData.slice(0, 6).map((item, index) => {
           const winRateWidth = maxWinRate > 0 ? (item.winRate / maxWinRate) * 100 : 0;
           const tradesWidth = maxTrades > 0 ? (item.totalTrades / maxTrades) * 100 : 0;
           

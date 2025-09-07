@@ -5,7 +5,17 @@ interface HourlyPerformanceChartProps {
 }
 
 export function HourlyPerformanceChart({ data }: HourlyPerformanceChartProps) {
-  if (!data || data.length === 0) {
+  const safeData = Array.isArray(data) ? data.filter(item => 
+    item && 
+    typeof item.totalPnL === 'number' && 
+    typeof item.totalTrades === 'number' && 
+    typeof item.winRate === 'number' &&
+    !isNaN(item.totalPnL) && 
+    !isNaN(item.totalTrades) && 
+    !isNaN(item.winRate)
+  ) : [];
+  
+  if (safeData.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
         <div className="text-center">
@@ -16,13 +26,13 @@ export function HourlyPerformanceChart({ data }: HourlyPerformanceChartProps) {
     );
   }
 
-  const maxPnL = Math.max(...data.map(d => Math.abs(d.totalPnL)));
-  const maxTrades = Math.max(...data.map(d => d.totalTrades));
+  const maxPnL = safeData.length > 0 ? Math.max(...safeData.map(d => Math.abs(d.totalPnL))) : 0;
+  const maxTrades = safeData.length > 0 ? Math.max(...safeData.map(d => d.totalTrades)) : 0;
 
   return (
     <div className="w-full h-full p-4">
       <div className="space-y-3">
-        {data.slice(0, 8).map((item, index) => {
+        {safeData.slice(0, 8).map((item, index) => {
           const pnlWidth = maxPnL > 0 ? (Math.abs(item.totalPnL) / maxPnL) * 100 : 0;
           const tradesWidth = maxTrades > 0 ? (item.totalTrades / maxTrades) * 100 : 0;
           
