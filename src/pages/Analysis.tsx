@@ -514,36 +514,44 @@ export default function Analysis() {
           <CardTitle className="flex items-center"><TrendingUp className="w-5 h-5 mr-2" /> Balance Over Time</CardTitle>
           <CardDescription>Account balance progression across the selected period</CardDescription>
         </CardHeader>
-        <CardContent className="h-72">
+        <CardContent className="h-80">
           <BalanceChart balanceOverTime={balanceOverTime} />
         </CardContent>
       </Card>
 
       {/* Essential Charts Only */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="card-modern overflow-hidden">
+        <Card className="card-modern">
           <CardHeader>
             <CardTitle className="flex items-center"><Award className="w-5 h-5 mr-2" /> Emotion Impact</CardTitle>
             <CardDescription>How emotions correlate with win rate</CardDescription>
           </CardHeader>
-          <CardContent className="h-[20rem] overflow-hidden">
+          <CardContent className="h-80">
             <EmotionsWinRateChart data={emotionPerformance} />
           </CardContent>
         </Card>
 
-        <Card className="card-modern overflow-hidden">
+        <Card className="card-modern">
           <CardHeader>
             <CardTitle className="flex items-center"><Clock className="w-5 h-5 mr-2" /> Hourly Performance</CardTitle>
             <CardDescription>Profit/Loss and win rate by hour</CardDescription>
           </CardHeader>
-          <CardContent className="h-[20rem] overflow-hidden">
+          <CardContent className="h-80">
             <HourlyPerformanceChart data={tradesByHour} />
           </CardContent>
         </Card>
       </div>
 
       {/* Setup Performance - Most Important Chart */}
-      <SetupPerformanceChart data={setupPerformance} isLoading={isLoading} />
+      <Card className="card-modern">
+        <CardHeader>
+          <CardTitle className="flex items-center"><Target className="w-5 h-5 mr-2" /> Setup Performance</CardTitle>
+          <CardDescription>Performance analysis by trading setup</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SetupPerformanceChart data={setupPerformance} isLoading={isLoading} />
+        </CardContent>
+      </Card>
 
       </div>
     </div>
