@@ -72,10 +72,12 @@
   transition: all var(--transition-normal);
   position: relative;
   overflow: hidden;
+  margin-bottom: 1.5rem;
 }
 
 .dark .chart-container {
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 .chart-container:hover {
@@ -84,7 +86,8 @@
 }
 
 .dark .chart-container:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3), 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  border-color: rgba(59, 130, 246, 0.5);
 }
 
 /* Chart title and labels */
@@ -107,6 +110,7 @@
   border-collapse: separate;
   border-spacing: 0.75rem 0.5rem;
   margin: 1rem 0;
+  clear: both;
 }
 
 .charts-css.bar tbody tr {
@@ -135,6 +139,7 @@
 
 .dark .charts-css.bar tbody tr td {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .charts-css.bar tbody tr td:hover {
@@ -144,7 +149,19 @@
 }
 
 .dark .charts-css.bar tbody tr td:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.4), 0 4px 8px rgba(0, 0, 0, 0.4);
+  border-color: rgba(59, 130, 246, 0.6);
+}
+
+/* Neon glow effects for profit/loss bars */
+.dark .charts-css.bar .profit:hover {
+  box-shadow: 0 0 15px rgba(52, 211, 153, 0.5), 0 4px 8px rgba(0, 0, 0, 0.4);
+  border-color: rgba(52, 211, 153, 0.6);
+}
+
+.dark .charts-css.bar .loss:hover {
+  box-shadow: 0 0 15px rgba(248, 113, 113, 0.5), 0 4px 8px rgba(0, 0, 0, 0.4);
+  border-color: rgba(248, 113, 113, 0.6);
 }
 
 .charts-css.bar tbody tr td .data {
@@ -198,7 +215,7 @@
 }
 
 .dark .doughnut-chart:hover {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.4), 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
 .doughnut-chart::before {
@@ -325,6 +342,7 @@
 
 .dark .scatter-plot .point:hover {
   box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.3), 0 4px 8px rgba(0, 0, 0, 0.4);
+  filter: drop-shadow(0 0 8px rgba(96, 165, 250, 0.6));
 }
 
 .scatter-plot .point::after {
@@ -458,6 +476,28 @@
   
   .chart-subtitle {
     font-size: 0.625rem;
+  }
+}
+
+/* Chart Layout and Spacing */
+.chart-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr;
+}
+
+.chart-grid.two-columns {
+  grid-template-columns: 1fr 1fr;
+}
+
+.chart-grid.three-columns {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+@media (max-width: 768px) {
+  .chart-grid.two-columns,
+  .chart-grid.three-columns {
+    grid-template-columns: 1fr;
   }
 }
 
