@@ -2,7 +2,7 @@
 require('dotenv').config();
 
 const config = {
-  port: process.env.PORT || 4004,
+  port: process.env.PORT || 3000,
   jwtSecret: process.env.JWT_SECRET || 'u+CQbmm/4Mjt4uATsSLhzAB0+q1UxH8wLhtrdeD4hnLn0fy5VPMUTzGUdma10Ff9tH3rN3N7Ms8j6luguJKu6Q==',
   dbUrl: process.env.PGHOST ? 
     `postgresql://${process.env.PGUSER}:${process.env.PGPASSWORD}@${process.env.PGHOST}:${process.env.PGPORT}/${process.env.PGDATABASE}` : 

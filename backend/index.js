@@ -502,7 +502,7 @@ app.delete('/checklists/:checklistId/items/:itemId', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT ? Number(process.env.PORT) : 4004;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Backend API running on port ${PORT}`);
   console.log(`Accessible at: http://localhost:${PORT}`);
