@@ -126,6 +126,10 @@ export function RevolutionaryHourlyChart({ data }: RevolutionaryHourlyChartProps
 
       {/* Revolutionary Chart Area */}
       <div className="absolute inset-0 pt-20 pb-20 px-6">
+        {/* Y-Axis Label */}
+        <div className="absolute left-2 top-1/2 transform -translate-y-1/2 -rotate-90">
+          <div className="text-xs text-orange-200/60 font-light">P&L ($)</div>
+        </div>
         <div className="h-full flex items-end justify-between space-x-2">
           {safeData.map((item, index) => {
             const pnlWidth = maxPnL > 0 ? (Math.abs(item.totalPnL) / maxPnL) * 100 : 0;
@@ -196,6 +200,11 @@ export function RevolutionaryHourlyChart({ data }: RevolutionaryHourlyChartProps
               </div>
             );
           })}
+        </div>
+        
+        {/* X-Axis Label */}
+        <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
+          <div className="text-xs text-orange-200/60 font-light">Hour of Day</div>
         </div>
       </div>
 
