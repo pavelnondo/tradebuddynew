@@ -121,16 +121,16 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
         </div>
       </div>
       
-      <div className="relative" style={{ height: '300px' }}>
+      <div className="relative bg-muted/20 rounded-lg p-4" style={{ height: '300px' }}>
         {/* Y-axis labels */}
-        <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-muted-foreground pr-2">
-          <span>${yAxisMax.toLocaleString()}</span>
-          <span>${((yAxisMax + yAxisMin) / 2).toLocaleString()}</span>
-          <span>${yAxisMin.toLocaleString()}</span>
+        <div className="absolute left-2 top-4 h-full flex flex-col justify-between text-xs text-muted-foreground pr-2 z-10">
+          <span className="bg-background/80 px-1 rounded">${yAxisMax.toLocaleString()}</span>
+          <span className="bg-background/80 px-1 rounded">${((yAxisMax + yAxisMin) / 2).toLocaleString()}</span>
+          <span className="bg-background/80 px-1 rounded">${yAxisMin.toLocaleString()}</span>
         </div>
         
         {/* Chart area */}
-        <div className="ml-8 mr-4 h-full relative">
+        <div className="ml-12 mr-4 h-full relative">
           <svg 
             className="w-full h-full" 
             viewBox="0 0 100 100" 
@@ -140,11 +140,11 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
             {/* Grid lines */}
             <defs>
               <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="var(--color-axis)" strokeWidth="0.5" opacity="0.3"/>
+                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth="0.3" opacity="0.2"/>
               </pattern>
               <linearGradient id="balanceGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.3"/>
-                <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0"/>
+                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3"/>
+                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0"/>
               </linearGradient>
             </defs>
             
@@ -162,8 +162,8 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
             <path
               d={createLinePath()}
               fill="none"
-              stroke="var(--color-primary)"
-              strokeWidth="0.5"
+              stroke="hsl(var(--primary))"
+              strokeWidth="0.8"
               className="transition-all duration-300"
             />
             
@@ -173,11 +173,11 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
                 key={index}
                 cx={`${point.x}%`}
                 cy={`${point.y}%`}
-                r={hoveredPoint === index ? "1.5" : "1"}
-                fill="var(--color-primary)"
-                stroke="var(--color-surface)"
-                strokeWidth="0.5"
-                className="cursor-pointer transition-all duration-200 hover:r-2"
+                r={hoveredPoint === index ? "2" : "1.5"}
+                fill="hsl(var(--primary))"
+                stroke="hsl(var(--background))"
+                strokeWidth="1"
+                className="cursor-pointer transition-all duration-200"
                 onMouseEnter={() => setHoveredPoint(index)}
                 onMouseLeave={() => setHoveredPoint(null)}
               />
@@ -187,7 +187,7 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
           {/* Tooltip */}
           {hoveredPoint !== null && (
             <div 
-              className="absolute bg-background border border-border rounded-lg p-3 shadow-lg z-10 pointer-events-none"
+              className="absolute bg-background border border-border rounded-lg p-3 shadow-lg z-20 pointer-events-none"
               style={{
                 left: `${pointPositions[hoveredPoint].x}%`,
                 top: `${pointPositions[hoveredPoint].y}%`,
@@ -195,7 +195,7 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
                 marginTop: '-10px'
               }}
             >
-              <div className="text-sm font-medium">
+              <div className="text-sm font-medium text-foreground">
                 {pointPositions[hoveredPoint].displayDate}
               </div>
               <div className="text-sm text-muted-foreground">
@@ -208,9 +208,9 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
         </div>
         
         {/* X-axis labels */}
-        <div className="absolute bottom-0 left-8 right-4 flex justify-between text-xs text-muted-foreground">
+        <div className="absolute bottom-2 left-12 right-4 flex justify-between text-xs text-muted-foreground">
           {pointPositions.filter((_, index) => index % Math.ceil(pointPositions.length / 5) === 0).map((point, index) => (
-            <span key={index}>{point.displayDate}</span>
+            <span key={index} className="bg-background/80 px-1 rounded">{point.displayDate}</span>
           ))}
         </div>
       </div>
