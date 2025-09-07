@@ -14,14 +14,28 @@ export function RevolutionaryWinLossChart({ data }: RevolutionaryWinLossChartPro
 
   // Bulletproof data validation with real-time accuracy
   const safeData = React.useMemo(() => {
-    if (!Array.isArray(data)) return [];
+    console.log('RevolutionaryWinLossChart - data:', data);
     
-    return data.filter(item => 
-      item && 
-      typeof item.value === 'number' && 
-      !isNaN(item.value) &&
-      item.value >= 0
-    );
+    if (!Array.isArray(data)) {
+      console.log('RevolutionaryWinLossChart - data is not an array');
+      return [];
+    }
+    
+    const filtered = data.filter(item => {
+      const isValid = item && 
+        typeof item.value === 'number' && 
+        !isNaN(item.value) &&
+        item.value >= 0;
+      
+      if (!isValid) {
+        console.log('RevolutionaryWinLossChart - invalid item:', item);
+      }
+      
+      return isValid;
+    });
+    
+    console.log('RevolutionaryWinLossChart - safeData:', filtered);
+    return filtered;
   }, [data]);
 
   // Revolutionary animation system
