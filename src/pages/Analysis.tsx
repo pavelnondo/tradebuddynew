@@ -29,9 +29,9 @@ import {
 import { useApiTrades } from '@/hooks/useApiTrades';
 import { useTradeAnalysis } from '@/hooks/useTradeAnalysis';
 import { cn } from "@/lib/utils";
-import { BalanceChart } from "@/components/charts/BalanceChart";
-import { HourlyPerformanceChart } from "@/components/charts/HourlyPerformanceChart";
-import { EmotionsWinRateChart } from "@/components/charts/EmotionsWinRateChart";
+import { RevolutionaryBalanceChart } from "@/components/charts/RevolutionaryBalanceChart";
+import { RevolutionaryHourlyChart } from "@/components/charts/RevolutionaryHourlyChart";
+import { RevolutionaryEmotionsChart } from "@/components/charts/RevolutionaryEmotionsChart";
 import { SetupPerformanceChart } from "@/components/charts/SetupPerformanceChart";
 import { useUserSettings } from "@/hooks/useUserSettings";
 
@@ -514,9 +514,9 @@ export default function Analysis() {
           <CardTitle className="flex items-center"><TrendingUp className="w-5 h-5 mr-2" /> Balance Over Time</CardTitle>
           <CardDescription>Account balance progression across the selected period</CardDescription>
         </CardHeader>
-        <CardContent className="h-80">
-          <BalanceChart balanceOverTime={balanceOverTime} />
-        </CardContent>
+          <CardContent className="h-80">
+            <RevolutionaryBalanceChart balanceOverTime={balanceOverTime} />
+          </CardContent>
       </Card>
 
       {/* Essential Charts Only */}
@@ -526,9 +526,9 @@ export default function Analysis() {
             <CardTitle className="flex items-center"><Award className="w-5 h-5 mr-2" /> Emotion Impact</CardTitle>
             <CardDescription>How emotions correlate with win rate</CardDescription>
           </CardHeader>
-          <CardContent className="h-80">
-            <EmotionsWinRateChart data={emotionPerformance} />
-          </CardContent>
+            <CardContent className="h-80">
+              <RevolutionaryEmotionsChart data={emotionPerformance} />
+            </CardContent>
         </Card>
 
         <Card className="card-modern">
@@ -536,9 +536,9 @@ export default function Analysis() {
             <CardTitle className="flex items-center"><Clock className="w-5 h-5 mr-2" /> Hourly Performance</CardTitle>
             <CardDescription>Profit/Loss and win rate by hour</CardDescription>
           </CardHeader>
-          <CardContent className="h-80">
-            <HourlyPerformanceChart data={tradesByHour} />
-          </CardContent>
+            <CardContent className="h-80">
+              <RevolutionaryHourlyChart data={tradesByHour} />
+            </CardContent>
         </Card>
       </div>
 
