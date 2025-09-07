@@ -16,21 +16,35 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
 
   // Bulletproof data validation with real-time accuracy
   const safeData = React.useMemo(() => {
-    if (!Array.isArray(balanceOverTime)) return [];
+    console.log('RevolutionaryBalanceChart - balanceOverTime:', balanceOverTime);
     
-    return balanceOverTime
-      .filter(item => 
-        item && 
-        typeof item.date === 'string' && 
-        typeof item.balance === 'number' && 
-        !isNaN(item.balance) &&
-        item.balance >= 0
-      )
+    if (!Array.isArray(balanceOverTime)) {
+      console.log('RevolutionaryBalanceChart - balanceOverTime is not an array');
+      return [];
+    }
+    
+    const filtered = balanceOverTime
+      .filter(item => {
+        const isValid = item && 
+          typeof item.date === 'string' && 
+          typeof item.balance === 'number' && 
+          !isNaN(item.balance) &&
+          item.balance >= 0;
+        
+        if (!isValid) {
+          console.log('RevolutionaryBalanceChart - invalid item:', item);
+        }
+        
+        return isValid;
+      })
       .map(item => ({
         date: new Date(item.date).toISOString(),
         balance: Math.round(item.balance * 100) / 100
       }))
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    console.log('RevolutionaryBalanceChart - safeData:', filtered);
+    return filtered;
   }, [balanceOverTime]);
 
   // Revolutionary animation system
@@ -85,36 +99,46 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
 
   // Revolutionary path generation with Bezier curves
   const createRevolutionaryPath = (points: Array<{ date: string; balance: number }>) => {
-    if (points.length < 2) return '';
+    if (!points || points.length < 2) return '';
     
-    const minBalance = Math.min(...points.map(p => p.balance));
-    const maxBalance = Math.max(...points.map(p => p.balance));
-    const range = maxBalance - minBalance;
-    const padding = range * 0.1;
-    const yMin = Math.max(0, minBalance - padding);
-    const yMax = maxBalance + padding;
-    
-    let path = '';
-    points.forEach((point, index) => {
-      const x = (index / (points.length - 1)) * 380 + 10;
-      const y = 190 - ((point.balance - yMin) / (yMax - yMin)) * 180;
+    try {
+      const minBalance = Math.min(...points.map(p => p.balance));
+      const maxBalance = Math.max(...points.map(p => p.balance));
+      const range = maxBalance - minBalance;
+      const padding = range * 0.1;
+      const yMin = Math.max(0, minBalance - padding);
+      const yMax = maxBalance + padding;
       
-      if (index === 0) {
-        path += `M ${x} ${y}`;
-      } else {
-        const prevX = ((index - 1) / (points.length - 1)) * 380 + 10;
-        const prevY = 190 - ((points[index - 1].balance - yMin) / (yMax - yMin)) * 180;
+      let path = '';
+      points.forEach((point, index) => {
+        if (!point || typeof point.balance !== 'number' || isNaN(point.balance)) {
+          console.warn('RevolutionaryBalanceChart - invalid point:', point);
+          return;
+        }
         
-        // Revolutionary smooth curves
-        const cp1x = prevX + (x - prevX) * 0.3;
-        const cp1y = prevY;
-        const cp2x = x - (x - prevX) * 0.3;
-        const cp2y = y;
+        const x = (index / (points.length - 1)) * 380 + 10;
+        const y = 190 - ((point.balance - yMin) / (yMax - yMin)) * 180;
         
-        path += ` C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${x} ${y}`;
-      }
-    });
-    return path;
+        if (index === 0) {
+          path += `M ${x} ${y}`;
+        } else {
+          const prevX = ((index - 1) / (points.length - 1)) * 380 + 10;
+          const prevY = 190 - ((points[index - 1].balance - yMin) / (yMax - yMin)) * 180;
+          
+          // Revolutionary smooth curves
+          const cp1x = prevX + (x - prevX) * 0.3;
+          const cp1y = prevY;
+          const cp2x = x - (x - prevX) * 0.3;
+          const cp2y = y;
+          
+          path += ` C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${x} ${y}`;
+        }
+      });
+      return path;
+    } catch (error) {
+      console.error('RevolutionaryBalanceChart - error creating path:', error);
+      return '';
+    }
   };
 
   // Revolutionary area path
@@ -122,18 +146,23 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
     const linePath = createRevolutionaryPath(points);
     if (!linePath) return '';
     
-    const minBalance = Math.min(...points.map(p => p.balance));
-    const maxBalance = Math.max(...points.map(p => p.balance));
-    const range = maxBalance - minBalance;
-    const padding = range * 0.1;
-    const yMin = Math.max(0, minBalance - padding);
-    const yMax = maxBalance + padding;
-    
-    const firstX = 10;
-    const lastX = 390;
-    const bottomY = 190 - ((yMin - yMin) / (yMax - yMin)) * 180;
-    
-    return `${linePath} L ${lastX} ${bottomY} L ${firstX} ${bottomY} Z`;
+    try {
+      const minBalance = Math.min(...points.map(p => p.balance));
+      const maxBalance = Math.max(...points.map(p => p.balance));
+      const range = maxBalance - minBalance;
+      const padding = range * 0.1;
+      const yMin = Math.max(0, minBalance - padding);
+      const yMax = maxBalance + padding;
+      
+      const firstX = 10;
+      const lastX = 390;
+      const bottomY = 190 - ((yMin - yMin) / (yMax - yMin)) * 180;
+      
+      return `${linePath} L ${lastX} ${bottomY} L ${firstX} ${bottomY} Z`;
+    } catch (error) {
+      console.error('RevolutionaryBalanceChart - error creating area path:', error);
+      return '';
+    }
   };
 
   if (isLoading) {
@@ -168,8 +197,8 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
     );
   }
 
-  const minBalance = Math.min(...safeData.map(p => p.balance));
-  const maxBalance = Math.max(...safeData.map(p => p.balance));
+  const minBalance = safeData.length > 0 ? Math.min(...safeData.map(p => p.balance)) : 0;
+  const maxBalance = safeData.length > 0 ? Math.max(...safeData.map(p => p.balance)) : 10000;
   const range = maxBalance - minBalance;
   const padding = range * 0.1;
   const yMin = Math.max(0, minBalance - padding);
@@ -262,6 +291,11 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
 
           {/* Revolutionary Data Points */}
           {animatedData.map((point, index) => {
+            if (!point || typeof point.balance !== 'number' || isNaN(point.balance)) {
+              console.warn('RevolutionaryBalanceChart - invalid animated point:', point);
+              return null;
+            }
+            
             const x = (index / (animatedData.length - 1)) * 380 + 10;
             const y = 190 - ((point.balance - yMin) / (yMax - yMin)) * 180;
             const isHovered = hoveredPoint === index;
@@ -296,7 +330,7 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
       </div>
 
       {/* Revolutionary Tooltip */}
-      {hoveredPoint !== null && animatedData[hoveredPoint] && (
+      {hoveredPoint !== null && animatedData[hoveredPoint] && animatedData[hoveredPoint].balance && (
         <div 
           className="absolute z-20 bg-black/80 backdrop-blur-lg rounded-2xl p-4 text-white border border-white/20"
           style={{
