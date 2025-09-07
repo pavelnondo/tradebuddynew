@@ -18,6 +18,8 @@ interface BalanceChartProps {
 export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
   // Ensure balanceOverTime is always an array to prevent map errors
   const safeBalanceData = Array.isArray(balanceOverTime) ? balanceOverTime : [];
+  console.log('BalanceChart received data:', balanceOverTime);
+  console.log('BalanceChart safe data:', safeBalanceData);
   
   const data = safeBalanceData.map(item => {
     const date = new Date(item.date);
@@ -37,6 +39,8 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
       timestamp: date.getTime(), // Add timestamp for proper ordering
     };
   }).filter(item => item !== null).sort((a, b) => a.timestamp - b.timestamp); // Ensure proper chronological order
+  
+  console.log('BalanceChart processed data:', data);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -92,10 +96,8 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
                 day: 'numeric' 
               });
             }}
-            scale="time"
-            type="number"
-            domain={data.length > 0 ? ['dataMin', 'dataMax'] : [0, 1]}
-            tickCount={Math.min(data.length, 8)} // Limit number of ticks for better readability
+            type="category"
+            tickCount={Math.min(data.length, 8)}
           />
           <YAxis 
             tick={{ fontSize: 12 }}
