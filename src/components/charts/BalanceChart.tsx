@@ -5,7 +5,12 @@ interface BalanceChartProps {
 }
 
 export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
-  const data = Array.isArray(balanceOverTime) ? balanceOverTime : [];
+  const data = Array.isArray(balanceOverTime) ? balanceOverTime.filter(item => 
+    item && 
+    typeof item.date === 'string' && 
+    typeof item.balance === 'number' && 
+    !isNaN(item.balance)
+  ) : [];
   
   if (data.length === 0) {
     return (
