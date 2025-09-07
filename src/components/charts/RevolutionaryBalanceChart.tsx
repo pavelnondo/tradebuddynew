@@ -72,7 +72,10 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
       
       const animate = () => {
         if (currentIndex < totalPoints) {
-          setAnimatedData(prev => [...prev, safeData[currentIndex]]);
+          const currentPoint = safeData[currentIndex];
+          if (currentPoint && typeof currentPoint.balance === 'number' && !isNaN(currentPoint.balance)) {
+            setAnimatedData(prev => [...prev, currentPoint]);
+          }
           currentIndex++;
           animationRef.current = requestAnimationFrame(animate);
         } else {
@@ -100,8 +103,10 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
       const latest = safeData[safeData.length - 1];
       const previous = safeData.length > 1 ? safeData[safeData.length - 2] : null;
       
-      setCurrentBalance(latest.balance);
-      setBalanceChange(previous ? latest.balance - previous.balance : 0);
+      if (latest && typeof latest.balance === 'number' && !isNaN(latest.balance)) {
+        setCurrentBalance(latest.balance);
+        setBalanceChange(previous && typeof previous.balance === 'number' ? latest.balance - previous.balance : 0);
+      }
     }
   }, [safeData]);
 
@@ -110,33 +115,27 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
     if (!points || points.length < 2) return '';
     
     try {
-      const minBalance = Math.min(...points.map(p => p.balance));
-      const maxBalance = Math.max(...points.map(p => p.balance));
+      // Filter out any invalid points before processing
+      const validPoints = points.filter(p => p && typeof p.balance === 'number' && !isNaN(p.balance));
+      if (validPoints.length < 2) return '';
+      
+      const minBalance = Math.min(...validPoints.map(p => p.balance));
+      const maxBalance = Math.max(...validPoints.map(p => p.balance));
       const range = maxBalance - minBalance;
       const padding = range * 0.1;
       const yMin = Math.max(0, minBalance - padding);
       const yMax = maxBalance + padding;
       
       let path = '';
-      points.forEach((point, index) => {
-        if (!point || typeof point.balance !== 'number' || isNaN(point.balance)) {
-          console.warn('RevolutionaryBalanceChart - invalid point:', point);
-          return;
-        }
-        
-        const x = (index / (points.length - 1)) * 360 + 20;
+      validPoints.forEach((point, index) => {
+        const x = (index / (validPoints.length - 1)) * 360 + 20;
         const y = 10 + ((yMax - point.balance) / (yMax - yMin)) * 180;
         
         if (index === 0) {
           path += `M ${x} ${y}`;
         } else {
-          const prevPoint = points[index - 1];
-          if (!prevPoint || typeof prevPoint.balance !== 'number' || isNaN(prevPoint.balance)) {
-            console.warn('RevolutionaryBalanceChart - invalid previous point:', prevPoint);
-            return;
-          }
-          
-          const prevX = ((index - 1) / (points.length - 1)) * 360 + 20;
+          const prevPoint = validPoints[index - 1];
+          const prevX = ((index - 1) / (validPoints.length - 1)) * 360 + 20;
           const prevY = 10 + ((yMax - prevPoint.balance) / (yMax - yMin)) * 180;
           
           // Revolutionary smooth curves
@@ -338,32 +337,47 @@ export function RevolutionaryBalanceChart({ balanceOverTime }: RevolutionaryBala
 
           {/* Revolutionary X-Axis Grid Lines and Labels */}
           {animatedData.length > 1 && animatedData.map((point, index) => {
+            if (!point || !point.date) {
+              console.warn('RevolutionaryBalanceChart - invalid point for X-axis:', point);
+              return null;
+            }
+            
             if (index % Math.ceil(animatedData.length / 5) === 0 || index === animatedData.length - 1) {
-              const x = (index / (animatedData.length - 1)) * 360 + 20;
-              const date = new Date(point.date);
-              
-              return (
-                <g key={index}>
-                  {/* Grid Line */}
-                  <line
-                    x1={x}
-                    y1="10"
-                    x2={x}
-                    y2="190"
-                    stroke="rgba(255, 255, 255, 0.1)"
-                    strokeWidth="1"
-                  />
-                  {/* X-Axis Label */}
-                  <text
-                    x={x}
-                    y="205"
-                    textAnchor="middle"
-                    className="text-xs fill-white/60 font-light"
-                  >
-                    {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </text>
-                </g>
-              );
+              try {
+                const x = (index / (animatedData.length - 1)) * 360 + 20;
+                const date = new Date(point.date);
+                
+                if (isNaN(date.getTime())) {
+                  console.warn('RevolutionaryBalanceChart - invalid date:', point.date);
+                  return null;
+                }
+                
+                return (
+                  <g key={index}>
+                    {/* Grid Line */}
+                    <line
+                      x1={x}
+                      y1="10"
+                      x2={x}
+                      y2="190"
+                      stroke="rgba(255, 255, 255, 0.1)"
+                      strokeWidth="1"
+                    />
+                    {/* X-Axis Label */}
+                    <text
+                      x={x}
+                      y="205"
+                      textAnchor="middle"
+                      className="text-xs fill-white/60 font-light"
+                    >
+                      {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </text>
+                  </g>
+                );
+              } catch (error) {
+                console.error('RevolutionaryBalanceChart - error creating X-axis label:', point, error);
+                return null;
+              }
             }
             return null;
           })}
