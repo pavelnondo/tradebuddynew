@@ -22,7 +22,7 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
       data.forEach((point, index) => {
         setTimeout(() => {
           setAnimatedData(prev => [...prev, point]);
-        }, index * 100);
+        }, index * 50);
       });
     }
   }, [data]);
@@ -63,9 +63,12 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
         path += `M ${x} ${y}`;
       } else {
         const prevX = ((index - 1) / (points.length - 1)) * 380 + 10;
+        const prevY = 190 - ((points[index - 1].balance - yMin) / (yMax - yMin)) * 180;
         const cp1x = prevX + (x - prevX) / 3;
+        const cp1y = prevY;
         const cp2x = x - (x - prevX) / 3;
-        path += ` C ${cp1x} ${y} ${cp2x} ${y} ${x} ${y}`;
+        const cp2y = y;
+        path += ` C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${x} ${y}`;
       }
     });
     return path;
@@ -103,7 +106,7 @@ export function BalanceChart({ balanceOverTime }: BalanceChartProps) {
       </div>
 
       {/* Chart */}
-      <div className="relative h-48">
+      <div className="relative h-64">
         <svg className="w-full h-full" viewBox="0 0 400 200" preserveAspectRatio="none">
           <defs>
             <linearGradient id="balanceGradient" x1="0%" y1="0%" x2="0%" y2="100%">
