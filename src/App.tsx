@@ -178,17 +178,18 @@ const AppRoutes = () => {
           </ErrorBoundary>
         </ProtectedRoute>
       } />
-            <Route path="/planning-goals" element={
-              <ProtectedRoute>
-                <ErrorBoundary>
-                  <Layout>
-                    <Suspense fallback={<PageLoader />}>
-                      <PlanningGoals />
-                    </Suspense>
-                  </Layout>
-                </ErrorBoundary>
-              </ProtectedRoute>
-            } />
+      
+      <Route path="/planning-goals" element={
+        <ProtectedRoute>
+          <ErrorBoundary>
+            <Layout>
+              <Suspense fallback={<PageLoader />}>
+                <PlanningGoals />
+              </Suspense>
+            </Layout>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      } />
       
       {/* Catch all route */}
       <Route path="*" element={<NotFound />} />
