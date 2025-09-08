@@ -1,5 +1,6 @@
 import React from 'react';
 import { ResearchBasedChart, SPACING } from './ResearchBasedChart';
+import { cn } from '@/lib/utils';
 
 interface ResearchBasedWinLossChartProps {
   data: Array<{ label: string; value: number; color?: string }>;
