@@ -1,4 +1,5 @@
 import React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart } from 'lucide-react';
 
 interface ThemedWinLossChartProps {
@@ -19,9 +20,9 @@ export function ThemedWinLossChart({ data, loading, error }: ThemedWinLossChartP
   const total = validData.reduce((sum, item) => sum + item.value, 0);
   const noDataMessage = 'Add trades to see your win/loss distribution';
 
-  // Calculate donut chart dimensions
-  const size = 200;
-  const strokeWidth = 30;
+  // Calculate donut chart dimensions - reduced to prevent border overlap
+  const size = 160;
+  const strokeWidth = 24;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
@@ -45,20 +46,17 @@ export function ThemedWinLossChart({ data, loading, error }: ThemedWinLossChartP
   const lossRate = total > 0 ? (validData.find(d => d.label === 'Losses')?.value || 0) / total * 100 : 0;
 
   return (
-    <div className="h-80 flex flex-col">
-      {/* Header */}
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold flex items-center space-x-2">
+    <Card className="card-modern">
+      <CardHeader>
+        <CardTitle className="flex items-center space-x-2">
           <PieChart className="h-5 w-5" />
           <span>Win/Loss Distribution</span>
-        </h3>
-        <p className="text-sm text-muted-foreground mt-1">
+        </CardTitle>
+        <CardDescription>
           Your trading performance breakdown
-        </p>
-      </div>
-      
-      {/* Chart Content */}
-      <div className="flex-1">
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="h-80">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -79,7 +77,7 @@ export function ThemedWinLossChart({ data, loading, error }: ThemedWinLossChartP
             </div>
           </div>
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center space-y-3">
+          <div className="w-full h-full flex flex-col items-center justify-center space-y-3 p-4">
             {/* Donut Chart with enhanced styling */}
             <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
               <svg width={size} height={size} className="transform -rotate-90">
@@ -156,7 +154,7 @@ export function ThemedWinLossChart({ data, loading, error }: ThemedWinLossChartP
             )}
           </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
