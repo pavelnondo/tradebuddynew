@@ -566,5 +566,6 @@ export default function Analysis() {
           <SetupPerformanceChart data={setupPerformance} isLoading={isLoading} />
         </CardContent>
       </Card>
+    </div>
   );
 }
