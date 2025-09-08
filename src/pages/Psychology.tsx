@@ -2,19 +2,10 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   Brain, 
-  TrendingUp, 
-  TrendingDown, 
-  Target,
-  Calendar,
-  BarChart3,
-  Activity,
-  AlertTriangle,
-  CheckCircle,
   Plus
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { 
   Select, 
   SelectContent, 
@@ -23,17 +14,14 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { useApiTrades } from '@/hooks/useApiTrades';
-import { useUserSettings } from '@/hooks/useUserSettings';
 import { PsychologyDashboard } from '@/components/charts/PsychologyDashboard';
 
 export default function Psychology() {
   const [timeframe, setTimeframe] = useState("all");
   const [selectedAsset, setSelectedAsset] = useState("all");
   const { trades, isLoading, error } = useApiTrades();
-  const { settings } = useUserSettings();
   const navigate = useNavigate();
 
-  // Filter trades based on timeframe and asset
   const filteredTrades = useMemo(() => {
     if (!Array.isArray(trades)) return [];
     let filtered = trades;
@@ -57,20 +45,14 @@ export default function Psychology() {
     return filtered;
   }, [trades, timeframe, selectedAsset]);
 
-  // Get unique assets for filter
   const uniqueAssets = useMemo(() => {
     if (!Array.isArray(trades)) return [];
     const assets = [...new Set(trades.map(t => t.asset))];
     return assets.sort();
   }, [trades]);
 
-  // Generate psychology data
   const psychologyData = useMemo(() => {
-    console.log('Psychology - filteredTrades:', filteredTrades);
-    console.log('Psychology - trades length:', filteredTrades?.length);
-    
     if (!Array.isArray(filteredTrades) || filteredTrades.length === 0) {
-      console.log('Psychology - no trades available');
       return {
         emotionTrends: [],
         emotionPerformance: [],
@@ -84,7 +66,6 @@ export default function Psychology() {
       };
     }
 
-    // Emotion trends
     const emotionTrends = filteredTrades.map(trade => ({
       date: typeof trade.date === 'string' ? trade.date : new Date(trade.date).toISOString(),
       emotion: trade.emotion || 'neutral',
@@ -92,13 +73,10 @@ export default function Psychology() {
       profitLoss: trade.profitLoss || 0,
     }));
 
-    // Emotion performance analysis
     const emotionStats = new Map();
-    console.log('Psychology - processing trades for emotions:', filteredTrades.map(t => ({ emotion: t.emotion, profitLoss: t.profitLoss })));
     
     filteredTrades.forEach(trade => {
       const emotion = trade.emotion || 'neutral';
-      console.log('Psychology - processing trade with emotion:', emotion, 'profitLoss:', trade.profitLoss);
       
       if (!emotionStats.has(emotion)) {
         emotionStats.set(emotion, {
@@ -114,8 +92,6 @@ export default function Psychology() {
       stats.totalConfidence += trade.confidenceLevel || 5;
       if ((trade.profitLoss || 0) >= 0) stats.winCount += 1;
     });
-    
-    console.log('Psychology - emotionStats:', emotionStats);
 
     const emotionPerformance = Array.from(emotionStats.entries()).map(([emotion, stats]) => ({
       emotion,
@@ -125,7 +101,6 @@ export default function Psychology() {
       avgConfidence: stats.totalConfidence / stats.totalCount,
     }));
 
-    // Confidence analysis
     const confidenceRanges = [
       { range: '1-3', min: 1, max: 3 },
       { range: '4-6', min: 4, max: 6 },
@@ -150,14 +125,12 @@ export default function Psychology() {
       };
     });
 
-    // Stress indicators
     let consecutiveLosses = 0;
     let maxConsecutiveLosses = 0;
     let recentLosses = 0;
     let emotionalVolatility = 0;
     let overtradingScore = 0;
 
-    // Calculate consecutive losses
     for (let i = filteredTrades.length - 1; i >= 0; i--) {
       if ((filteredTrades[i].profitLoss || 0) < 0) {
         consecutiveLosses++;
@@ -169,7 +142,6 @@ export default function Psychology() {
     }
     maxConsecutiveLosses = Math.max(maxConsecutiveLosses, consecutiveLosses);
 
-    // Calculate emotional volatility (standard deviation of emotions)
     const emotions = filteredTrades.map(t => t.emotion || 'neutral');
     const emotionCounts = new Map();
     emotions.forEach(emotion => {
@@ -181,13 +153,11 @@ export default function Psychology() {
     }, 0) / emotions.length;
     emotionalVolatility = Math.sqrt(emotionVariance);
 
-    // Calculate overtrading score (based on recent activity and losses)
     const recentTrades = filteredTrades.slice(-10);
     const recentLossRate = recentTrades.filter(t => (t.profitLoss || 0) < 0).length / recentTrades.length;
     const recentActivity = recentTrades.length;
     overtradingScore = (recentLossRate * 5) + (recentActivity > 5 ? 3 : 0);
 
-    // Calculate recent drawdown
     let peak = 0;
     let currentDrawdown = 0;
     let maxDrawdown = 0;
@@ -217,46 +187,26 @@ export default function Psychology() {
     };
   }, [filteredTrades]);
 
-
-
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Trading Psychology</h1>
-            <p className="text-muted-foreground">Analyze your emotional patterns and performance</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i} className="card-modern">
-              <CardContent className="p-6">
-                <div className="h-64 bg-muted/50 rounded-lg shimmer"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+      <div className="p-6">
+        <h1 className="text-2xl font-bold mb-6">Psychology</h1>
+        <Card>
+          <CardContent className="p-4">
+            <div className="h-64 bg-gray-200 rounded animate-pulse"></div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Trading Psychology</h1>
-            <p className="text-muted-foreground">Analyze your emotional patterns and performance</p>
-          </div>
-        </div>
-        <Card className="card-modern">
-          <CardContent className="p-12 text-center">
-            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-xl font-semibold mb-2">Error Loading Data</h3>
-            <p className="text-muted-foreground mb-6">{error}</p>
+      <div className="p-6">
+        <h1 className="text-2xl font-bold mb-6">Psychology</h1>
+        <Card>
+          <CardContent className="p-6 text-center">
+            <p className="text-red-600 mb-4">{error}</p>
             <Button onClick={() => window.location.reload()}>Retry</Button>
           </CardContent>
         </Card>
@@ -265,29 +215,20 @@ export default function Psychology() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
-      {/* Header Section */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-        <div>
-          <h1 className="text-4xl font-bold mb-2">Trading Psychology</h1>
-          <p className="text-lg text-muted-foreground">Analyze your emotional patterns and performance</p>
-        </div>
-        <Button onClick={() => navigate('/add-trade')} className="btn-apple">
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Psychology</h1>
+        <Button onClick={() => navigate('/add-trade')}>
           <Plus className="w-4 h-4 mr-2" />
           Add Trade
         </Button>
       </div>
 
-      {/* Filters Section */}
-      <Card className="card-modern">
-        <CardHeader>
-          <CardTitle className="text-xl">Filters</CardTitle>
-          <CardDescription className="text-base">
-            Customize your psychology analysis view
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Timeframe</label>
               <Select value={timeframe} onValueChange={setTimeframe}>
