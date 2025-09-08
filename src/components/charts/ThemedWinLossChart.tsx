@@ -77,10 +77,21 @@ export function ThemedWinLossChart({ data, loading, error }: ThemedWinLossChartP
             </div>
           </div>
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center space-y-4">
-            {/* Donut Chart */}
+          <div className="w-full h-full flex flex-col items-center justify-center space-y-3">
+            {/* Donut Chart with enhanced styling */}
             <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
               <svg width={size} height={size} className="transform -rotate-90">
+                {/* Background circle with shadow */}
+                <circle
+                  cx={size / 2 + 1}
+                  cy={size / 2 + 1}
+                  r={radius}
+                  fill="transparent"
+                  stroke="rgba(0,0,0,0.1)"
+                  strokeWidth={strokeWidth}
+                  opacity="0.3"
+                />
+                {/* Main background circle */}
                 <circle
                   cx={size / 2}
                   cy={size / 2}
@@ -90,6 +101,7 @@ export function ThemedWinLossChart({ data, loading, error }: ThemedWinLossChartP
                   strokeWidth={strokeWidth}
                   opacity="0.3"
                 />
+                {/* Segments with enhanced styling */}
                 {segments.map((segment) => (
                   <circle
                     key={segment.index}
@@ -102,24 +114,25 @@ export function ThemedWinLossChart({ data, loading, error }: ThemedWinLossChartP
                     strokeDasharray={segment.strokeDasharray}
                     strokeDashoffset={segment.strokeDashoffset}
                     className="transition-all duration-700 ease-out"
+                    strokeLinecap="round"
                   />
                 ))}
               </svg>
 
-              {/* Center text */}
+              {/* Center text with enhanced styling */}
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <div className="text-3xl font-bold text-foreground">{winRate.toFixed(0)}%</div>
+                <div className="text-3xl font-bold text-foreground drop-shadow-sm">{winRate.toFixed(0)}%</div>
                 <div className="text-sm text-muted-foreground font-medium">Win Rate</div>
               </div>
             </div>
 
-            {/* Legend */}
-            <div className="space-y-2 w-full max-w-xs">
+            {/* Legend with enhanced styling */}
+            <div className="space-y-1 w-full max-w-xs">
               {segments.map((segment) => (
-                <div key={segment.index} className="flex items-center justify-between px-2">
+                <div key={segment.index} className="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-muted/50 transition-colors">
                   <div className="flex items-center space-x-2">
                     <div
-                      className="w-3 h-3 rounded-full"
+                      className="w-3 h-3 rounded-full shadow-sm"
                       style={{ backgroundColor: segment.color }}
                     />
                     <span className="text-sm font-medium text-foreground">
@@ -138,20 +151,20 @@ export function ThemedWinLossChart({ data, loading, error }: ThemedWinLossChartP
               ))}
             </div>
 
-            {/* Summary Stats - moved inside the card content */}
+            {/* Summary Stats with enhanced styling */}
             {hasData && (
-              <div className="pt-2 border-t border-border w-full">
+              <div className="pt-1 border-t border-border w-full">
                 <div className="flex justify-between items-center text-xs">
-                  <div className="flex flex-col items-center flex-1">
-                    <span className="text-xs text-muted-foreground">Total Trades</span>
+                  <div className="flex flex-col items-center flex-1 p-2 rounded-lg hover:bg-muted/30 transition-colors">
+                    <span className="text-xs text-muted-foreground font-medium">Total Trades</span>
                     <span className="text-sm font-semibold text-primary">{total}</span>
                   </div>
-                  <div className="flex flex-col items-center flex-1">
-                    <span className="text-xs text-muted-foreground">Win Rate</span>
+                  <div className="flex flex-col items-center flex-1 p-2 rounded-lg hover:bg-muted/30 transition-colors">
+                    <span className="text-xs text-muted-foreground font-medium">Win Rate</span>
                     <span className="text-sm font-semibold text-green-600">{winRate.toFixed(1)}%</span>
                   </div>
-                  <div className="flex flex-col items-center flex-1">
-                    <span className="text-xs text-muted-foreground">Loss Rate</span>
+                  <div className="flex flex-col items-center flex-1 p-2 rounded-lg hover:bg-muted/30 transition-colors">
+                    <span className="text-xs text-muted-foreground font-medium">Loss Rate</span>
                     <span className="text-sm font-semibold text-red-600">{lossRate.toFixed(1)}%</span>
                   </div>
                 </div>

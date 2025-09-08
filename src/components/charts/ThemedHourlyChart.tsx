@@ -93,15 +93,22 @@ export function ThemedHourlyChart({ data, loading, error }: ThemedHourlyChartPro
           </div>
         ) : (
           <div className="w-full h-full flex flex-col">
-            {/* Best hour display */}
+            {/* Best hour display with elegant styling */}
             {bestHour && (
-              <div className="mb-4 text-center">
-                <div className="text-lg font-semibold text-foreground">
-                  Best Hour: {bestHour.hour}
+              <div className="mb-4 flex justify-between items-center px-2">
+                <div className="text-center flex-1">
+                  <div className="text-2xl font-bold text-foreground">
+                    {bestHour.hour}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">Best Hour</div>
                 </div>
-                <div className={`text-sm ${bestHour.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {bestHour.profitLoss >= 0 ? '+' : ''}${bestHour.profitLoss.toFixed(2)} 
-                  ({bestHour.tradeCount} trades)
+                <div className="text-center flex-1">
+                  <div className={`text-xl font-semibold ${bestHour.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {bestHour.profitLoss >= 0 ? '+' : ''}${bestHour.profitLoss.toFixed(2)}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    {bestHour.tradeCount} trades
+                  </div>
                 </div>
               </div>
             )}
@@ -123,7 +130,7 @@ export function ThemedHourlyChart({ data, loading, error }: ThemedHourlyChartPro
                   />
                 ))}
 
-                {/* Bars */}
+                {/* Bars with enhanced styling */}
                 {validData.map((item, index) => {
                   const barHeight = Math.abs(yScale(item.profitLoss) - yScale(0));
                   const barY = item.profitLoss >= 0 ? yScale(item.profitLoss) : yScale(0);
@@ -132,6 +139,16 @@ export function ThemedHourlyChart({ data, loading, error }: ThemedHourlyChartPro
                   
                   return (
                     <g key={index}>
+                      {/* Bar shadow */}
+                      <rect
+                        x={barX + 1}
+                        y={barY + 1}
+                        width={barWidth}
+                        height={barHeight}
+                        fill="rgba(0,0,0,0.1)"
+                        opacity="0.3"
+                      />
+                      {/* Main bar */}
                       <rect
                         x={barX}
                         y={barY}
@@ -140,6 +157,8 @@ export function ThemedHourlyChart({ data, loading, error }: ThemedHourlyChartPro
                         fill={item.profitLoss >= 0 ? "hsl(var(--primary))" : "hsl(var(--destructive))"}
                         opacity="0.8"
                         className="transition-all duration-300 ease-out hover:opacity-100"
+                        rx="2"
+                        ry="2"
                       />
                       {/* Win rate indicator */}
                       {item.winRate >= 50 && (
@@ -150,6 +169,8 @@ export function ThemedHourlyChart({ data, loading, error }: ThemedHourlyChartPro
                           height="2"
                           fill="hsl(var(--primary))"
                           opacity="0.9"
+                          rx="1"
+                          ry="1"
                         />
                       )}
                     </g>
@@ -184,19 +205,19 @@ export function ThemedHourlyChart({ data, loading, error }: ThemedHourlyChartPro
               </svg>
             </div>
 
-            {/* Legend */}
+            {/* Legend with enhanced styling */}
             <div className="mt-4 flex justify-center space-x-6">
               <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-primary rounded"></div>
-                <span className="text-xs text-muted-foreground">Profit</span>
+                <div className="w-3 h-3 bg-primary rounded shadow-sm"></div>
+                <span className="text-xs text-muted-foreground font-medium">Profit</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-destructive rounded"></div>
-                <span className="text-xs text-muted-foreground">Loss</span>
+                <div className="w-3 h-3 bg-destructive rounded shadow-sm"></div>
+                <span className="text-xs text-muted-foreground font-medium">Loss</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="w-3 h-1 bg-primary rounded"></div>
-                <span className="text-xs text-muted-foreground">Win Rate ≥50%</span>
+                <div className="w-3 h-1 bg-primary rounded shadow-sm"></div>
+                <span className="text-xs text-muted-foreground font-medium">Win Rate ≥50%</span>
               </div>
             </div>
           </div>
