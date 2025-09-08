@@ -16,8 +16,8 @@ export function ThemedEmotionChart({ data, loading, error }: ThemedEmotionChartP
     return data.filter(item => 
       item && 
       typeof item.emotion === 'string' && 
-      typeof item.avgProfitLoss === 'number' && 
-      !isNaN(item.avgProfitLoss) &&
+      typeof item.winRate === 'number' && 
+      !isNaN(item.winRate) &&
       typeof item.tradeCount === 'number' &&
       !isNaN(item.tradeCount)
     );
@@ -26,39 +26,11 @@ export function ThemedEmotionChart({ data, loading, error }: ThemedEmotionChartP
   const hasData = validData.length > 0;
   const noDataMessage = 'Add trades with emotions to see patterns';
 
-  // Chart dimensions
-  const chartWidth = 400;
-  const chartHeight = 200;
-  const margin = { top: 20, right: 30, bottom: 40, left: 50 };
-  const plotWidth = chartWidth - margin.left - margin.right;
-  const plotHeight = chartHeight - margin.top - margin.bottom;
-
-  // Calculate profit/loss range
-  const minPnl = hasData ? Math.min(...validData.map(d => d.avgProfitLoss)) : 0;
-  const maxPnl = hasData ? Math.max(...validData.map(d => d.avgProfitLoss)) : 1000;
-  const pnlRange = maxPnl - minPnl;
-  const yMin = minPnl - pnlRange * 0.1;
-  const yMax = maxPnl + pnlRange * 0.1;
-
-  const xScale = (index: number) => margin.left + (index / (validData.length - 1)) * plotWidth;
-  const yScale = (value: number) => margin.top + plotHeight - ((value - yMin) / (yMax - yMin)) * plotHeight;
-
-  // Y-axis labels
-  const yAxisLabels = Array.from({ length: 5 }).map((_, i) => {
-    const value = yMin + (i / 4) * (yMax - yMin);
-    const y = yScale(value);
-    return { value, y };
-  });
-
-  // X-axis labels (emotions)
-  const xAxisLabels = validData.map((item, index) => ({
-    label: item.emotion.substring(0, 4), // Shorten emotion names
-    x: xScale(index)
-  }));
-
-  const bestEmotion = hasData ? validData.reduce((best, current) => 
-    current.avgProfitLoss > best.avgProfitLoss ? current : best
-  ) : null;
+  // Sort emotions by win rate (highest first)
+  const sortedEmotions = validData.sort((a, b) => b.winRate - a.winRate);
+  
+  const bestEmotion = sortedEmotions[0];
+  const worstEmotion = sortedEmotions[sortedEmotions.length - 1];
 
   return (
     <Card className="card-modern">
@@ -93,7 +65,7 @@ export function ThemedEmotionChart({ data, loading, error }: ThemedEmotionChartP
           </div>
         ) : (
           <div className="w-full h-full flex flex-col">
-            {/* Best emotion display with elegant styling */}
+            {/* Best emotion display */}
             {bestEmotion && (
               <div className="mb-4 flex justify-between items-center px-2">
                 <div className="text-center flex-1">
@@ -103,121 +75,63 @@ export function ThemedEmotionChart({ data, loading, error }: ThemedEmotionChartP
                   <div className="text-sm text-muted-foreground mt-1">Best Emotion</div>
                 </div>
                 <div className="text-center flex-1">
-                  <div className={`text-xl font-semibold ${bestEmotion.avgProfitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {bestEmotion.avgProfitLoss >= 0 ? '+' : ''}${bestEmotion.avgProfitLoss.toFixed(2)}
+                  <div className="text-xl font-semibold text-green-600">
+                    {bestEmotion.winRate.toFixed(0)}%
                   </div>
                   <div className="text-sm text-muted-foreground mt-1">
-                    {bestEmotion.tradeCount} trades, {bestEmotion.winRate.toFixed(0)}% win rate
+                    Win Rate ({bestEmotion.tradeCount} trades)
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Chart */}
-            <div className="flex-1 min-h-0">
-              <svg width="100%" height="100%" viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="overflow-visible">
-                {/* Grid lines */}
-                {yAxisLabels.map((label, index) => (
-                  <line
-                    key={index}
-                    x1={margin.left}
-                    y1={label.y}
-                    x2={chartWidth - margin.right}
-                    y2={label.y}
-                    stroke="hsl(var(--border))"
-                    strokeWidth="1"
-                    opacity="0.2"
-                  />
+            {/* Emotion win rates list */}
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <div className="space-y-3">
+                {sortedEmotions.map((emotion, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-3 h-3 rounded-full ${
+                        emotion.winRate >= 70 ? 'bg-green-500' : 
+                        emotion.winRate >= 50 ? 'bg-yellow-500' : 
+                        'bg-red-500'
+                      }`}></div>
+                      <span className="font-medium text-foreground capitalize">
+                        {emotion.emotion}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <div className={`font-semibold ${
+                        emotion.winRate >= 70 ? 'text-green-600' : 
+                        emotion.winRate >= 50 ? 'text-yellow-600' : 
+                        'text-red-600'
+                      }`}>
+                        {emotion.winRate.toFixed(0)}%
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {emotion.tradeCount} trades
+                      </div>
+                    </div>
+                  </div>
                 ))}
-
-                {/* Bars with enhanced styling */}
-                {validData.map((item, index) => {
-                  const barHeight = Math.abs(yScale(item.avgProfitLoss) - yScale(0));
-                  const barY = item.avgProfitLoss >= 0 ? yScale(item.avgProfitLoss) : yScale(0);
-                  const barWidth = Math.max(plotWidth / validData.length - 2, 2);
-                  const barX = xScale(index) - barWidth / 2;
-                  
-                  return (
-                    <g key={index}>
-                      {/* Bar shadow */}
-                      <rect
-                        x={barX + 1}
-                        y={barY + 1}
-                        width={barWidth}
-                        height={barHeight}
-                        fill="rgba(0,0,0,0.1)"
-                        opacity="0.3"
-                      />
-                      {/* Main bar */}
-                      <rect
-                        x={barX}
-                        y={barY}
-                        width={barWidth}
-                        height={barHeight}
-                        fill={item.avgProfitLoss >= 0 ? "hsl(var(--primary))" : "hsl(var(--destructive))"}
-                        opacity="0.8"
-                        className="transition-all duration-300 ease-out hover:opacity-100"
-                        rx="2"
-                        ry="2"
-                      />
-                      {/* Win rate indicator */}
-                      {item.winRate >= 50 && (
-                        <rect
-                          x={barX + 1}
-                          y={barY - 4}
-                          width={barWidth - 2}
-                          height="2"
-                          fill="hsl(var(--primary))"
-                          opacity="0.9"
-                          rx="1"
-                          ry="1"
-                        />
-                      )}
-                    </g>
-                  );
-                })}
-
-                {/* Y-axis labels */}
-                {yAxisLabels.map((label, index) => (
-                  <text
-                    key={index}
-                    x={margin.left - 10}
-                    y={label.y + 5}
-                    textAnchor="end"
-                    className="text-xs fill-muted-foreground font-medium"
-                  >
-                    ${label.value.toFixed(0)}
-                  </text>
-                ))}
-
-                {/* X-axis labels */}
-                {xAxisLabels.map((label, index) => (
-                  <text
-                    key={index}
-                    x={label.x}
-                    y={chartHeight - 10}
-                    textAnchor="middle"
-                    className="text-xs fill-muted-foreground font-medium"
-                  >
-                    {label.label}
-                  </text>
-                ))}
-              </svg>
+              </div>
             </div>
 
-            {/* Legend with enhanced styling */}
-            <div className="mt-4 flex justify-center space-x-6">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-primary rounded shadow-sm"></div>
-                <span className="text-xs text-muted-foreground font-medium">Profit</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-destructive rounded shadow-sm"></div>
-                <span className="text-xs text-muted-foreground font-medium">Loss</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-1 bg-primary rounded shadow-sm"></div>
-                <span className="text-xs text-muted-foreground font-medium">Win Rate ≥50%</span>
+            {/* Summary */}
+            <div className="mt-4 pt-3 border-t border-border">
+              <div className="flex justify-center space-x-6 text-xs">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-muted-foreground">≥70% Win Rate</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                  <span className="text-muted-foreground">50-69% Win Rate</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                  <span className="text-muted-foreground">&lt;50% Win Rate</span>
+                </div>
               </div>
             </div>
           </div>
