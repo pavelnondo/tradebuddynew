@@ -13,8 +13,8 @@ import { Button } from "@/components/ui/button";
 import { useApiTrades } from '@/hooks/useApiTrades';
 import { useTradeAnalysis } from '@/hooks/useTradeAnalysis';
 import { useUserSettings } from '@/hooks/useUserSettings';
-import { ProperBalanceChart } from '@/components/charts/ProperBalanceChart';
-import { ProperWinLossChart } from '@/components/charts/ProperWinLossChart';
+import { ResearchBasedBalanceChart } from '@/components/charts/ResearchBasedBalanceChart';
+import { ResearchBasedWinLossChart } from '@/components/charts/ResearchBasedWinLossChart';
 
 export default function Dashboard() {
   const { settings } = useUserSettings();
@@ -142,15 +142,15 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ProperBalanceChart 
+      {/* Research-Based Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <ResearchBasedBalanceChart 
           balanceOverTime={analysisData.balanceOverTime}
           loading={isLoading}
           error={error}
         />
         
-        <ProperWinLossChart 
+        <ResearchBasedWinLossChart 
           data={analysisData.winLossData}
           loading={isLoading}
           error={error}
