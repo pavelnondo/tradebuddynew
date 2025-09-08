@@ -32,14 +32,15 @@ export function PsychologyDashboard({ data, isLoading }: PsychologyDashboardProp
   
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-80 bg-gradient-to-br from-slate-900 via-purple-900 to-pink-900 rounded-3xl">
         <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center animate-pulse">
-            <svg className="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-purple-500 to-pink-600 flex items-center justify-center animate-pulse">
+            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <div className="text-lg font-semibold mb-2 text-foreground">Loading Psychology Data...</div>
+          <div className="text-xl font-light text-white mb-2">Loading Psychology Data...</div>
+          <div className="text-sm text-purple-200">Analyzing your trading emotions</div>
         </div>
       </div>
     );
@@ -57,15 +58,16 @@ export function PsychologyDashboard({ data, isLoading }: PsychologyDashboardProp
   
   if (!data || safeEmotionData.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-80 bg-gradient-to-br from-slate-900 via-purple-900 to-pink-900 rounded-3xl">
         <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
-            <svg className="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-purple-500 to-pink-600 flex items-center justify-center">
+            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <div className="text-lg font-semibold mb-2 text-foreground">No Data Available</div>
-          <div className="text-sm text-muted-foreground">Add trades with emotions to see psychology analysis</div>
+          <div className="text-xl font-light text-white mb-2">No Psychology Data</div>
+          <div className="text-sm text-purple-200 mb-4">Add trades with emotions to see psychology analysis</div>
+          <div className="text-xs text-purple-300">Track your emotions while trading to gain insights</div>
         </div>
       </div>
     );
@@ -83,17 +85,23 @@ export function PsychologyDashboard({ data, isLoading }: PsychologyDashboardProp
   }, [safeEmotionData.length]);
 
   return (
-    <div className="w-full bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-xl p-6">
+    <div className="w-full bg-gradient-to-br from-slate-900 via-purple-900 to-pink-900 rounded-3xl p-8 relative overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-0 left-0 w-32 h-32 bg-purple-500 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-0 w-40 h-40 bg-pink-500 rounded-full blur-3xl"></div>
+      </div>
+      
       {/* Header */}
-      <div className="text-center mb-6">
-        <h3 className="text-lg font-semibold text-foreground mb-2">Trading Psychology</h3>
-        <p className="text-sm text-muted-foreground">Emotional patterns and stress indicators</p>
+      <div className="text-center mb-8 relative z-10">
+        <h3 className="text-2xl font-light text-white mb-3">Trading Psychology</h3>
+        <p className="text-purple-200">Emotional patterns and stress indicators</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10">
         {/* Emotion Performance */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-foreground">Emotion Performance</h3>
+        <div className="space-y-6">
+          <h3 className="text-xl font-light text-white mb-6">Emotion Performance</h3>
           {safeEmotionData.slice(0, 4).map((item, index) => {
             const isAnimated = animatedCards.includes(index);
             const isHovered = hoveredCard === index;
@@ -103,24 +111,24 @@ export function PsychologyDashboard({ data, isLoading }: PsychologyDashboardProp
             return (
               <div 
                 key={index} 
-                className={`bg-white dark:bg-slate-800 rounded-lg p-4 shadow-lg transition-all duration-300 ${
-                  isHovered ? 'transform scale-105 shadow-xl' : ''
+                className={`bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 transition-all duration-300 ${
+                  isHovered ? 'transform scale-105 bg-white/20 shadow-2xl' : ''
                 } ${isAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
                 onMouseEnter={() => setHoveredCard(index)}
                 onMouseLeave={() => setHoveredCard(null)}
               >
-                <div className="flex justify-between items-center mb-2">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xl">{icon}</span>
-                    <span className="font-semibold text-foreground capitalize">{item.emotion}</span>
+                <div className="flex justify-between items-center mb-4">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-2xl">{icon}</span>
+                    <span className="font-semibold text-white capitalize text-lg">{item.emotion}</span>
                   </div>
-                  <span className={`font-bold text-lg ${item.avgProfitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <span className={`font-bold text-xl ${item.avgProfitLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {item.avgProfitLoss >= 0 ? '+' : ''}${item.avgProfitLoss.toFixed(0)}
                   </span>
                 </div>
-                <div className="flex justify-between text-sm text-muted-foreground">
+                <div className="flex justify-between text-sm text-purple-200">
                   <span>{item.tradeCount} trades</span>
-                  <span className={`font-medium ${item.winRate >= 50 ? 'text-green-600' : 'text-red-600'}`}>
+                  <span className={`font-medium ${item.winRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
                     {item.winRate.toFixed(0)}% win rate
                   </span>
                 </div>
@@ -130,48 +138,48 @@ export function PsychologyDashboard({ data, isLoading }: PsychologyDashboardProp
         </div>
 
         {/* Stress Indicators */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-foreground">Stress Indicators</h3>
-          <div className="space-y-3">
+        <div className="space-y-6">
+          <h3 className="text-xl font-light text-white mb-6">Stress Indicators</h3>
+          <div className="space-y-4">
             <div 
-              className={`bg-white dark:bg-slate-800 rounded-lg p-4 shadow-lg transition-all duration-300 ${
+              className={`bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 transition-all duration-300 ${
                 animatedCards.includes(safeEmotionData.length) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
               }`}
             >
               <div className="flex justify-between items-center">
-                <div className="flex items-center space-x-2">
-                  <span className="text-xl">📉</span>
-                  <span className="font-semibold text-foreground">Consecutive Losses</span>
+                <div className="flex items-center space-x-3">
+                  <span className="text-2xl">📉</span>
+                  <span className="font-semibold text-white text-lg">Consecutive Losses</span>
                 </div>
-                <span className="text-2xl font-bold text-red-600">{data.stressIndicators.consecutiveLosses}</span>
+                <span className="text-3xl font-bold text-red-400">{data.stressIndicators.consecutiveLosses}</span>
               </div>
             </div>
             
             <div 
-              className={`bg-white dark:bg-slate-800 rounded-lg p-4 shadow-lg transition-all duration-300 ${
+              className={`bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 transition-all duration-300 ${
                 animatedCards.includes(safeEmotionData.length + 1) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
               }`}
             >
               <div className="flex justify-between items-center">
-                <div className="flex items-center space-x-2">
-                  <span className="text-xl">📊</span>
-                  <span className="font-semibold text-foreground">Recent Drawdown</span>
+                <div className="flex items-center space-x-3">
+                  <span className="text-2xl">📊</span>
+                  <span className="font-semibold text-white text-lg">Recent Drawdown</span>
                 </div>
-                <span className="text-2xl font-bold text-orange-600">{data.stressIndicators.recentDrawdown.toFixed(1)}%</span>
+                <span className="text-3xl font-bold text-orange-400">{data.stressIndicators.recentDrawdown.toFixed(1)}%</span>
               </div>
             </div>
             
             <div 
-              className={`bg-white dark:bg-slate-800 rounded-lg p-4 shadow-lg transition-all duration-300 ${
+              className={`bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 transition-all duration-300 ${
                 animatedCards.includes(safeEmotionData.length + 2) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
               }`}
             >
               <div className="flex justify-between items-center">
-                <div className="flex items-center space-x-2">
-                  <span className="text-xl">⚡</span>
-                  <span className="font-semibold text-foreground">Overtrading Score</span>
+                <div className="flex items-center space-x-3">
+                  <span className="text-2xl">⚡</span>
+                  <span className="font-semibold text-white text-lg">Overtrading Score</span>
                 </div>
-                <span className="text-2xl font-bold text-yellow-600">{data.stressIndicators.overtradingScore.toFixed(1)}/10</span>
+                <span className="text-3xl font-bold text-yellow-400">{data.stressIndicators.overtradingScore.toFixed(1)}/10</span>
               </div>
             </div>
           </div>

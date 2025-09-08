@@ -66,17 +66,23 @@ export default function Psychology() {
 
   // Generate psychology data
   const psychologyData = useMemo(() => {
-    if (!Array.isArray(filteredTrades)) return {
-      emotionTrends: [],
-      emotionPerformance: [],
-      confidenceAnalysis: [],
-      stressIndicators: {
-        consecutiveLosses: 0,
-        recentDrawdown: 0,
-        emotionalVolatility: 0,
-        overtradingScore: 0,
-      },
-    };
+    console.log('Psychology - filteredTrades:', filteredTrades);
+    console.log('Psychology - trades length:', filteredTrades?.length);
+    
+    if (!Array.isArray(filteredTrades) || filteredTrades.length === 0) {
+      console.log('Psychology - no trades available');
+      return {
+        emotionTrends: [],
+        emotionPerformance: [],
+        confidenceAnalysis: [],
+        stressIndicators: {
+          consecutiveLosses: 0,
+          recentDrawdown: 0,
+          emotionalVolatility: 0,
+          overtradingScore: 0,
+        },
+      };
+    }
 
     // Emotion trends
     const emotionTrends = filteredTrades.map(trade => ({
@@ -88,8 +94,12 @@ export default function Psychology() {
 
     // Emotion performance analysis
     const emotionStats = new Map();
+    console.log('Psychology - processing trades for emotions:', filteredTrades.map(t => ({ emotion: t.emotion, profitLoss: t.profitLoss })));
+    
     filteredTrades.forEach(trade => {
       const emotion = trade.emotion || 'neutral';
+      console.log('Psychology - processing trade with emotion:', emotion, 'profitLoss:', trade.profitLoss);
+      
       if (!emotionStats.has(emotion)) {
         emotionStats.set(emotion, {
           totalPnL: 0,
@@ -104,6 +114,8 @@ export default function Psychology() {
       stats.totalConfidence += trade.confidenceLevel || 5;
       if ((trade.profitLoss || 0) >= 0) stats.winCount += 1;
     });
+    
+    console.log('Psychology - emotionStats:', emotionStats);
 
     const emotionPerformance = Array.from(emotionStats.entries()).map(([emotion, stats]) => ({
       emotion,
