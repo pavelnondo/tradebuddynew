@@ -514,8 +514,7 @@ export default function Analysis() {
 
       {/* Interactive Dashboard Tabs */}
       {/* Essential Analysis */}
-      <div className="space-y-6">
-          {/* Key Metrics */}
+      {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard title="Total P&L" value={metrics.totalProfitLoss} icon={DollarSign} format="currency" color={metrics.totalProfitLoss >= 0 ? "green" : "red"} />
         <MetricCard title="Win Rate" value={metrics.winRate} icon={Target} format="percentage" color="blue" />
@@ -567,6 +566,5 @@ export default function Analysis() {
           <SetupPerformanceChart data={setupPerformance} isLoading={isLoading} />
         </CardContent>
       </Card>
-    </div>
   );
 }
