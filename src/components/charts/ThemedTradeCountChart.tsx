@@ -28,7 +28,7 @@ export function ThemedTradeCountChart({ data, loading, error }: ThemedTradeCount
   // Chart dimensions
   const chartWidth = 400;
   const chartHeight = 200;
-  const margin = { top: 20, right: 30, bottom: 40, left: 50 };
+  const margin = { top: 20, right: 30, bottom: 40, left: 60 };
   const plotWidth = chartWidth - margin.left - margin.right;
   const plotHeight = chartHeight - margin.top - margin.bottom;
 
@@ -166,10 +166,10 @@ export function ThemedTradeCountChart({ data, loading, error }: ThemedTradeCount
                 {yAxisLabels.map((label, index) => (
                   <text
                     key={index}
-                    x={margin.left - 10}
+                    x={margin.left - 15}
                     y={label.y + 5}
                     textAnchor="end"
-                    className="text-xs fill-muted-foreground font-medium"
+                    className="text-[10px] fill-muted-foreground font-medium"
                   >
                     {label.value.toFixed(0)}
                   </text>

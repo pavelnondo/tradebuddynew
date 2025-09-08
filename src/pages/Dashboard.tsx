@@ -5,15 +5,21 @@ import { Badge } from "@/components/ui/badge";
 import { useApiTrades } from '@/hooks/useApiTrades';
 import { useTradeAnalysis } from '@/hooks/useTradeAnalysis';
 import { useUserSettings } from '@/hooks/useUserSettings';
+import { useAccountManagement } from '@/hooks/useAccountManagement';
 import { ThemedBalanceChart } from '@/components/charts/ThemedBalanceChart';
 import { ThemedWinLossChart } from '@/components/charts/ThemedWinLossChart';
+import { AccountManager } from '@/components/AccountManager';
 import { TrendingUp, TrendingDown, DollarSign, Target, BarChart3, PieChart } from 'lucide-react';
 
 export default function Dashboard() {
   const { settings } = useUserSettings();
-  const [initialBalance, setInitialBalance] = useState<number>(10000);
+  const { activeAccount } = useAccountManagement();
+  const [initialBalance, setInitialBalance] = useState<number>(5000);
   const { trades, isLoading, error } = useApiTrades();
-  const analysisData = useTradeAnalysis(trades, initialBalance);
+  
+  // Use active account's initial balance if available, otherwise use default
+  const effectiveInitialBalance = activeAccount?.initialBalance || initialBalance;
+  const analysisData = useTradeAnalysis(trades, effectiveInitialBalance);
 
   const safeTrades = Array.isArray(trades) ? trades : [];
   const totalTrades = safeTrades.length;
@@ -21,7 +27,7 @@ export default function Dashboard() {
   const losingTrades = safeTrades.filter(trade => trade.profitLoss < 0).length;
   const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
   const totalProfitLoss = safeTrades.reduce((sum, trade) => sum + (trade.profitLoss || 0), 0);
-  const currentBalance = initialBalance + totalProfitLoss;
+  const currentBalance = effectiveInitialBalance + totalProfitLoss;
 
   const recentTrades = safeTrades
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -48,6 +54,9 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* Account Management */}
+        <AccountManager />
 
         {/* Key Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
