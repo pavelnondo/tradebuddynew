@@ -43,7 +43,8 @@ export function AccountManager() {
     error,
     createAccount, 
     switchAccount, 
-    markAccountAsBlown 
+    markAccountAsBlown,
+    markAccountAsPassed
   } = useAccountManagement();
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -81,6 +82,16 @@ export function AccountManager() {
         await markAccountAsBlown(accountId);
       } catch (error) {
         console.error('Error marking account as blown:', error);
+      }
+    }
+  };
+
+  const handleMarkAsPassed = async (accountId: string) => {
+    if (window.confirm('Are you sure you want to mark this account as passed? This will deactivate it and preserve all trading data.')) {
+      try {
+        await markAccountAsPassed(accountId);
+      } catch (error) {
+        console.error('Error marking account as passed:', error);
       }
     }
   };
@@ -142,6 +153,20 @@ export function AccountManager() {
                 </p>
               </div>
               <AlertTriangle className="w-8 h-8 text-red-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="card-modern">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Passed Accounts</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {accountStats.passedAccounts}
+                </p>
+              </div>
+              <CheckCircle className="w-8 h-8 text-green-500" />
             </div>
           </CardContent>
         </Card>
@@ -235,7 +260,7 @@ export function AccountManager() {
                   <SelectValue placeholder="Choose an account" />
                 </SelectTrigger>
                 <SelectContent>
-                  {accounts.filter(acc => !acc.isBlown).map((account) => (
+                  {accounts.filter(acc => !acc.isBlown && !acc.isPassed).map((account) => (
                     <SelectItem key={account.id} value={account.id}>
                       <div className="flex items-center justify-between w-full">
                         <span>{account.name}</span>
@@ -339,6 +364,8 @@ export function AccountManager() {
                     ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
                     : account.isBlown
                     ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                    : account.isPassed
+                    ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
                     : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800'
                 }`}
               >
@@ -363,6 +390,11 @@ export function AccountManager() {
                           Blown
                         </Badge>
                       )}
+                      {account.isPassed && (
+                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                          Passed
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center space-x-4">
@@ -375,7 +407,7 @@ export function AccountManager() {
                       </div>
                     </div>
                     <div className="flex space-x-2">
-                      {!account.isBlown && !account.isActive && (
+                      {!account.isBlown && !account.isPassed && !account.isActive && (
                         <Button 
                           size="sm" 
                           variant="outline"
@@ -384,13 +416,23 @@ export function AccountManager() {
                           Activate
                         </Button>
                       )}
-                      {!account.isBlown && (
+                      {!account.isBlown && !account.isPassed && (
                         <Button 
                           size="sm" 
                           variant="destructive"
                           onClick={() => handleMarkAsBlown(account.id)}
                         >
                           Mark as Blown
+                        </Button>
+                      )}
+                      {!account.isBlown && !account.isPassed && (
+                        <Button 
+                          size="sm" 
+                          variant="default"
+                          className="bg-green-600 hover:bg-green-700"
+                          onClick={() => handleMarkAsPassed(account.id)}
+                        >
+                          Mark as Passed
                         </Button>
                       )}
                     </div>

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useApiTrades } from '@/hooks/useApiTrades';
 import { useTradeAnalysis } from '@/hooks/useTradeAnalysis';
+import { useAccountManagement } from '@/hooks/useAccountManagement';
 import { ThemedBalanceChart } from '@/components/charts/ThemedBalanceChart';
 import { ThemedTradeCountChart } from '@/components/charts/ThemedTradeCountChart';
 import { ThemedEmotionChart } from '@/components/charts/ThemedEmotionChart';
@@ -13,8 +14,13 @@ import { BarChart3, TrendingUp, Clock, Heart, Target, Filter } from 'lucide-reac
 export default function Analysis() {
   const [timeframe, setTimeframe] = useState("all");
   const [selectedAsset, setSelectedAsset] = useState("all");
+  const [selectedAccount, setSelectedAccount] = useState("all");
   const { trades, isLoading, error } = useApiTrades();
-  const analysisData = useTradeAnalysis(trades, 10000);
+  const { accounts, activeAccount } = useAccountManagement();
+  
+  // Use active account's initial balance if available, otherwise use default
+  const effectiveInitialBalance = activeAccount?.initialBalance || 10000;
+  const analysisData = useTradeAnalysis(trades, effectiveInitialBalance);
 
   const safeTrades = Array.isArray(trades) ? trades : [];
   
@@ -30,6 +36,10 @@ export default function Analysis() {
     }
     
     if (selectedAsset !== "all" && trade.asset !== selectedAsset) {
+      return false;
+    }
+    
+    if (selectedAccount !== "all" && trade.accountId !== selectedAccount) {
       return false;
     }
     
@@ -102,6 +112,23 @@ export default function Analysis() {
                     <SelectItem value="all">All Assets</SelectItem>
                     {uniqueAssets.map(asset => (
                       <SelectItem key={asset} value={asset}>{asset}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <label className="text-sm font-medium text-muted-foreground">Account:</label>
+                <Select value={selectedAccount} onValueChange={setSelectedAccount}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Accounts</SelectItem>
+                    {accounts.map(account => (
+                      <SelectItem key={account.id} value={account.id}>
+                        {account.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

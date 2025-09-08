@@ -133,7 +133,45 @@ export function useAccountManagement() {
       
       // If the blown account was active, switch to another account
       if (activeAccount?.id === accountId) {
-        const nextActiveAccount = accounts.find(acc => acc.id !== accountId && !acc.isBlown);
+        const nextActiveAccount = accounts.find(acc => acc.id !== accountId && !acc.isBlown && !acc.isPassed);
+        if (nextActiveAccount) {
+          await switchAccount(nextActiveAccount.id);
+        }
+      }
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    }
+  }, [activeAccount, accounts, switchAccount]);
+
+  // Mark account as passed
+  const markAccountAsPassed = useCallback(async (accountId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token');
+
+      const response = await fetch(`${API_BASE_URL}/accounts/${accountId}/pass`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to mark account as passed: ${response.statusText}`);
+      }
+
+      // Update local state
+      setAccounts(prev => prev.map(acc => 
+        acc.id === accountId 
+          ? { ...acc, isPassed: true, isActive: false, passedAt: new Date().toISOString() }
+          : acc
+      ));
+      
+      // If the passed account was active, switch to another account
+      if (activeAccount?.id === accountId) {
+        const nextActiveAccount = accounts.find(acc => acc.id !== accountId && !acc.isBlown && !acc.isPassed);
         if (nextActiveAccount) {
           await switchAccount(nextActiveAccount.id);
         }
@@ -147,8 +185,9 @@ export function useAccountManagement() {
   // Calculate account stats
   const accountStats: AccountStats = {
     totalAccounts: accounts.length,
-    activeAccounts: accounts.filter(acc => !acc.isBlown).length,
+    activeAccounts: accounts.filter(acc => !acc.isBlown && !acc.isPassed).length,
     blownAccounts: accounts.filter(acc => acc.isBlown).length,
+    passedAccounts: accounts.filter(acc => acc.isPassed).length,
     totalTradesAcrossAccounts: accounts.reduce((sum, acc) => sum + acc.totalTrades, 0),
     totalPnLAcrossAccounts: accounts.reduce((sum, acc) => sum + acc.totalPnL, 0),
     overallWinRate: accounts.length > 0 
@@ -181,6 +220,7 @@ export function useAccountManagement() {
     createAccount,
     switchAccount,
     markAccountAsBlown,
+    markAccountAsPassed,
     fetchAccounts,
   };
 }
