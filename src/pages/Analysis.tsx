@@ -245,7 +245,7 @@ export default function Analysis() {
           <CardDescription>Account balance progression</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-64">
+          <div className="h-80">
             <ProfessionalBalanceChart balanceOverTime={balanceOverTime} />
           </div>
         </CardContent>
@@ -259,7 +259,7 @@ export default function Analysis() {
             <CardDescription>How emotions correlate with performance</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
+            <div className="h-80">
               <ProfessionalEmotionsChart data={transformedEmotionPerformance} />
             </div>
           </CardContent>
@@ -271,7 +271,7 @@ export default function Analysis() {
             <CardDescription>Profit/Loss and win rate by hour</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
+            <div className="h-80">
               <ProfessionalHourlyChart data={transformedTradesByHour} />
             </div>
           </CardContent>

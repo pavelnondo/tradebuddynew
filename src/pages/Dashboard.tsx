@@ -150,7 +150,7 @@ export default function Dashboard() {
             <CardDescription>Your account balance progression</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
+            <div className="h-80">
               <ProfessionalBalanceChart balanceOverTime={analysisData.balanceOverTime} />
             </div>
           </CardContent>
@@ -162,7 +162,7 @@ export default function Dashboard() {
             <CardDescription>Your trading performance breakdown</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
+            <div className="h-80">
               <ProfessionalWinLossChart data={analysisData.winLossData} />
             </div>
           </CardContent>
