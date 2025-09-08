@@ -7,10 +7,16 @@ CREATE TABLE IF NOT EXISTS accounts (
     current_balance DECIMAL(15,2) NOT NULL DEFAULT 0,
     is_active BOOLEAN NOT NULL DEFAULT false,
     is_blown BOOLEAN NOT NULL DEFAULT false,
+    is_passed BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     blown_at TIMESTAMP WITH TIME ZONE NULL,
+    passed_at TIMESTAMP WITH TIME ZONE NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Add is_passed column if it doesn't exist (for existing installations)
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS is_passed BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS passed_at TIMESTAMP WITH TIME ZONE NULL;
 
 -- Add account_id column to trades table
 ALTER TABLE trades ADD COLUMN IF NOT EXISTS account_id UUID REFERENCES accounts(id) ON DELETE CASCADE;
@@ -21,13 +27,14 @@ CREATE INDEX IF NOT EXISTS idx_accounts_active ON accounts(user_id, is_active);
 CREATE INDEX IF NOT EXISTS idx_trades_account_id ON trades(account_id);
 
 -- Create a default account for existing users
-INSERT INTO accounts (user_id, name, initial_balance, current_balance, is_active, is_blown)
+INSERT INTO accounts (user_id, name, initial_balance, current_balance, is_active, is_blown, is_passed)
 SELECT 
     u.id,
-    'Main Account',
-    COALESCE(us.initial_balance, 10000),
-    COALESCE(us.initial_balance, 10000),
+    'Account 1',
+    COALESCE(us.initial_balance, 5000),
+    COALESCE(us.initial_balance, 5000),
     true,
+    false,
     false
 FROM users u
 LEFT JOIN user_settings us ON u.id = us.user_id
