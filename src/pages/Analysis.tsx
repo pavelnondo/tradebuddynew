@@ -410,6 +410,21 @@ export default function Analysis() {
   }
 
   const { metrics, balanceOverTime, winLossData, tradesByHour, emotionPerformance } = analysisHook as any;
+  
+  // Transform data to match chart expectations
+  const transformedEmotionPerformance = emotionPerformance?.map((item: any) => ({
+    emotion: item.emotion,
+    avgProfitLoss: item.trades > 0 ? item.profitLoss / item.trades : 0,
+    winRate: item.winRate,
+    tradeCount: item.trades
+  })) || [];
+  
+  const transformedTradesByHour = tradesByHour?.map((item: any) => ({
+    hour: item.hour,
+    profitLoss: item.profitLoss,
+    winRate: item.winRate,
+    tradeCount: item.trades
+  })) || [];
 
   return (
     <div className="space-y-6">
@@ -526,9 +541,9 @@ export default function Analysis() {
             <CardTitle className="flex items-center"><Award className="w-5 h-5 mr-2" /> Emotion Impact</CardTitle>
             <CardDescription>How emotions correlate with win rate</CardDescription>
           </CardHeader>
-            <CardContent className="h-80">
-              <ProfessionalEmotionsChart data={emotionPerformance} />
-            </CardContent>
+          <CardContent className="h-80">
+            <ProfessionalEmotionsChart data={transformedEmotionPerformance} />
+          </CardContent>
         </Card>
 
         <Card className="card-modern">
@@ -536,9 +551,9 @@ export default function Analysis() {
             <CardTitle className="flex items-center"><Clock className="w-5 h-5 mr-2" /> Hourly Performance</CardTitle>
             <CardDescription>Profit/Loss and win rate by hour</CardDescription>
           </CardHeader>
-            <CardContent className="h-80">
-              <ProfessionalHourlyChart data={tradesByHour} />
-            </CardContent>
+          <CardContent className="h-80">
+            <ProfessionalHourlyChart data={transformedTradesByHour} />
+          </CardContent>
         </Card>
       </div>
 
@@ -548,12 +563,10 @@ export default function Analysis() {
           <CardTitle className="flex items-center"><Target className="w-5 h-5 mr-2" /> Setup Performance</CardTitle>
           <CardDescription>Performance analysis by trading setup</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="h-80">
           <SetupPerformanceChart data={setupPerformance} isLoading={isLoading} />
         </CardContent>
       </Card>
-
-      </div>
     </div>
   );
 }
