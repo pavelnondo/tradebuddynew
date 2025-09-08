@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { useApiTrades } from '@/hooks/useApiTrades';
 import { useTradeAnalysis } from '@/hooks/useTradeAnalysis';
 import { useUserSettings } from '@/hooks/useUserSettings';
+import { ThemedBalanceChart } from '@/components/charts/ThemedBalanceChart';
+import { ThemedWinLossChart } from '@/components/charts/ThemedWinLossChart';
 import { TrendingUp, TrendingDown, DollarSign, Target, BarChart3, PieChart } from 'lucide-react';
 
 export default function Dashboard() {
@@ -128,125 +130,17 @@ export default function Dashboard() {
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Balance Over Time */}
-          <Card className="card-modern">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <TrendingUp className="h-5 w-5" />
-                <span>Balance Over Time</span>
-              </CardTitle>
-              <CardDescription>
-                Your account balance progression
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-80">
-              {isLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              ) : error ? (
-                <div className="flex items-center justify-center h-full text-destructive">
-                  <div className="text-center">
-                    <p className="font-medium">Error loading data</p>
-                    <p className="text-sm text-muted-foreground">{error}</p>
-                  </div>
-                </div>
-              ) : analysisData.balanceOverTime.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  <div className="text-center">
-                    <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="font-medium">No data available</p>
-                    <p className="text-sm">Start trading to see your balance progression</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-foreground mb-2">
-                      ${currentBalance.toLocaleString()}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Current Balance
-                    </div>
-                    <div className="mt-4 text-lg font-semibold text-green-600">
-                      {totalProfitLoss >= 0 ? '+' : ''}${totalProfitLoss.toLocaleString()}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Total Change
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Win/Loss Distribution */}
-          <Card className="card-modern">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <PieChart className="h-5 w-5" />
-                <span>Win/Loss Distribution</span>
-              </CardTitle>
-              <CardDescription>
-                Your trading performance breakdown
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-80">
-              {isLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              ) : error ? (
-                <div className="flex items-center justify-center h-full text-destructive">
-                  <div className="text-center">
-                    <p className="font-medium">Error loading data</p>
-                    <p className="text-sm text-muted-foreground">{error}</p>
-                  </div>
-                </div>
-              ) : totalTrades === 0 ? (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  <div className="text-center">
-                    <PieChart className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="font-medium">No data available</p>
-                    <p className="text-sm">Start trading to see your performance breakdown</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="h-full flex flex-col items-center justify-center space-y-6">
-                  <div className="text-center">
-                    <div className="text-4xl font-bold text-foreground mb-2">
-                      {winRate.toFixed(0)}%
-                    </div>
-                    <div className="text-sm text-muted-foreground">Win Rate</div>
-                  </div>
-                  
-                  <div className="flex space-x-8">
-                    <div className="text-center">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium">Wins</span>
-                      </div>
-                      <div className="text-lg font-semibold text-green-600">{winningTrades}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {totalTrades > 0 ? ((winningTrades / totalTrades) * 100).toFixed(1) : 0}%
-                      </div>
-                    </div>
-                    
-                    <div className="text-center">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                        <span className="text-sm font-medium">Losses</span>
-                      </div>
-                      <div className="text-lg font-semibold text-red-600">{losingTrades}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {totalTrades > 0 ? ((losingTrades / totalTrades) * 100).toFixed(1) : 0}%
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <ThemedBalanceChart 
+            balanceOverTime={analysisData.balanceOverTime}
+            loading={isLoading}
+            error={error}
+          />
+          
+          <ThemedWinLossChart 
+            data={analysisData.winLossData}
+            loading={isLoading}
+            error={error}
+          />
         </div>
 
         {/* Recent Trades */}
