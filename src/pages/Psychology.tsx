@@ -265,12 +265,12 @@ export default function Psychology() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="max-w-7xl mx-auto space-y-8">
+      {/* Header Section */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Trading Psychology</h1>
-          <p className="text-muted-foreground">Analyze your emotional patterns and performance</p>
+          <h1 className="text-4xl font-bold mb-2">Trading Psychology</h1>
+          <p className="text-lg text-muted-foreground">Analyze your emotional patterns and performance</p>
         </div>
         <Button onClick={() => navigate('/add-trade')} className="btn-apple">
           <Plus className="w-4 h-4 mr-2" />
@@ -278,11 +278,17 @@ export default function Psychology() {
         </Button>
       </div>
 
-      {/* Filters */}
+      {/* Filters Section */}
       <Card className="card-modern">
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
+        <CardHeader>
+          <CardTitle className="text-xl">Filters</CardTitle>
+          <CardDescription className="text-base">
+            Customize your psychology analysis view
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
               <label className="text-sm font-medium mb-2 block">Timeframe</label>
               <Select value={timeframe} onValueChange={setTimeframe}>
                 <SelectTrigger>
@@ -297,7 +303,7 @@ export default function Psychology() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex-1">
+            <div>
               <label className="text-sm font-medium mb-2 block">Asset</label>
               <Select value={selectedAsset} onValueChange={setSelectedAsset}>
                 <SelectTrigger>
@@ -315,7 +321,7 @@ export default function Psychology() {
         </CardContent>
       </Card>
 
-      {/* Psychology Dashboard - Essential Only */}
+      {/* Psychology Dashboard */}
       <PsychologyDashboard data={psychologyData} isLoading={isLoading} />
     </div>
   );
