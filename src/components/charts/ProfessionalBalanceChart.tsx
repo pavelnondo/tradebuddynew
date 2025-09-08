@@ -119,12 +119,8 @@ export function ProfessionalBalanceChart({ balanceOverTime }: ProfessionalBalanc
 
   return (
     <div className="w-full h-full">
-      {/* Chart Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">Balance Evolution</h3>
-          <p className="text-sm text-slate-600 dark:text-slate-400">Account balance over time</p>
-        </div>
+      {/* Current Balance Display */}
+      <div className="flex justify-between items-center mb-4">
         <div className="text-right">
           <div className="text-2xl font-bold text-slate-800 dark:text-slate-200">
             ${validData[validData.length - 1].balance.toLocaleString()}
