@@ -26,7 +26,7 @@ export function ProfessionalHourlyChart({ data }: ProfessionalHourlyChartProps) 
 
   if (validData.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-xl">
+      <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center">
             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,12 +51,7 @@ export function ProfessionalHourlyChart({ data }: ProfessionalHourlyChartProps) 
   const chartWidth = validData.length * totalBarWidth + 40;
 
   return (
-    <div className="w-full h-full bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-xl p-6">
-      {/* Chart Header */}
-      <div className="text-center mb-6">
-        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">Hourly Performance</h3>
-        <p className="text-sm text-slate-600 dark:text-slate-400">Profit/Loss and win rate by hour</p>
-      </div>
+    <div className="w-full h-full">
 
       {/* Chart */}
       <div className="w-full overflow-x-auto">
