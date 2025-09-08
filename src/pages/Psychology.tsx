@@ -144,7 +144,12 @@ export default function Psychology() {
         {/* Psychology Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <ThemedEmotionChart 
-            data={analysisData.emotionPerformance}
+            data={analysisData.emotionPerformance.map(item => ({
+              emotion: item.emotion,
+              avgProfitLoss: item.trades > 0 ? item.profitLoss / item.trades : 0,
+              tradeCount: item.trades,
+              winRate: item.winRate
+            }))}
             loading={isLoading}
             error={error}
           />

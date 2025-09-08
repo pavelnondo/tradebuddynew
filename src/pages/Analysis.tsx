@@ -190,7 +190,12 @@ export default function Analysis() {
           />
           
           <ThemedHourlyChart 
-            data={analysisData.tradesByHour}
+            data={analysisData.tradesByHour.map(item => ({
+              hour: item.hourFormatted || `${item.hour}:00`,
+              profitLoss: item.profitLoss,
+              tradeCount: item.trades,
+              winRate: item.winRate
+            }))}
             loading={isLoading}
             error={error}
           />
@@ -198,7 +203,12 @@ export default function Analysis() {
 
         {/* Emotion Impact */}
         <ThemedEmotionChart 
-          data={analysisData.emotionPerformance}
+          data={analysisData.emotionPerformance.map(item => ({
+            emotion: item.emotion,
+            avgProfitLoss: item.trades > 0 ? item.profitLoss / item.trades : 0,
+            tradeCount: item.trades,
+            winRate: item.winRate
+          }))}
           loading={isLoading}
           error={error}
         />
