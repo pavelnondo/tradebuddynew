@@ -21,9 +21,9 @@ export function ThemedBalanceChart({ balanceOverTime, loading, error }: ThemedBa
   const hasData = validData.length > 0;
   const noDataMessage = 'Add trades to see your balance progression over time';
 
-  // Chart dimensions - reduced to prevent border overlap
-  const chartWidth = 350;
-  const chartHeight = 180;
+  // Chart dimensions - increased size with proper spacing
+  const chartWidth = 400;
+  const chartHeight = 220;
   const margin = { top: 20, right: 30, bottom: 40, left: 50 };
   const plotWidth = chartWidth - margin.left - margin.right;
   const plotHeight = chartHeight - margin.top - margin.bottom;
@@ -54,11 +54,11 @@ export function ThemedBalanceChart({ balanceOverTime, loading, error }: ThemedBa
   const linePoints = validData.map((d, i) => ({ x: xScale(i), y: yScale(d.balance) }));
   const pathData = createSmoothPath(linePoints);
 
-  // Y-axis labels
+  // Y-axis labels - fixed to show proper balance values
   const yAxisLabels = Array.from({ length: 5 }).map((_, i) => {
     const value = yMin + (i / 4) * (yMax - yMin);
     const y = yScale(value);
-    return { value, y };
+    return { value: Math.round(value), y };
   });
 
   // X-axis labels (dates)
@@ -180,7 +180,7 @@ export function ThemedBalanceChart({ balanceOverTime, loading, error }: ThemedBa
                     x={margin.left - 10}
                     y={label.y + 5}
                     textAnchor="end"
-                    className="text-xs fill-muted-foreground font-medium"
+                    className="text-[10px] fill-muted-foreground font-medium"
                   >
                     ${label.value.toLocaleString()}
                   </text>
@@ -193,7 +193,7 @@ export function ThemedBalanceChart({ balanceOverTime, loading, error }: ThemedBa
                     x={label.x}
                     y={chartHeight - 10}
                     textAnchor="middle"
-                    className="text-xs fill-muted-foreground font-medium"
+                    className="text-[10px] fill-muted-foreground font-medium"
                   >
                     {label.label}
                   </text>
