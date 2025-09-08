@@ -77,7 +77,7 @@ export function ThemedWinLossChart({ data, loading, error }: ThemedWinLossChartP
             </div>
           </div>
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center space-y-6">
+          <div className="w-full h-full flex flex-col items-center justify-center space-y-4">
             {/* Donut Chart */}
             <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
               <svg width={size} height={size} className="transform -rotate-90">
@@ -114,12 +114,12 @@ export function ThemedWinLossChart({ data, loading, error }: ThemedWinLossChartP
             </div>
 
             {/* Legend */}
-            <div className="space-y-3 w-full max-w-xs">
+            <div className="space-y-2 w-full max-w-xs">
               {segments.map((segment) => (
-                <div key={segment.index} className="flex items-center justify-between px-3">
-                  <div className="flex items-center space-x-3">
+                <div key={segment.index} className="flex items-center justify-between px-2">
+                  <div className="flex items-center space-x-2">
                     <div
-                      className="w-4 h-4 rounded-full"
+                      className="w-3 h-3 rounded-full"
                       style={{ backgroundColor: segment.color }}
                     />
                     <span className="text-sm font-medium text-foreground">
@@ -138,10 +138,10 @@ export function ThemedWinLossChart({ data, loading, error }: ThemedWinLossChartP
               ))}
             </div>
 
-            {/* Summary Stats */}
+            {/* Summary Stats - moved inside the card content */}
             {hasData && (
-              <div className="pt-4 border-t border-border w-full">
-                <div className="flex justify-between items-center text-sm">
+              <div className="pt-2 border-t border-border w-full">
+                <div className="flex justify-between items-center text-xs">
                   <div className="flex flex-col items-center flex-1">
                     <span className="text-xs text-muted-foreground">Total Trades</span>
                     <span className="text-sm font-semibold text-primary">{total}</span>
