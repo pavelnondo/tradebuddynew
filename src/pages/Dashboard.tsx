@@ -269,16 +269,16 @@ export default function Dashboard() {
   const totalTrades = analysisData.metrics.totalTrades || 0;
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div className="max-w-7xl mx-auto space-y-8">
+      {/* Header Section */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome back! Here's your trading overview for today.
+          <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
+          <p className="text-lg text-muted-foreground">
+            Welcome back! Here's your trading overview.
           </p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-4">
           <Button 
             variant="outline" 
             onClick={() => navigate('/settings')}
@@ -297,7 +297,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Key Metrics */}
+      {/* Key Metrics Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
           title="Total Balance"
@@ -333,109 +333,120 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="card-modern lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <BarChart3 className="w-5 h-5 mr-2" />
-              Balance Over Time
-            </CardTitle>
-            <CardDescription>
-              Your account balance progression
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-80">
-            <ProfessionalBalanceChart balanceOverTime={analysisData.balanceOverTime} />
-          </CardContent>
-        </Card>
+      {/* Main Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Balance Over Time Chart */}
+        <div className="lg:col-span-2">
+          <Card className="card-modern">
+            <CardHeader>
+              <CardTitle className="flex items-center text-xl">
+                <BarChart3 className="w-6 h-6 mr-3" />
+                Balance Over Time
+              </CardTitle>
+              <CardDescription className="text-base">
+                Your account balance progression across time
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-96">
+              <ProfessionalBalanceChart balanceOverTime={analysisData.balanceOverTime} />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
+      {/* Secondary Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Win/Loss Distribution */}
         <Card className="card-modern">
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <PieChart className="w-5 h-5 mr-2" />
+            <CardTitle className="flex items-center text-xl">
+              <PieChart className="w-6 h-6 mr-3" />
               Win/Loss Distribution
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-base">
               Your trading performance breakdown
             </CardDescription>
           </CardHeader>
-          <CardContent className="h-80">
+          <CardContent className="h-96">
             <ProfessionalWinLossChart data={analysisData.winLossData} />
+          </CardContent>
+        </Card>
+
+        {/* Quick Actions */}
+        <Card className="card-modern">
+          <CardHeader>
+            <CardTitle className="flex items-center text-xl">
+              <Zap className="w-6 h-6 mr-3" />
+              Quick Actions
+            </CardTitle>
+            <CardDescription className="text-base">
+              Common tasks and navigation
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="h-96 flex flex-col justify-center">
+            <div className="space-y-4">
+              <QuickActionCard
+                title="Add New Trade"
+                description="Record your latest trade with detailed analysis"
+                icon={Plus}
+                onClick={() => navigate('/add-trade')}
+                variant="primary"
+              />
+              <QuickActionCard
+                title="View Analysis"
+                description="Deep dive into your trading patterns"
+                icon={BarChart3}
+                onClick={() => navigate('/analysis')}
+              />
+              <QuickActionCard
+                title="Trading Calendar"
+                description="Plan and review your trading schedule"
+                icon={Calendar}
+                onClick={() => navigate('/calendar')}
+              />
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Quick Actions & Insights */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Quick Actions */}
-        <div className="space-y-6">
-          <h2 className="text-xl font-semibold">Quick Actions</h2>
-          <div className="space-y-4">
-            <QuickActionCard
-              title="Add New Trade"
-              description="Record your latest trade with detailed analysis"
-              icon={Plus}
-              onClick={() => navigate('/add-trade')}
-              variant="primary"
-            />
-            <QuickActionCard
-              title="View Analysis"
-              description="Deep dive into your trading patterns"
-              icon={BarChart3}
-              onClick={() => navigate('/analysis')}
-            />
-            <QuickActionCard
-              title="Trading Calendar"
-              description="Plan and review your trading schedule"
-              icon={Calendar}
-              onClick={() => navigate('/calendar')}
-            />
-          </div>
-        </div>
-
-        {/* Trading Insights */}
-        <div className="lg:col-span-2 space-y-6">
-          <h2 className="text-xl font-semibold">Trading Insights</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <InsightCard
-              title="Best Performing Asset"
-              value={analysisData.assetPerformance.length > 0 ? analysisData.assetPerformance[0]?.asset || "N/A" : "N/A"}
-              description="Your most profitable trading instrument"
-              icon={TrendingUp}
-              color="green"
-            />
-            <InsightCard
-              title="Peak Trading Hours"
-              value={analysisData.tradesByHour.length > 0 ? `${analysisData.tradesByHour[0]?.hourFormatted || "N/A"}` : "N/A"}
-              description="Your most successful trading time"
-              icon={Clock}
-              color="blue"
-            />
-            <InsightCard
-              title="Profit Factor"
-              value={analysisData.metrics.profitFactor ? analysisData.metrics.profitFactor.toFixed(2) : "N/A"}
-              description={`Total Profit: $${analysisData.metrics.totalProfit?.toFixed(2) || '0'} | Total Loss: $${Math.abs(analysisData.metrics.totalLoss || 0).toFixed(2)}`}
-              icon={Award}
-              color="yellow"
-            />
-            <InsightCard
-              title="Risk Level"
-              value={analysisData.metrics.maxDrawdown > 10 ? "High" : analysisData.metrics.maxDrawdown > 5 ? "Medium" : "Low"}
-              description="Your current risk exposure"
-              icon={Zap}
-              color="purple"
-            />
-          </div>
-        </div>
+      {/* Trading Insights Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <InsightCard
+          title="Best Performing Asset"
+          value={analysisData.assetPerformance.length > 0 ? analysisData.assetPerformance[0]?.asset || "N/A" : "N/A"}
+          description="Your most profitable trading instrument"
+          icon={TrendingUp}
+          color="green"
+        />
+        <InsightCard
+          title="Peak Trading Hours"
+          value={analysisData.tradesByHour.length > 0 ? `${analysisData.tradesByHour[0]?.hourFormatted || "N/A"}` : "N/A"}
+          description="Your most successful trading time"
+          icon={Clock}
+          color="blue"
+        />
+        <InsightCard
+          title="Profit Factor"
+          value={analysisData.metrics.profitFactor ? analysisData.metrics.profitFactor.toFixed(2) : "N/A"}
+          description={`Total Profit: $${analysisData.metrics.totalProfit?.toFixed(2) || '0'} | Total Loss: $${Math.abs(analysisData.metrics.totalLoss || 0).toFixed(2)}`}
+          icon={Award}
+          color="yellow"
+        />
+        <InsightCard
+          title="Risk Level"
+          value={analysisData.metrics.maxDrawdown > 10 ? "High" : analysisData.metrics.maxDrawdown > 5 ? "Medium" : "Low"}
+          description="Your current risk exposure"
+          icon={Zap}
+          color="purple"
+        />
       </div>
 
-      {/* Recent Activity */}
+      {/* Recent Activity Section */}
       {trades.length > 0 && (
         <Card className="card-modern">
           <CardHeader>
-            <CardTitle>Recent Trades</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-xl">Recent Trades</CardTitle>
+            <CardDescription className="text-base">
               Your latest trading activity
             </CardDescription>
           </CardHeader>
@@ -467,7 +478,7 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
-            <div className="mt-4 pt-4 border-t border-border/50">
+            <div className="mt-6 pt-4 border-t border-border/50">
               <Button 
                 variant="ghost" 
                 onClick={() => navigate('/trades')}

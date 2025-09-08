@@ -427,14 +427,14 @@ export default function Analysis() {
   })) || [];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div className="max-w-7xl mx-auto space-y-8">
+      {/* Header Section */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Trading Analysis</h1>
-          <p className="text-muted-foreground">Deep insights into your trading performance</p>
+          <h1 className="text-4xl font-bold mb-2">Trading Analysis</h1>
+          <p className="text-lg text-muted-foreground">Deep insights into your trading performance</p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-4">
           <Button variant="outline" onClick={() => {/* Export functionality */}} className="btn-apple-secondary">
             <Download className="w-4 h-4 mr-2" />
             Export Report
@@ -514,39 +514,41 @@ export default function Analysis() {
 
       {/* Interactive Dashboard Tabs */}
       {/* Essential Analysis */}
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      {/* Key Metrics Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard title="Total P&L" value={metrics.totalProfitLoss} icon={DollarSign} format="currency" color={metrics.totalProfitLoss >= 0 ? "green" : "red"} />
         <MetricCard title="Win Rate" value={metrics.winRate} icon={Target} format="percentage" color="blue" />
         <MetricCard title="Total Trades" value={metrics.totalTrades} icon={Activity} format="number" color="purple" />
         <MetricCard title="Profit Factor" value={metrics.profitFactor} icon={TrendingUp} format="number" color="yellow" />
       </div>
 
-      {/* Balance Over Time */}
-      <div className="mb-8">
-        <Card className="card-modern">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <TrendingUp className="w-5 h-5 mr-2" /> 
-              Balance Over Time
-            </CardTitle>
-            <CardDescription>Account balance progression across the selected period</CardDescription>
-          </CardHeader>
-          <CardContent className="h-96">
-            <ProfessionalBalanceChart balanceOverTime={balanceOverTime} />
-          </CardContent>
-        </Card>
-      </div>
+      {/* Balance Over Time - Full Width */}
+      <Card className="card-modern">
+        <CardHeader>
+          <CardTitle className="flex items-center text-xl">
+            <TrendingUp className="w-6 h-6 mr-3" /> 
+            Balance Over Time
+          </CardTitle>
+          <CardDescription className="text-base">
+            Account balance progression across the selected period
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="h-96">
+          <ProfessionalBalanceChart balanceOverTime={balanceOverTime} />
+        </CardContent>
+      </Card>
 
       {/* Charts Grid - Two Columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card className="card-modern">
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <Award className="w-5 h-5 mr-2" /> 
+            <CardTitle className="flex items-center text-xl">
+              <Award className="w-6 h-6 mr-3" /> 
               Emotion Impact
             </CardTitle>
-            <CardDescription>How emotions correlate with performance</CardDescription>
+            <CardDescription className="text-base">
+              How emotions correlate with performance
+            </CardDescription>
           </CardHeader>
           <CardContent className="h-96">
             <ProfessionalEmotionsChart data={transformedEmotionPerformance} />
@@ -555,11 +557,13 @@ export default function Analysis() {
 
         <Card className="card-modern">
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <Clock className="w-5 h-5 mr-2" /> 
+            <CardTitle className="flex items-center text-xl">
+              <Clock className="w-6 h-6 mr-3" /> 
               Hourly Performance
             </CardTitle>
-            <CardDescription>Profit/Loss and win rate by hour</CardDescription>
+            <CardDescription className="text-base">
+              Profit/Loss and win rate by hour
+            </CardDescription>
           </CardHeader>
           <CardContent className="h-96">
             <ProfessionalHourlyChart data={transformedTradesByHour} />
@@ -568,20 +572,20 @@ export default function Analysis() {
       </div>
 
       {/* Setup Performance - Full Width */}
-      <div className="mb-8">
-        <Card className="card-modern">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Target className="w-5 h-5 mr-2" /> 
-              Setup Performance
-            </CardTitle>
-            <CardDescription>Performance analysis by trading setup</CardDescription>
-          </CardHeader>
-          <CardContent className="h-96">
-            <SetupPerformanceChart data={setupPerformance} isLoading={isLoading} />
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="card-modern">
+        <CardHeader>
+          <CardTitle className="flex items-center text-xl">
+            <Target className="w-6 h-6 mr-3" /> 
+            Setup Performance
+          </CardTitle>
+          <CardDescription className="text-base">
+            Performance analysis by trading setup
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="h-96">
+          <SetupPerformanceChart data={setupPerformance} isLoading={isLoading} />
+        </CardContent>
+      </Card>
     </div>
   );
 }
