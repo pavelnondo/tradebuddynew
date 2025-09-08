@@ -1,5 +1,6 @@
 import React from 'react';
 import { ResearchBasedChart, SPACING } from './ResearchBasedChart';
+import { cn } from '@/lib/utils';
 
 interface ResearchBasedBalanceChartProps {
   balanceOverTime: Array<{ date: string; balance: number; drawdown?: number }>;
