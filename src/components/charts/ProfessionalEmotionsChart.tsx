@@ -57,83 +57,105 @@ export function ProfessionalEmotionsChart({ data }: ProfessionalEmotionsChartPro
 
   // Calculate chart dimensions
   const maxProfitLoss = Math.max(...validData.map(d => Math.abs(d.avgProfitLoss)));
-  const chartHeight = 200;
-  const barHeight = 30;
-  const barSpacing = 8;
+  const chartHeight = 280;
+  const barHeight = 35;
+  const barSpacing = 12;
   const totalBarHeight = barHeight + barSpacing;
-  const chartWidth = 300;
+  const chartWidth = 400;
 
   return (
-    <div className="w-full h-full">
-
-      {/* Chart */}
-      <div className="w-full">
-        <svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="overflow-visible">
+    <div className="w-full h-full flex flex-col">
+      {/* Chart Area */}
+      <div className="flex-1 min-h-0">
+        <svg width="100%" height="100%" viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="overflow-visible">
+          {/* Background pattern */}
+          <defs>
+            <pattern id="emotionGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.03"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#emotionGrid)" />
+          
           {/* Grid lines */}
           {[0, 0.25, 0.5, 0.75, 1].map((ratio, index) => (
             <line
               key={index}
-              y1="20"
-              x1={20 + ratio * (chartWidth - 40)}
-              y2={chartHeight - 20}
-              x2={20 + ratio * (chartWidth - 40)}
+              y1="30"
+              x1={30 + ratio * (chartWidth - 60)}
+              y2={chartHeight - 30}
+              x2={30 + ratio * (chartWidth - 60)}
               stroke="currentColor"
               strokeWidth="1"
               opacity="0.1"
             />
           ))}
 
-          {/* Bars */}
+          {/* Bars with improved styling */}
           {validData.map((item, index) => {
-            const y = 20 + index * totalBarHeight;
-            const barWidth = maxProfitLoss > 0 ? (Math.abs(item.avgProfitLoss) / maxProfitLoss) * (chartWidth - 80) : 0;
+            const y = 30 + index * totalBarHeight;
+            const barWidth = maxProfitLoss > 0 ? (Math.abs(item.avgProfitLoss) / maxProfitLoss) * (chartWidth - 120) : 0;
             const x = item.avgProfitLoss >= 0 ? 
-              20 : 
-              (20 + (chartWidth - 40) - barWidth);
+              30 : 
+              (30 + (chartWidth - 60) - barWidth);
             
             return (
               <g key={index}>
-                {/* P&L Bar */}
+                {/* Bar with gradient */}
+                <defs>
+                  <linearGradient id={`emotionGradient${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor={item.avgProfitLoss >= 0 ? "#10B981" : "#EF4444"} stopOpacity="0.8"/>
+                    <stop offset="100%" stopColor={item.avgProfitLoss >= 0 ? "#059669" : "#DC2626"} stopOpacity="1"/>
+                  </linearGradient>
+                </defs>
                 <rect
                   x={x}
                   y={y}
                   width={barWidth}
                   height={barHeight}
-                  fill={item.avgProfitLoss >= 0 ? '#10B981' : '#EF4444'}
-                  opacity="0.8"
-                  className="transition-all duration-300 hover:opacity-100"
-                  rx="4"
+                  fill={`url(#emotionGradient${index})`}
+                  rx="6"
+                  className="transition-all duration-300 hover:opacity-100 drop-shadow-sm"
                 />
                 
                 {/* Win Rate Indicator */}
                 <rect
                   x={x}
-                  y={y + barHeight - 6}
+                  y={y + barHeight - 8}
                   width={barWidth}
-                  height="4"
+                  height="6"
                   fill={item.winRate >= 50 ? '#059669' : '#DC2626'}
                   opacity="0.9"
-                  rx="2"
+                  rx="3"
                 />
                 
                 {/* Emotion Label */}
                 <text
-                  x="10"
-                  y={y + barHeight / 2 + 4}
+                  x="15"
+                  y={y + barHeight / 2 + 5}
                   textAnchor="end"
-                  className="text-xs fill-slate-600 dark:fill-slate-400 font-medium"
+                  className="text-sm fill-slate-700 dark:fill-slate-300 font-medium"
                 >
                   {emotionIcons[item.emotion.toLowerCase()] || '😐'} {item.emotion}
                 </text>
                 
                 {/* Value Label */}
                 <text
-                  x={x + barWidth + 5}
-                  y={y + barHeight / 2 + 4}
+                  x={x + barWidth + 10}
+                  y={y + barHeight / 2 + 5}
                   textAnchor="start"
-                  className="text-xs fill-slate-700 dark:fill-slate-300 font-semibold"
+                  className="text-sm fill-slate-800 dark:fill-slate-200 font-bold"
                 >
                   ${item.avgProfitLoss.toFixed(0)}
+                </text>
+                
+                {/* Trade count */}
+                <text
+                  x={x + barWidth + 10}
+                  y={y + barHeight / 2 + 18}
+                  textAnchor="start"
+                  className="text-xs fill-slate-500 dark:fill-slate-400"
+                >
+                  {item.tradeCount} trades
                 </text>
               </g>
             );
@@ -142,12 +164,12 @@ export function ProfessionalEmotionsChart({ data }: ProfessionalEmotionsChartPro
           {/* X-axis labels */}
           {[0, 0.25, 0.5, 0.75, 1].map((ratio, index) => {
             const value = maxProfitLoss * (1 - ratio);
-            const x = 20 + ratio * (chartWidth - 40);
+            const x = 30 + ratio * (chartWidth - 60);
             return (
               <text
                 key={index}
                 x={x}
-                y={chartHeight - 5}
+                y={chartHeight - 10}
                 textAnchor="middle"
                 className="text-xs fill-slate-600 dark:fill-slate-400"
               >
@@ -158,24 +180,35 @@ export function ProfessionalEmotionsChart({ data }: ProfessionalEmotionsChartPro
         </svg>
       </div>
 
-      {/* Simple Stats */}
-      <div className="mt-4 flex justify-between text-sm">
-        <div>
-          <span className="text-slate-600 dark:text-slate-400">Best Emotion: </span>
-          <span className="font-semibold text-green-600">
-            {validData.reduce((best, current) => 
-              current.avgProfitLoss > best.avgProfitLoss ? current : best
-            ).emotion}
-          </span>
-        </div>
-        <div>
-          <span className="text-slate-600 dark:text-slate-400">Total Emotions: </span>
-          <span className="font-semibold text-purple-600">
-            {validData.length}
-          </span>
+      {/* Stats Footer */}
+      <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
+        <div className="flex justify-between items-center text-sm">
+          <div className="flex items-center space-x-6">
+            <div>
+              <span className="text-slate-600 dark:text-slate-400">Best: </span>
+              <span className="font-semibold text-green-600">
+                {validData.reduce((best, current) => 
+                  current.avgProfitLoss > best.avgProfitLoss ? current : best
+                ).emotion}
+              </span>
+            </div>
+            <div>
+              <span className="text-slate-600 dark:text-slate-400">Worst: </span>
+              <span className="font-semibold text-red-600">
+                {validData.reduce((worst, current) => 
+                  current.avgProfitLoss < worst.avgProfitLoss ? current : worst
+                ).emotion}
+              </span>
+            </div>
+          </div>
+          <div>
+            <span className="text-slate-600 dark:text-slate-400">Total: </span>
+            <span className="font-semibold text-blue-600">
+              {validData.length} emotions
+            </span>
+          </div>
         </div>
       </div>
-
     </div>
   );
 }
