@@ -21,9 +21,9 @@ import {
 } from "@/components/ui/select";
 import { useApiTrades } from '@/hooks/useApiTrades';
 import { useTradeAnalysis } from '@/hooks/useTradeAnalysis';
-import { ProfessionalBalanceChart } from "@/components/charts/ProfessionalBalanceChart";
-import { ProfessionalHourlyChart } from "@/components/charts/ProfessionalHourlyChart";
-import { ProfessionalEmotionsChart } from "@/components/charts/ProfessionalEmotionsChart";
+import { BalanceChart } from "@/components/charts/BalanceChart";
+import { HourlyPerformanceChart } from "@/components/charts/HourlyPerformanceChart";
+import { EmotionImpactChart } from "@/components/charts/EmotionImpactChart";
 import { SetupPerformanceChart } from "@/components/charts/SetupPerformanceChart";
 
 export default function Analysis() {
@@ -239,40 +239,25 @@ export default function Analysis() {
       </div>
 
       {/* Balance Chart */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg">Balance Over Time</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="h-80">
-            <ProfessionalBalanceChart balanceOverTime={balanceOverTime} />
-          </div>
-        </CardContent>
-      </Card>
+      <BalanceChart 
+        balanceOverTime={balanceOverTime}
+        loading={isLoading}
+        error={error}
+      />
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Emotion Impact</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="h-80">
-              <ProfessionalEmotionsChart data={transformedEmotionPerformance} />
-            </div>
-          </CardContent>
-        </Card>
+        <EmotionImpactChart 
+          data={transformedEmotionPerformance}
+          loading={isLoading}
+          error={error}
+        />
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Hourly Performance</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="h-80">
-              <ProfessionalHourlyChart data={transformedTradesByHour} />
-            </div>
-          </CardContent>
-        </Card>
+        <HourlyPerformanceChart 
+          data={transformedTradesByHour}
+          loading={isLoading}
+          error={error}
+        />
       </div>
 
       {/* Setup Performance */}

@@ -1,19 +1,32 @@
 import React from 'react';
 import { UnifiedChart } from './UnifiedChart';
 
-interface HourlyPerformanceChartProps {
+interface EmotionImpactChartProps {
   data: Array<{ 
-    hour: number; 
-    profitLoss: number; 
+    emotion: string; 
+    avgProfitLoss: number; 
     winRate: number; 
     tradeCount: number;
-    hourFormatted?: string;
   }>;
   loading?: boolean;
   error?: string;
 }
 
-export function HourlyPerformanceChart({ data, loading, error }: HourlyPerformanceChartProps) {
+const emotionIcons: { [key: string]: string } = {
+  'confident': '😎',
+  'calm': '😌',
+  'excited': '🤩',
+  'nervous': '😰',
+  'fearful': '😨',
+  'greedy': '🤤',
+  'frustrated': '😤',
+  'neutral': '😐',
+  'anxious': '😟',
+  'optimistic': '😊',
+  'pessimistic': '😔'
+};
+
+export function EmotionImpactChart({ data, loading, error }: EmotionImpactChartProps) {
   // Validate and process data
   const validData = React.useMemo(() => {
     if (!Array.isArray(data) || data.length === 0) {
@@ -23,34 +36,32 @@ export function HourlyPerformanceChart({ data, loading, error }: HourlyPerforman
     return data
       .filter(item => 
         item && 
-        typeof item.hour === 'number' && 
-        typeof item.profitLoss === 'number' && 
+        typeof item.emotion === 'string' && 
+        typeof item.avgProfitLoss === 'number' && 
         typeof item.winRate === 'number' &&
         typeof item.tradeCount === 'number' &&
-        !isNaN(item.hour) && 
-        !isNaN(item.profitLoss) && 
-        !isNaN(item.winRate) &&
+        !isNaN(item.avgProfitLoss) && 
+        !isNaN(item.winRate) && 
         !isNaN(item.tradeCount) &&
-        item.hour >= 0 && item.hour <= 23
+        item.tradeCount > 0
       )
       .map(item => ({
         ...item,
-        hourFormatted: item.hourFormatted || `${item.hour.toString().padStart(2, '0')}:00`,
-        profitLoss: Math.round(item.profitLoss * 100) / 100,
+        avgProfitLoss: Math.round(item.avgProfitLoss * 100) / 100,
         winRate: Math.round(item.winRate * 10) / 10,
         tradeCount: Math.round(item.tradeCount)
       }))
-      .sort((a, b) => a.hour - b.hour);
+      .sort((a, b) => b.avgProfitLoss - a.avgProfitLoss);
   }, [data]);
 
   const hasData = validData.length > 0;
-  const noDataMessage = 'Add trades to see your hourly performance patterns';
+  const noDataMessage = 'Add trades with emotions to see emotional patterns';
 
   if (!hasData && !loading && !error) {
     return (
       <UnifiedChart
-        title="Hourly Performance"
-        description="Profit/Loss and win rate by hour of day"
+        title="Emotion Impact"
+        description="How emotions correlate with trading performance"
         loading={loading}
         error={error}
         noData={!hasData}
@@ -61,39 +72,40 @@ export function HourlyPerformanceChart({ data, loading, error }: HourlyPerforman
   }
 
   // Calculate chart dimensions
-  const maxProfitLoss = Math.max(...validData.map(d => Math.abs(d.profitLoss)));
-  const chartWidth = Math.max(400, validData.length * 50 + 100);
-  const chartHeight = 280;
-  const margin = { top: 20, right: 20, bottom: 40, left: 60 };
+  const maxProfitLoss = Math.max(...validData.map(d => Math.abs(d.avgProfitLoss)));
+  const chartWidth = 500;
+  const chartHeight = 320;
+  const margin = { top: 20, right: 20, bottom: 40, left: 80 };
   const plotWidth = chartWidth - margin.left - margin.right;
   const plotHeight = chartHeight - margin.top - margin.bottom;
 
   // Calculate bar dimensions
-  const barWidth = Math.min(40, plotWidth / validData.length - 5);
-  const barSpacing = (plotWidth - (validData.length * barWidth)) / (validData.length + 1);
+  const barHeight = 35;
+  const barSpacing = 15;
+  const totalBarHeight = barHeight + barSpacing;
 
   return (
     <UnifiedChart
-      title="Hourly Performance"
-      description="Profit/Loss and win rate by hour of day"
+      title="Emotion Impact"
+      description="How emotions correlate with trading performance"
       loading={loading}
       error={error}
       noData={!hasData}
       noDataMessage={noDataMessage}
       height="lg"
     >
-      <div className="w-full h-full overflow-x-auto">
+      <div className="w-full h-full">
         <svg width="100%" height="100%" viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="overflow-visible">
           {/* Grid lines */}
           {[0, 0.25, 0.5, 0.75, 1].map((ratio, index) => {
-            const y = margin.top + ratio * plotHeight;
+            const x = margin.left + ratio * plotWidth;
             return (
               <line
                 key={index}
-                x1={margin.left}
-                y1={y}
-                x2={margin.left + plotWidth}
-                y2={y}
+                y1={margin.top}
+                x1={x}
+                y2={margin.top + plotHeight}
+                x2={x}
                 stroke="hsl(var(--border))"
                 strokeWidth="1"
                 opacity="0.3"
@@ -103,11 +115,11 @@ export function HourlyPerformanceChart({ data, loading, error }: HourlyPerforman
 
           {/* Bars */}
           {validData.map((item, index) => {
-            const x = margin.left + barSpacing + index * (barWidth + barSpacing);
-            const barHeight = maxProfitLoss > 0 ? (Math.abs(item.profitLoss) / maxProfitLoss) * plotHeight : 0;
-            const y = item.profitLoss >= 0 ? 
-              margin.top + plotHeight - barHeight : 
-              margin.top + plotHeight;
+            const y = margin.top + index * totalBarHeight;
+            const barWidth = maxProfitLoss > 0 ? (Math.abs(item.avgProfitLoss) / maxProfitLoss) * plotWidth : 0;
+            const x = item.avgProfitLoss >= 0 ? 
+              margin.left + plotWidth - barWidth : 
+              margin.left;
             
             return (
               <g key={index}>
@@ -117,7 +129,7 @@ export function HourlyPerformanceChart({ data, loading, error }: HourlyPerforman
                   y={y}
                   width={barWidth}
                   height={barHeight}
-                  fill={item.profitLoss >= 0 ? '#10B981' : '#EF4444'}
+                  fill={item.avgProfitLoss >= 0 ? '#10B981' : '#EF4444'}
                   opacity="0.8"
                   rx="4"
                   className="transition-all duration-300 hover:opacity-100"
@@ -134,39 +146,49 @@ export function HourlyPerformanceChart({ data, loading, error }: HourlyPerforman
                   rx="2"
                 />
                 
-                {/* Hour label */}
+                {/* Emotion label */}
                 <text
-                  x={x + barWidth / 2}
-                  y={chartHeight - 10}
-                  textAnchor="middle"
-                  className="text-xs fill-muted-foreground font-medium"
+                  x={margin.left - 10}
+                  y={y + barHeight / 2 + 4}
+                  textAnchor="end"
+                  className="text-sm fill-foreground font-medium"
                 >
-                  {item.hourFormatted}
+                  {emotionIcons[item.emotion.toLowerCase()] || '😐'} {item.emotion}
                 </text>
                 
                 {/* Value label */}
                 <text
-                  x={x + barWidth / 2}
-                  y={y - 8}
-                  textAnchor="middle"
-                  className="text-xs fill-foreground font-semibold"
+                  x={x + (item.avgProfitLoss >= 0 ? barWidth + 8 : -8)}
+                  y={y + barHeight / 2 + 4}
+                  textAnchor={item.avgProfitLoss >= 0 ? 'start' : 'end'}
+                  className="text-sm fill-foreground font-semibold"
                 >
-                  ${item.profitLoss.toFixed(0)}
+                  ${item.avgProfitLoss.toFixed(0)}
+                </text>
+                
+                {/* Trade count */}
+                <text
+                  x={x + (item.avgProfitLoss >= 0 ? barWidth + 8 : -8)}
+                  y={y + barHeight / 2 + 16}
+                  textAnchor={item.avgProfitLoss >= 0 ? 'start' : 'end'}
+                  className="text-xs fill-muted-foreground"
+                >
+                  {item.tradeCount} trades
                 </text>
               </g>
             );
           })}
 
-          {/* Y-axis labels */}
+          {/* X-axis labels */}
           {[0, 0.25, 0.5, 0.75, 1].map((ratio, index) => {
             const value = maxProfitLoss * (1 - ratio);
-            const y = margin.top + ratio * plotHeight;
+            const x = margin.left + ratio * plotWidth;
             return (
               <text
                 key={index}
-                x={margin.left - 10}
-                y={y + 4}
-                textAnchor="end"
+                x={x}
+                y={chartHeight - 10}
+                textAnchor="middle"
                 className="text-xs fill-muted-foreground"
               >
                 ${value.toFixed(0)}
@@ -181,26 +203,26 @@ export function HourlyPerformanceChart({ data, loading, error }: HourlyPerforman
             <div className="flex justify-between items-center text-sm">
               <div className="flex items-center space-x-6">
                 <div>
-                  <span className="text-muted-foreground">Best Hour: </span>
+                  <span className="text-muted-foreground">Best Emotion: </span>
                   <span className="font-semibold text-green-600">
                     {validData.reduce((best, current) => 
-                      current.profitLoss > best.profitLoss ? current : best
-                    ).hourFormatted}
+                      current.avgProfitLoss > best.avgProfitLoss ? current : best
+                    ).emotion}
                   </span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Worst Hour: </span>
+                  <span className="text-muted-foreground">Worst Emotion: </span>
                   <span className="font-semibold text-red-600">
                     {validData.reduce((worst, current) => 
-                      current.profitLoss < worst.profitLoss ? current : worst
-                    ).hourFormatted}
+                      current.avgProfitLoss < worst.avgProfitLoss ? current : worst
+                    ).emotion}
                   </span>
                 </div>
               </div>
               <div>
-                <span className="text-muted-foreground">Total Trades: </span>
+                <span className="text-muted-foreground">Total Emotions: </span>
                 <span className="font-semibold text-foreground">
-                  {validData.reduce((sum, item) => sum + item.tradeCount, 0)}
+                  {validData.length}
                 </span>
               </div>
             </div>
