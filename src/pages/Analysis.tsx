@@ -29,9 +29,9 @@ import {
 import { useApiTrades } from '@/hooks/useApiTrades';
 import { useTradeAnalysis } from '@/hooks/useTradeAnalysis';
 import { cn } from "@/lib/utils";
-import { RevolutionaryBalanceChart } from "@/components/charts/RevolutionaryBalanceChart";
-import { RevolutionaryHourlyChart } from "@/components/charts/RevolutionaryHourlyChart";
-import { RevolutionaryEmotionsChart } from "@/components/charts/RevolutionaryEmotionsChart";
+import { ProfessionalBalanceChart } from "@/components/charts/ProfessionalBalanceChart";
+import { ProfessionalHourlyChart } from "@/components/charts/ProfessionalHourlyChart";
+import { ProfessionalEmotionsChart } from "@/components/charts/ProfessionalEmotionsChart";
 import { SetupPerformanceChart } from "@/components/charts/SetupPerformanceChart";
 import { useUserSettings } from "@/hooks/useUserSettings";
 
@@ -515,7 +515,7 @@ export default function Analysis() {
           <CardDescription>Account balance progression across the selected period</CardDescription>
         </CardHeader>
           <CardContent className="h-80">
-            <RevolutionaryBalanceChart balanceOverTime={balanceOverTime} />
+            <ProfessionalBalanceChart balanceOverTime={balanceOverTime} />
           </CardContent>
       </Card>
 
@@ -527,7 +527,7 @@ export default function Analysis() {
             <CardDescription>How emotions correlate with win rate</CardDescription>
           </CardHeader>
             <CardContent className="h-80">
-              <RevolutionaryEmotionsChart data={emotionPerformance} />
+              <ProfessionalEmotionsChart data={emotionPerformance} />
             </CardContent>
         </Card>
 
@@ -537,7 +537,7 @@ export default function Analysis() {
             <CardDescription>Profit/Loss and win rate by hour</CardDescription>
           </CardHeader>
             <CardContent className="h-80">
-              <RevolutionaryHourlyChart data={tradesByHour} />
+              <ProfessionalHourlyChart data={tradesByHour} />
             </CardContent>
         </Card>
       </div>
