@@ -6,7 +6,13 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
     // Ensure trades is always an array to prevent map/filter errors
     const safeTrades = Array.isArray(trades) ? trades : [];
     console.log('useTradeAnalysis - trades:', safeTrades);
+    console.log('useTradeAnalysis - trades length:', safeTrades.length);
     console.log('useTradeAnalysis - initialBalance:', initialBalance);
+    
+    if (safeTrades.length > 0) {
+      console.log('useTradeAnalysis - first trade:', safeTrades[0]);
+      console.log('useTradeAnalysis - trade dates:', safeTrades.map(t => ({ date: t.date, profitLoss: t.profitLoss })));
+    }
     
     // Helper function to ensure valid numbers - only fix truly invalid values
     const safeNumber = (value: number, defaultValue: number = 0): number => {
@@ -47,9 +53,13 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
     let peak = initialBalance;
     
     const balanceOverTime = (() => {
+      console.log('balanceOverTime - processing trades:', safeTrades.length);
       const sortedTrades = safeTrades
         .filter(trade => trade.date) // Filter out trades without dates
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      
+      console.log('balanceOverTime - sorted trades:', sortedTrades.length);
+      console.log('balanceOverTime - sorted trade dates:', sortedTrades.map(t => t.date));
       
       // Start with initial balance point
       const startPoint = {
@@ -59,6 +69,8 @@ export function useTradeAnalysis(trades: Trade[], initialBalance: number) {
         balance: initialBalance,
         drawdown: 0
       };
+      
+      console.log('balanceOverTime - start point:', startPoint);
       
       const tradePoints = sortedTrades.reduce((acc, trade, index) => {
         const date = new Date(trade.date).toISOString().split('T')[0];
