@@ -1,4 +1,5 @@
 import React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp } from 'lucide-react';
 
 interface ThemedBalanceChartProps {
@@ -20,9 +21,9 @@ export function ThemedBalanceChart({ balanceOverTime, loading, error }: ThemedBa
   const hasData = validData.length > 0;
   const noDataMessage = 'Add trades to see your balance progression over time';
 
-  // Chart dimensions
-  const chartWidth = 400;
-  const chartHeight = 200;
+  // Chart dimensions - reduced to prevent border overlap
+  const chartWidth = 350;
+  const chartHeight = 180;
   const margin = { top: 20, right: 30, bottom: 40, left: 50 };
   const plotWidth = chartWidth - margin.left - margin.right;
   const plotHeight = chartHeight - margin.top - margin.bottom;
@@ -74,20 +75,17 @@ export function ThemedBalanceChart({ balanceOverTime, loading, error }: ThemedBa
   const isProfit = totalChange >= 0;
 
   return (
-    <div className="h-80 flex flex-col">
-      {/* Header */}
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold flex items-center space-x-2">
+    <Card className="card-modern">
+      <CardHeader>
+        <CardTitle className="flex items-center space-x-2">
           <TrendingUp className="h-5 w-5" />
           <span>Balance Over Time</span>
-        </h3>
-        <p className="text-sm text-muted-foreground mt-1">
+        </CardTitle>
+        <CardDescription>
           Your account balance progression
-        </p>
-      </div>
-      
-      {/* Chart Content */}
-      <div className="flex-1">
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="h-80">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -108,9 +106,9 @@ export function ThemedBalanceChart({ balanceOverTime, loading, error }: ThemedBa
             </div>
           </div>
         ) : (
-          <div className="w-full h-full flex flex-col">
-            {/* Chart - now takes full space */}
-            <div className="flex-1 min-h-0">
+          <div className="w-full h-full flex flex-col p-4">
+            {/* Chart - with proper padding to prevent border overlap */}
+            <div className="flex-1 min-h-0 flex items-center justify-center">
               <svg width="100%" height="100%" viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="overflow-visible">
                 {/* Grid lines */}
                 {yAxisLabels.map((label, index) => (
@@ -212,7 +210,7 @@ export function ThemedBalanceChart({ balanceOverTime, loading, error }: ThemedBa
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
