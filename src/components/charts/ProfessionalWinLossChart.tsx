@@ -141,15 +141,15 @@ export function ProfessionalWinLossChart({ data }: ProfessionalWinLossChartProps
           ))}
         </div>
 
-        {/* Summary Stats */}
-        <div className="mt-6 grid grid-cols-2 gap-4 w-full">
-          <div className="text-center p-3 bg-white dark:bg-slate-800 rounded-lg">
-            <div className="text-lg font-bold text-green-600">{wins}</div>
-            <div className="text-xs text-slate-600 dark:text-slate-400">Winning Trades</div>
+        {/* Simple Stats */}
+        <div className="mt-4 flex justify-between text-sm">
+          <div>
+            <span className="text-slate-600 dark:text-slate-400">Wins: </span>
+            <span className="font-semibold text-green-600">{wins}</span>
           </div>
-          <div className="text-center p-3 bg-white dark:bg-slate-800 rounded-lg">
-            <div className="text-lg font-bold text-red-600">{losses}</div>
-            <div className="text-xs text-slate-600 dark:text-slate-400">Losing Trades</div>
+          <div>
+            <span className="text-slate-600 dark:text-slate-400">Losses: </span>
+            <span className="font-semibold text-red-600">{losses}</span>
           </div>
         </div>
       </div>

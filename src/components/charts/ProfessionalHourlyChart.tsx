@@ -133,37 +133,21 @@ export function ProfessionalHourlyChart({ data }: ProfessionalHourlyChartProps) 
         </svg>
       </div>
 
-      {/* Legend and Stats */}
-      <div className="mt-6 grid grid-cols-2 gap-4">
-        <div className="text-center p-3 bg-white dark:bg-slate-800 rounded-lg">
-          <div className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Best Hour</div>
-          <div className="text-lg font-bold text-green-600">
+      {/* Simple Stats */}
+      <div className="mt-4 flex justify-between text-sm">
+        <div>
+          <span className="text-slate-600 dark:text-slate-400">Best Hour: </span>
+          <span className="font-semibold text-green-600">
             {validData.reduce((best, current) => 
               current.profitLoss > best.profitLoss ? current : best
             ).hour}:00
-          </div>
+          </span>
         </div>
-        <div className="text-center p-3 bg-white dark:bg-slate-800 rounded-lg">
-          <div className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Total Trades</div>
-          <div className="text-lg font-bold text-blue-600">
+        <div>
+          <span className="text-slate-600 dark:text-slate-400">Total Trades: </span>
+          <span className="font-semibold text-blue-600">
             {validData.reduce((sum, item) => sum + item.tradeCount, 0)}
-          </div>
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="mt-4 flex justify-center space-x-6">
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-green-500 rounded"></div>
-          <span className="text-xs text-slate-600 dark:text-slate-400">Profit</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-red-500 rounded"></div>
-          <span className="text-xs text-slate-600 dark:text-slate-400">Loss</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-1 bg-green-600 rounded"></div>
-          <span className="text-xs text-slate-600 dark:text-slate-400">Win Rate ≥50%</span>
+          </span>
         </div>
       </div>
     </div>

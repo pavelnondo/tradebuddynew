@@ -158,39 +158,24 @@ export function ProfessionalEmotionsChart({ data }: ProfessionalEmotionsChartPro
         </svg>
       </div>
 
-      {/* Stats */}
-      <div className="mt-6 grid grid-cols-2 gap-4">
-        <div className="text-center p-3 bg-white dark:bg-slate-800 rounded-lg">
-          <div className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Best Emotion</div>
-          <div className="text-lg font-bold text-green-600">
+      {/* Simple Stats */}
+      <div className="mt-4 flex justify-between text-sm">
+        <div>
+          <span className="text-slate-600 dark:text-slate-400">Best Emotion: </span>
+          <span className="font-semibold text-green-600">
             {validData.reduce((best, current) => 
               current.avgProfitLoss > best.avgProfitLoss ? current : best
             ).emotion}
-          </div>
+          </span>
         </div>
-        <div className="text-center p-3 bg-white dark:bg-slate-800 rounded-lg">
-          <div className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Total Emotions</div>
-          <div className="text-lg font-bold text-purple-600">
+        <div>
+          <span className="text-slate-600 dark:text-slate-400">Total Emotions: </span>
+          <span className="font-semibold text-purple-600">
             {validData.length}
-          </div>
+          </span>
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="mt-4 flex justify-center space-x-6">
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-green-500 rounded"></div>
-          <span className="text-xs text-slate-600 dark:text-slate-400">Profitable</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-red-500 rounded"></div>
-          <span className="text-xs text-slate-600 dark:text-slate-400">Loss</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-1 bg-green-600 rounded"></div>
-          <span className="text-xs text-slate-600 dark:text-slate-400">Win Rate ≥50%</span>
-        </div>
-      </div>
     </div>
   );
 }
