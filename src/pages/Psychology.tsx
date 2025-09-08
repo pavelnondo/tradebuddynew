@@ -3,20 +3,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useApiTrades } from '@/hooks/useApiTrades';
-import { useTradeAnalysis } from '@/hooks/useTradeAnalysis';
-import { ThemedEmotionChart } from '@/components/charts/ThemedEmotionChart';
-import { Brain, Heart, TrendingUp, Target, BarChart3, PieChart, Clock, Zap } from 'lucide-react';
+import { Brain, Heart, TrendingUp, Target, Zap, AlertTriangle, CheckCircle, Clock, BarChart3 } from 'lucide-react';
 
 export default function Psychology() {
   const { trades, isLoading, error } = useApiTrades();
-  const analysisData = useTradeAnalysis(trades, 10000);
 
   const safeTrades = Array.isArray(trades) ? trades : [];
   
   // Psychology-related metrics
   const totalTrades = safeTrades.length;
   const tradesWithEmotions = safeTrades.filter(trade => trade.emotion).length;
+  const tradesWithConfidence = safeTrades.filter(trade => trade.confidence !== undefined);
+  const tradesWithNotes = safeTrades.filter(trade => trade.notes && trade.notes.trim().length > 0).length;
+  
   const emotionPercentage = totalTrades > 0 ? (tradesWithEmotions / totalTrades) * 100 : 0;
+  const confidencePercentage = totalTrades > 0 ? (tradesWithConfidence / totalTrades) * 100 : 0;
+  const notesPercentage = totalTrades > 0 ? (tradesWithNotes / totalTrades) * 100 : 0;
   
   // Emotion analysis
   const emotionStats = safeTrades.reduce((acc, trade) => {
@@ -43,10 +45,16 @@ export default function Psychology() {
   const worstEmotion = emotionEntries[emotionEntries.length - 1];
 
   // Confidence analysis
-  const tradesWithConfidence = safeTrades.filter(trade => trade.confidence !== undefined);
   const avgConfidence = tradesWithConfidence.length > 0 
     ? tradesWithConfidence.reduce((sum, trade) => sum + (trade.confidence || 0), 0) / tradesWithConfidence.length 
     : 0;
+
+  // Psychology patterns
+  const recentTrades = safeTrades
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 10);
+
+  const psychologyScore = Math.round((emotionPercentage + confidencePercentage + notesPercentage) / 3);
 
   return (
     <div className="min-h-screen bg-background">
@@ -56,23 +64,23 @@ export default function Psychology() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold text-foreground">Psychology</h1>
-              <p className="text-muted-foreground mt-2">Understand your trading mindset and emotional patterns</p>
+              <p className="text-muted-foreground mt-2">Analyze your trading mindset, emotions, and psychological patterns</p>
             </div>
             <div className="flex items-center space-x-4">
               <Badge variant="outline" className="px-3 py-1">
-                {tradesWithEmotions} Emotional Trades
+                Psychology Score: {psychologyScore}%
               </Badge>
             </div>
           </div>
         </div>
 
-        {/* Key Psychology Metrics */}
+        {/* Psychology Tracking Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Emotional Awareness */}
           <Card className="card-modern">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Emotional Awareness
+                Emotional Tracking
               </CardTitle>
               <Heart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -86,17 +94,17 @@ export default function Psychology() {
             </CardContent>
           </Card>
 
-          {/* Average Confidence */}
+          {/* Confidence Tracking */}
           <Card className="card-modern">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Avg Confidence
+                Confidence Tracking
               </CardTitle>
               <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-foreground">
-                {avgConfidence.toFixed(1)}/10
+                {confidencePercentage.toFixed(1)}%
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {tradesWithConfidence.length} trades rated
@@ -104,118 +112,139 @@ export default function Psychology() {
             </CardContent>
           </Card>
 
-          {/* Best Emotion */}
+          {/* Notes Tracking */}
           <Card className="card-modern">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Best Emotion
+                Journal Entries
               </CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <Brain className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground capitalize">
-                {bestEmotion?.emotion || 'N/A'}
+              <div className="text-2xl font-bold text-foreground">
+                {notesPercentage.toFixed(1)}%
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {bestEmotion ? `+$${bestEmotion.avgPnl.toFixed(0)} avg` : 'No data'}
+                {tradesWithNotes} of {totalTrades} trades
               </p>
             </CardContent>
           </Card>
 
-          {/* Worst Emotion */}
+          {/* Average Confidence */}
           <Card className="card-modern">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Worst Emotion
+                Avg Confidence
               </CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground capitalize">
-                {worstEmotion?.emotion || 'N/A'}
+              <div className="text-2xl font-bold text-foreground">
+                {avgConfidence.toFixed(1)}/10
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {worstEmotion ? `$${worstEmotion.avgPnl.toFixed(0)} avg` : 'No data'}
+                {tradesWithConfidence.length > 0 ? 'Based on rated trades' : 'No data'}
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Psychology Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <ThemedEmotionChart 
-            data={analysisData.emotionPerformance.map(item => ({
-              emotion: item.emotion,
-              avgProfitLoss: item.trades > 0 ? item.profitLoss / item.trades : 0,
-              tradeCount: item.trades,
-              winRate: item.winRate
-            }))}
-            loading={isLoading}
-            error={error}
-          />
-
-          {/* Confidence vs Performance */}
+        {/* Emotion Analysis */}
+        {emotionEntries.length > 0 && (
           <Card className="card-modern">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Target className="h-5 w-5" />
-                <span>Confidence vs Performance</span>
+                <Heart className="h-5 w-5" />
+                <span>Emotion Performance Analysis</span>
               </CardTitle>
               <CardDescription>
-                Relationship between confidence levels and actual outcomes
+                How different emotions correlate with your trading performance
               </CardDescription>
             </CardHeader>
-            <CardContent className="h-80">
-              {isLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              ) : error ? (
-                <div className="flex items-center justify-center h-full text-destructive">
-                  <div className="text-center">
-                    <p className="font-medium">Error loading data</p>
-                    <p className="text-sm text-muted-foreground">{error}</p>
-                  </div>
-                </div>
-              ) : tradesWithConfidence.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  <div className="text-center">
-                    <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="font-medium">No confidence data</p>
-                    <p className="text-sm">Add trades with confidence ratings to see patterns</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-foreground mb-2">
-                      {avgConfidence.toFixed(1)}/10
+            <CardContent>
+              <div className="space-y-4">
+                {emotionEntries.map((emotion, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-3 h-3 rounded-full ${
+                        emotion.avgPnl >= 0 ? 'bg-green-500' : 'bg-red-500'
+                      }`}></div>
+                      <span className="font-medium text-foreground capitalize">
+                        {emotion.emotion}
+                      </span>
                     </div>
-                    <div className="text-sm text-muted-foreground mb-4">
-                      Average Confidence
-                    </div>
-                    <div className="text-lg font-semibold text-blue-600">
-                      {tradesWithConfidence.length}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Trades Rated
+                    <div className="text-right">
+                      <div className={`font-semibold ${
+                        emotion.avgPnl >= 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {emotion.avgPnl >= 0 ? '+' : ''}${emotion.avgPnl.toFixed(0)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {emotion.count} trades, {emotion.winRate.toFixed(0)}% win rate
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                ))}
+              </div>
             </CardContent>
           </Card>
-        </div>
+        )}
 
-        {/* Psychology Insights */}
+        {/* Recent Psychology Patterns */}
+        <Card className="card-modern">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Clock className="h-5 w-5" />
+              <span>Recent Psychology Patterns</span>
+            </CardTitle>
+            <CardDescription>
+              Your latest trading mindset and emotional states
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {recentTrades.slice(0, 5).map((trade, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-2 h-2 rounded-full ${
+                      trade.profitLoss >= 0 ? 'bg-green-500' : 'bg-red-500'
+                    }`}></div>
+                    <span className="text-sm font-medium text-foreground">
+                      {new Date(trade.date).toLocaleDateString()}
+                    </span>
+                    {trade.emotion && (
+                      <Badge variant="outline" className="text-xs">
+                        {trade.emotion}
+                      </Badge>
+                    )}
+                    {trade.confidence !== undefined && (
+                      <Badge variant="outline" className="text-xs">
+                        {trade.confidence}/10
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <div className={`text-sm font-semibold ${
+                      trade.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {trade.profitLoss >= 0 ? '+' : ''}${trade.profitLoss?.toFixed(2) || '0.00'}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Psychology Insights & Recommendations */}
         <Card className="card-modern">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Brain className="h-5 w-5" />
-              <span>Psychology Insights</span>
+              <span>Psychology Insights & Recommendations</span>
             </CardTitle>
             <CardDescription>
-              Key insights about your trading psychology
+              Key insights about your trading psychology and improvement suggestions
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -223,32 +252,63 @@ export default function Psychology() {
               <div className="p-4 bg-muted/50 rounded-lg">
                 <div className="flex items-center space-x-2 mb-2">
                   <Zap className="h-4 w-4 text-yellow-500" />
-                  <span className="font-medium text-foreground">Emotional Awareness</span>
+                  <span className="font-medium text-foreground">Emotional Tracking</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   You track emotions in {emotionPercentage.toFixed(0)}% of your trades. 
-                  {emotionPercentage > 50 ? ' Great job maintaining emotional awareness!' : ' Consider tracking emotions more consistently.'}
+                  {emotionPercentage > 70 ? ' Excellent emotional awareness!' : emotionPercentage > 50 ? ' Good tracking, aim for 70%+' : ' Consider tracking emotions more consistently for better insights.'}
                 </p>
               </div>
 
               <div className="p-4 bg-muted/50 rounded-lg">
                 <div className="flex items-center space-x-2 mb-2">
                   <Target className="h-4 w-4 text-blue-500" />
-                  <span className="font-medium text-foreground">Confidence Level</span>
+                  <span className="font-medium text-foreground">Confidence Analysis</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Your average confidence is {avgConfidence.toFixed(1)}/10. 
-                  {avgConfidence > 7 ? ' You trade with high confidence!' : avgConfidence > 5 ? ' Moderate confidence level.' : ' Consider building more confidence in your trades.'}
+                  {tradesWithConfidence.length > 0 ? `Your average confidence is ${avgConfidence.toFixed(1)}/10. ${avgConfidence > 7 ? 'High confidence trader!' : avgConfidence > 5 ? 'Moderate confidence level.' : 'Consider building more confidence through practice and education.'}` : 'Start rating your confidence levels to track psychological patterns.'}
+                </p>
+              </div>
+
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Brain className="h-4 w-4 text-purple-500" />
+                  <span className="font-medium text-foreground">Journaling Practice</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  You journal {notesPercentage.toFixed(0)}% of your trades. 
+                  {notesPercentage > 60 ? ' Great journaling discipline!' : 'Consider adding more detailed notes to track your thought process and improve decision-making.'}
                 </p>
               </div>
 
               <div className="p-4 bg-muted/50 rounded-lg">
                 <div className="flex items-center space-x-2 mb-2">
                   <TrendingUp className="h-4 w-4 text-green-500" />
-                  <span className="font-medium text-foreground">Best Emotion</span>
+                  <span className="font-medium text-foreground">Best Trading Mindset</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {bestEmotion ? `You perform best when feeling ${bestEmotion.emotion}, with an average P&L of +$${bestEmotion.avgPnl.toFixed(0)}.` : 'Track more emotions to identify your best trading mindset.'}
+                  {bestEmotion ? `You perform best when feeling ${bestEmotion.emotion}, with an average P&L of +$${bestEmotion.avgPnl.toFixed(0)}. Focus on cultivating this mindset.` : 'Track more emotions to identify your optimal trading mindset.'}
+                </p>
+              </div>
+
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <div className="flex items-center space-x-2 mb-2">
+                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                  <span className="font-medium text-foreground">Areas for Improvement</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {worstEmotion ? `Be cautious when feeling ${worstEmotion.emotion} - it correlates with ${worstEmotion.avgPnl < 0 ? 'losses' : 'lower performance'}. Consider taking breaks or adjusting your strategy.` : 'Track more emotional data to identify patterns that need attention.'}
+                </p>
+              </div>
+
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <div className="flex items-center space-x-2 mb-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span className="font-medium text-foreground">Psychology Score</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Your overall psychology tracking score is {psychologyScore}%. 
+                  {psychologyScore > 80 ? 'Excellent psychological awareness!' : psychologyScore > 60 ? 'Good tracking habits, keep improving!' : 'Focus on consistent tracking of emotions, confidence, and notes.'}
                 </p>
               </div>
             </div>
