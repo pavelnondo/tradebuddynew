@@ -33,6 +33,9 @@ export function useApiTrades() {
       }
       // Map backend fields to frontend Trade type and parse dates with validation
       console.log('Raw API data:', data);
+      console.log('API data length:', data.length);
+      console.log('First trade sample:', data[0]);
+      
       const mappedTrades = data.map((trade: any) => {
         // Helper function to safely convert to number
         const safeNumber = (value: any, defaultValue: number = 0): number => {
@@ -70,6 +73,8 @@ export function useApiTrades() {
         };
       });
       console.log('Mapped trades:', mappedTrades);
+      console.log('Mapped trades length:', mappedTrades.length);
+      console.log('First mapped trade:', mappedTrades[0]);
       setTrades(mappedTrades);
     } catch (err: any) {
       setError(err.message);
