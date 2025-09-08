@@ -1,6 +1,6 @@
 -- Create accounts table for multi-account support
 CREATE TABLE IF NOT EXISTS accounts (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     initial_balance DECIMAL(15,2) NOT NULL DEFAULT 0,
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS accounts (
 );
 
 -- Add account_id column to trades table
-ALTER TABLE trades ADD COLUMN IF NOT EXISTS account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE;
+ALTER TABLE trades ADD COLUMN IF NOT EXISTS account_id UUID REFERENCES accounts(id) ON DELETE CASCADE;
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_accounts_user_id ON accounts(user_id);

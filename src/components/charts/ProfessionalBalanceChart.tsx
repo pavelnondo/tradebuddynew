@@ -118,7 +118,7 @@ export function ProfessionalBalanceChart({ balanceOverTime }: ProfessionalBalanc
   }
 
   return (
-    <div className="w-full h-full bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-xl p-6">
+    <div className="w-full h-full">
       {/* Chart Header */}
       <div className="flex justify-between items-center mb-6">
         <div>

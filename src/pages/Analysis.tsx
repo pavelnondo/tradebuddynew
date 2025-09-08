@@ -515,7 +515,7 @@ export default function Analysis() {
       {/* Interactive Dashboard Tabs */}
       {/* Essential Analysis */}
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <MetricCard title="Total P&L" value={metrics.totalProfitLoss} icon={DollarSign} format="currency" color={metrics.totalProfitLoss >= 0 ? "green" : "red"} />
         <MetricCard title="Win Rate" value={metrics.winRate} icon={Target} format="percentage" color="blue" />
         <MetricCard title="Total Trades" value={metrics.totalTrades} icon={Activity} format="number" color="purple" />
@@ -523,49 +523,65 @@ export default function Analysis() {
       </div>
 
       {/* Balance Over Time */}
-      <Card className="card-modern">
-        <CardHeader>
-          <CardTitle className="flex items-center"><TrendingUp className="w-5 h-5 mr-2" /> Balance Over Time</CardTitle>
-          <CardDescription>Account balance progression across the selected period</CardDescription>
-        </CardHeader>
-          <CardContent className="h-80">
-            <ProfessionalBalanceChart balanceOverTime={balanceOverTime} />
-          </CardContent>
-      </Card>
-
-      {/* Essential Charts Only */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="mb-8">
         <Card className="card-modern">
           <CardHeader>
-            <CardTitle className="flex items-center"><Award className="w-5 h-5 mr-2" /> Emotion Impact</CardTitle>
-            <CardDescription>How emotions correlate with win rate</CardDescription>
+            <CardTitle className="flex items-center">
+              <TrendingUp className="w-5 h-5 mr-2" /> 
+              Balance Over Time
+            </CardTitle>
+            <CardDescription>Account balance progression across the selected period</CardDescription>
           </CardHeader>
-          <CardContent className="h-80">
+          <CardContent className="h-96">
+            <ProfessionalBalanceChart balanceOverTime={balanceOverTime} />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Grid - Two Columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <Card className="card-modern">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Award className="w-5 h-5 mr-2" /> 
+              Emotion Impact
+            </CardTitle>
+            <CardDescription>How emotions correlate with performance</CardDescription>
+          </CardHeader>
+          <CardContent className="h-96">
             <ProfessionalEmotionsChart data={transformedEmotionPerformance} />
           </CardContent>
         </Card>
 
         <Card className="card-modern">
           <CardHeader>
-            <CardTitle className="flex items-center"><Clock className="w-5 h-5 mr-2" /> Hourly Performance</CardTitle>
+            <CardTitle className="flex items-center">
+              <Clock className="w-5 h-5 mr-2" /> 
+              Hourly Performance
+            </CardTitle>
             <CardDescription>Profit/Loss and win rate by hour</CardDescription>
           </CardHeader>
-          <CardContent className="h-80">
+          <CardContent className="h-96">
             <ProfessionalHourlyChart data={transformedTradesByHour} />
           </CardContent>
         </Card>
       </div>
 
-      {/* Setup Performance - Most Important Chart */}
-      <Card className="card-modern">
-        <CardHeader>
-          <CardTitle className="flex items-center"><Target className="w-5 h-5 mr-2" /> Setup Performance</CardTitle>
-          <CardDescription>Performance analysis by trading setup</CardDescription>
-        </CardHeader>
-        <CardContent className="h-80">
-          <SetupPerformanceChart data={setupPerformance} isLoading={isLoading} />
-        </CardContent>
-      </Card>
+      {/* Setup Performance - Full Width */}
+      <div className="mb-8">
+        <Card className="card-modern">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Target className="w-5 h-5 mr-2" /> 
+              Setup Performance
+            </CardTitle>
+            <CardDescription>Performance analysis by trading setup</CardDescription>
+          </CardHeader>
+          <CardContent className="h-96">
+            <SetupPerformanceChart data={setupPerformance} isLoading={isLoading} />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
