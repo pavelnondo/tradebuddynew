@@ -13,8 +13,8 @@ import { Button } from "@/components/ui/button";
 import { useApiTrades } from '@/hooks/useApiTrades';
 import { useTradeAnalysis } from '@/hooks/useTradeAnalysis';
 import { useUserSettings } from '@/hooks/useUserSettings';
-import { ProfessionalBalanceChart } from '@/components/charts/ProfessionalBalanceChart';
-import { ProfessionalWinLossChart } from '@/components/charts/ProfessionalWinLossChart';
+import { BalanceChart } from '@/components/charts/BalanceChart';
+import { WinLossChart } from '@/components/charts/WinLossChart';
 
 export default function Dashboard() {
   const { settings } = useUserSettings();
@@ -144,27 +144,17 @@ export default function Dashboard() {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Balance Over Time</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="h-80">
-              <ProfessionalBalanceChart balanceOverTime={analysisData.balanceOverTime} />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Win/Loss Distribution</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="h-80">
-              <ProfessionalWinLossChart data={analysisData.winLossData} />
-            </div>
-          </CardContent>
-        </Card>
+        <BalanceChart 
+          balanceOverTime={analysisData.balanceOverTime}
+          loading={isLoading}
+          error={error}
+        />
+        
+        <WinLossChart 
+          data={analysisData.winLossData}
+          loading={isLoading}
+          error={error}
+        />
       </div>
 
       {/* Recent Trades */}
