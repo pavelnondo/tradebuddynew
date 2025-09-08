@@ -12,6 +12,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useUserSettings } from "@/hooks/useUserSettings";
 import { useEffect, useMemo } from "react";
+import { AccountManager } from "@/components/AccountManager";
 
 // Define settings schema with validation
 const settingsFormSchema = z.object({
@@ -102,8 +103,11 @@ export default function Settings() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-4xl mx-auto space-y-8">
       <h1 className="text-3xl font-bold mb-6">Settings</h1>
+      
+      {/* Account Management */}
+      <AccountManager />
       
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
