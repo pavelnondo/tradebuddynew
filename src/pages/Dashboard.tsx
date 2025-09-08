@@ -1,262 +1,66 @@
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   TrendingUp, 
-  TrendingDown, 
   DollarSign, 
   Target, 
-  Calendar,
-  Plus,
-  ArrowUpRight,
-  ArrowDownRight,
   Activity,
-  BarChart3,
-  PieChart,
-  Clock,
-  Award,
-  Zap,
+  Plus,
   Settings
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useApiTrades } from '@/hooks/useApiTrades';
 import { useTradeAnalysis } from '@/hooks/useTradeAnalysis';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import { ProfessionalBalanceChart } from '@/components/charts/ProfessionalBalanceChart';
 import { ProfessionalWinLossChart } from '@/components/charts/ProfessionalWinLossChart';
-import { cn } from "@/lib/utils";
-
-// Loading skeleton component
-const MetricSkeleton = () => (
-  <div className="card-modern p-6">
-    <div className="flex items-center justify-between mb-4">
-      <div className="h-4 w-24 bg-muted rounded shimmer"></div>
-      <div className="h-8 w-8 bg-muted rounded-full shimmer"></div>
-    </div>
-    <div className="h-8 w-20 bg-muted rounded shimmer mb-2"></div>
-    <div className="h-3 w-32 bg-muted rounded shimmer"></div>
-  </div>
-);
-
-// Metric card component
-const MetricCard = ({ 
-  title, 
-  value, 
-  change, 
-  icon: Icon, 
-  trend = "up",
-  format = "number",
-  className = ""
-}: {
-  title: string;
-  value: number | string;
-  change?: string;
-  icon: any;
-  trend?: "up" | "down";
-  format?: "number" | "currency" | "percentage";
-  className?: string;
-}) => {
-  const formatValue = (val: number | string) => {
-    if (typeof val === "string") return val;
-    switch (format) {
-      case "currency":
-        return new Intl.NumberFormat('en-US', { 
-          style: 'currency', 
-          currency: 'USD',
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0
-        }).format(val);
-      case "percentage":
-        return `${val.toFixed(1)}%`;
-      default:
-        return val.toLocaleString();
-    }
-  };
-
-  return (
-    <Card className={cn("card-modern group hover:shadow-lg transition-smooth", className)}>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="p-2 rounded-xl bg-muted/50 group-hover:bg-muted transition-smooth">
-            <Icon className="w-5 h-5 text-muted-foreground" />
-          </div>
-          {change && (
-            <Badge 
-              variant={trend === "up" ? "default" : "secondary"}
-              className={cn(
-                "text-xs",
-                trend === "up" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : 
-                "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-              )}
-            >
-              {trend === "up" ? <ArrowUpRight className="w-3 h-3 mr-1" /> : <ArrowDownRight className="w-3 h-3 mr-1" />}
-              {change}
-            </Badge>
-          )}
-        </div>
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-2xl font-bold">{formatValue(value)}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-// Quick action card
-const QuickActionCard = ({ 
-  title, 
-  description, 
-  icon: Icon, 
-  onClick, 
-  variant = "default" 
-}: {
-  title: string;
-  description: string;
-  icon: any;
-  onClick: () => void;
-  variant?: "default" | "primary";
-}) => (
-  <Card 
-    className={cn(
-      "card-modern cursor-pointer group hover:shadow-lg transition-smooth",
-      variant === "primary" && "bg-gradient-to-br from-blue-500 to-purple-600 text-white"
-    )}
-    onClick={onClick}
-  >
-    <CardContent className="p-6">
-      <div className="flex items-start space-x-4">
-        <div className={cn(
-          "p-3 rounded-xl",
-          variant === "primary" ? "bg-white/20" : "bg-muted/50 group-hover:bg-muted"
-        )}>
-          <Icon className={cn("w-6 h-6", variant === "primary" ? "text-white" : "text-muted-foreground")} />
-        </div>
-        <div className="flex-1">
-          <h3 className={cn("font-semibold mb-1", variant === "primary" ? "text-white" : "text-foreground")}>
-            {title}
-          </h3>
-          <p className={cn("text-sm", variant === "primary" ? "text-white/80" : "text-muted-foreground")}>
-            {description}
-          </p>
-        </div>
-      </div>
-    </CardContent>
-  </Card>
-);
-
-// Insight card
-const InsightCard = ({ 
-  title, 
-  value, 
-  description, 
-  icon: Icon,
-  color = "blue" 
-}: {
-  title: string;
-  value: string;
-  description: string;
-  icon: any;
-  color?: "blue" | "green" | "yellow" | "purple";
-}) => {
-  const colorClasses = {
-    blue: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-    green: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    yellow: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-    purple: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
-  };
-
-  return (
-    <Card className="card-modern">
-      <CardContent className="p-6">
-        <div className="flex items-start space-x-4">
-          <div className={cn("p-3 rounded-xl", colorClasses[color])}>
-            <Icon className="w-5 h-5" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-semibold mb-1">{title}</h3>
-            <p className="text-2xl font-bold mb-2">{value}</p>
-            <p className="text-sm text-muted-foreground">{description}</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
 
 export default function Dashboard() {
   const { settings } = useUserSettings();
   const [initialBalance, setInitialBalance] = useState<number>(10000);
+  const { trades, isLoading, error } = useApiTrades();
+  const navigate = useNavigate();
   
-  // Update initial balance when settings are loaded
   useEffect(() => {
     if (settings) {
       setInitialBalance(Number(settings.initial_balance));
     }
   }, [settings]);
   
-  const { trades, isLoading, error, fetchTrades } = useApiTrades();
-  // Ensure trades is always an array to prevent map errors
   const safeTrades = Array.isArray(trades) ? trades : [];
-  const navigate = useNavigate();
   const analysisData = useTradeAnalysis(safeTrades, initialBalance);
 
-  const handleInitialBalanceChange = (newBalance: number) => {
-    setInitialBalance(newBalance);
-    // Note: This will be handled by the Settings page now
-    localStorage.setItem('initialTradingBalance', newBalance.toString());
-  };
-
-  // Loading state
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-            <p className="text-muted-foreground">Your trading overview</p>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="p-6">
+        <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           {[...Array(4)].map((_, i) => (
-            <MetricSkeleton key={i} />
-          ))}
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <Card className="card-modern">
-              <CardContent className="p-6">
-                <div className="h-64 bg-muted/50 rounded-lg shimmer"></div>
+            <Card key={i}>
+              <CardContent className="p-4">
+                <div className="h-20 bg-gray-200 rounded animate-pulse"></div>
               </CardContent>
             </Card>
-          </div>
-          <Card className="card-modern">
-            <CardContent className="p-6">
-              <div className="h-64 bg-muted/50 rounded-lg shimmer"></div>
-            </CardContent>
-          </Card>
+          ))}
         </div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="h-64 bg-gray-200 rounded animate-pulse"></div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <Card className="card-modern max-w-md">
-          <CardContent className="p-8 text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <TrendingDown className="w-8 h-8 text-red-600" />
-            </div>
-            <h2 className="text-xl font-bold mb-2">Error Loading Data</h2>
-            <p className="text-muted-foreground mb-4">{error}</p>
-            <Button onClick={fetchTrades} className="btn-apple">
-              Try Again
-            </Button>
+      <div className="p-6">
+        <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+        <Card>
+          <CardContent className="p-6 text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <Button onClick={() => window.location.reload()}>Retry</Button>
           </CardContent>
         </Card>
       </div>
@@ -269,216 +73,130 @@ export default function Dashboard() {
   const totalTrades = analysisData.metrics.totalTrades || 0;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
-      {/* Header Section */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-        <div>
-          <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
-          <p className="text-lg text-muted-foreground">
-            Welcome back! Here's your trading overview.
-          </p>
-        </div>
-        <div className="flex items-center space-x-4">
-          <Button 
-            variant="outline" 
-            onClick={() => navigate('/settings')}
-            className="btn-apple-secondary"
-          >
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate('/settings')}>
             <Settings className="w-4 h-4 mr-2" />
             Settings
           </Button>
-          <Button 
-            onClick={() => navigate('/add-trade')}
-            className="btn-apple"
-          >
+          <Button onClick={() => navigate('/add-trade')}>
             <Plus className="w-4 h-4 mr-2" />
             Add Trade
           </Button>
         </div>
       </div>
 
-      {/* Key Metrics Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard
-          title="Total Balance"
-          value={currentBalance}
-          change="+12.5%"
-          icon={DollarSign}
-          format="currency"
-          trend="up"
-        />
-        <MetricCard
-          title="Total P&L"
-          value={totalProfitLoss}
-          change={totalProfitLoss >= 0 ? "+8.2%" : "-3.1%"}
-          icon={TrendingUp}
-          format="currency"
-          trend={totalProfitLoss >= 0 ? "up" : "down"}
-        />
-        <MetricCard
-          title="Win Rate"
-          value={winRate}
-          change="+2.1%"
-          icon={Target}
-          format="percentage"
-          trend="up"
-        />
-        <MetricCard
-          title="Total Trades"
-          value={totalTrades}
-          change="+5"
-          icon={Activity}
-          format="number"
-          trend="up"
-        />
-      </div>
-
-      {/* Balance Over Time Chart - Full Width */}
-      <Card className="card-modern">
-        <CardHeader>
-          <CardTitle className="flex items-center text-xl">
-            <BarChart3 className="w-6 h-6 mr-3" />
-            Balance Over Time
-          </CardTitle>
-          <CardDescription className="text-base">
-            Your account balance progression across time
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="h-96">
-          <ProfessionalBalanceChart balanceOverTime={analysisData.balanceOverTime} />
-        </CardContent>
-      </Card>
-
-      {/* Charts Row - Two Columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Win/Loss Distribution */}
-        <Card className="card-modern">
-          <CardHeader>
-            <CardTitle className="flex items-center text-xl">
-              <PieChart className="w-6 h-6 mr-3" />
-              Win/Loss Distribution
-            </CardTitle>
-            <CardDescription className="text-base">
-              Your trading performance breakdown
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-96">
-            <ProfessionalWinLossChart data={analysisData.winLossData} />
+      {/* Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Total Balance</p>
+                <p className="text-2xl font-bold">${currentBalance.toLocaleString()}</p>
+              </div>
+              <DollarSign className="w-8 h-8 text-green-600" />
+            </div>
           </CardContent>
         </Card>
 
-        {/* Quick Actions */}
-        <Card className="card-modern">
-          <CardHeader>
-            <CardTitle className="flex items-center text-xl">
-              <Zap className="w-6 h-6 mr-3" />
-              Quick Actions
-            </CardTitle>
-            <CardDescription className="text-base">
-              Common tasks and navigation
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-96 flex flex-col justify-center">
-            <div className="space-y-4">
-              <QuickActionCard
-                title="Add New Trade"
-                description="Record your latest trade with detailed analysis"
-                icon={Plus}
-                onClick={() => navigate('/add-trade')}
-                variant="primary"
-              />
-              <QuickActionCard
-                title="View Analysis"
-                description="Deep dive into your trading patterns"
-                icon={BarChart3}
-                onClick={() => navigate('/analysis')}
-              />
-              <QuickActionCard
-                title="Trading Calendar"
-                description="Plan and review your trading schedule"
-                icon={Calendar}
-                onClick={() => navigate('/calendar')}
-              />
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Total P&L</p>
+                <p className={`text-2xl font-bold ${totalProfitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {totalProfitLoss >= 0 ? '+' : ''}${totalProfitLoss.toLocaleString()}
+                </p>
+              </div>
+              <TrendingUp className="w-8 h-8 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Win Rate</p>
+                <p className="text-2xl font-bold">{winRate.toFixed(1)}%</p>
+              </div>
+              <Target className="w-8 h-8 text-purple-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Total Trades</p>
+                <p className="text-2xl font-bold">{totalTrades}</p>
+              </div>
+              <Activity className="w-8 h-8 text-orange-600" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Trading Insights Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <InsightCard
-          title="Best Performing Asset"
-          value={analysisData.assetPerformance.length > 0 ? analysisData.assetPerformance[0]?.asset || "N/A" : "N/A"}
-          description="Your most profitable trading instrument"
-          icon={TrendingUp}
-          color="green"
-        />
-        <InsightCard
-          title="Peak Trading Hours"
-          value={analysisData.tradesByHour.length > 0 ? `${analysisData.tradesByHour[0]?.hourFormatted || "N/A"}` : "N/A"}
-          description="Your most successful trading time"
-          icon={Clock}
-          color="blue"
-        />
-        <InsightCard
-          title="Profit Factor"
-          value={analysisData.metrics.profitFactor ? analysisData.metrics.profitFactor.toFixed(2) : "N/A"}
-          description={`Total Profit: $${analysisData.metrics.totalProfit?.toFixed(2) || '0'} | Total Loss: $${Math.abs(analysisData.metrics.totalLoss || 0).toFixed(2)}`}
-          icon={Award}
-          color="yellow"
-        />
-        <InsightCard
-          title="Risk Level"
-          value={analysisData.metrics.maxDrawdown > 10 ? "High" : analysisData.metrics.maxDrawdown > 5 ? "Medium" : "Low"}
-          description="Your current risk exposure"
-          icon={Zap}
-          color="purple"
-        />
-      </div>
-
-      {/* Recent Activity Section */}
-      {trades.length > 0 && (
-        <Card className="card-modern">
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-xl">Recent Trades</CardTitle>
-            <CardDescription className="text-base">
-              Your latest trading activity
-            </CardDescription>
+            <CardTitle>Balance Over Time</CardTitle>
+            <CardDescription>Your account balance progression</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="h-64">
+              <ProfessionalBalanceChart balanceOverTime={analysisData.balanceOverTime} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Win/Loss Distribution</CardTitle>
+            <CardDescription>Your trading performance breakdown</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ProfessionalWinLossChart data={analysisData.winLossData} />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Trades */}
+      {safeTrades.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Trades</CardTitle>
+            <CardDescription>Your latest trading activity</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
               {safeTrades.slice(0, 5).map((trade) => (
-                <div key={trade.id} className="flex items-center justify-between p-4 rounded-xl bg-muted/30">
-                  <div className="flex items-center space-x-4">
-                    <div className={cn(
-                      "w-3 h-3 rounded-full",
-                      trade.profitLoss >= 0 ? "bg-green-500" : "bg-red-500"
-                    )} />
-                    <div>
-                      <p className="font-medium">{trade.asset}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {trade.date ? new Date(trade.date).toLocaleDateString() : "N/A"}
-                      </p>
-                    </div>
+                <div key={trade.id} className="flex justify-between items-center p-3 border rounded">
+                  <div>
+                    <p className="font-medium">{trade.asset}</p>
+                    <p className="text-sm text-gray-600">
+                      {trade.date ? new Date(trade.date).toLocaleDateString() : "N/A"}
+                    </p>
                   </div>
                   <div className="text-right">
-                    <p className={cn(
-                      "font-semibold",
-                      trade.profitLoss >= 0 ? "text-green-600" : "text-red-600"
-                    )}>
-                      {trade.profitLoss >= 0 ? "+" : ""}${trade.profitLoss.toFixed(2)}
+                    <p className={`font-semibold ${trade.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {trade.profitLoss >= 0 ? '+' : ''}${trade.profitLoss.toFixed(2)}
                     </p>
-                    <p className="text-sm text-muted-foreground">{trade.tradeType}</p>
+                    <p className="text-sm text-gray-600">{trade.tradeType}</p>
                   </div>
                 </div>
               ))}
             </div>
-            <div className="mt-6 pt-4 border-t border-border/50">
-              <Button 
-                variant="ghost" 
-                onClick={() => navigate('/trades')}
-                className="w-full"
-              >
+            <div className="mt-4">
+              <Button variant="outline" onClick={() => navigate('/trades')} className="w-full">
                 View All Trades
               </Button>
             </div>
