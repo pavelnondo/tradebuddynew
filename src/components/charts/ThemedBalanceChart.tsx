@@ -1,5 +1,4 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp } from 'lucide-react';
 
 interface ThemedBalanceChartProps {
@@ -75,17 +74,20 @@ export function ThemedBalanceChart({ balanceOverTime, loading, error }: ThemedBa
   const isProfit = totalChange >= 0;
 
   return (
-    <Card className="card-modern">
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
+    <div className="h-80 flex flex-col">
+      {/* Header */}
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold flex items-center space-x-2">
           <TrendingUp className="h-5 w-5" />
           <span>Balance Over Time</span>
-        </CardTitle>
-        <CardDescription>
+        </h3>
+        <p className="text-sm text-muted-foreground mt-1">
           Your account balance progression
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="h-80">
+        </p>
+      </div>
+      
+      {/* Chart Content */}
+      <div className="flex-1">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -210,7 +212,7 @@ export function ThemedBalanceChart({ balanceOverTime, loading, error }: ThemedBa
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
