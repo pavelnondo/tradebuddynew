@@ -21,9 +21,9 @@ import {
 } from "@/components/ui/select";
 import { useApiTrades } from '@/hooks/useApiTrades';
 import { useTradeAnalysis } from '@/hooks/useTradeAnalysis';
-import { BorderlessBalanceChart } from "@/components/charts/BorderlessBalanceChart";
-import { BorderlessHourlyChart } from "@/components/charts/BorderlessHourlyChart";
-import { BorderlessEmotionChart } from "@/components/charts/BorderlessEmotionChart";
+import { ProperBalanceChart } from "@/components/charts/ProperBalanceChart";
+import { ProperHourlyChart } from "@/components/charts/ProperHourlyChart";
+import { ProperEmotionChart } from "@/components/charts/ProperEmotionChart";
 import { SetupPerformanceChart } from "@/components/charts/SetupPerformanceChart";
 
 export default function Analysis() {
@@ -239,7 +239,7 @@ export default function Analysis() {
       </div>
 
       {/* Balance Chart */}
-      <BorderlessBalanceChart 
+      <ProperBalanceChart 
         balanceOverTime={balanceOverTime}
         loading={isLoading}
         error={error}
@@ -247,13 +247,13 @@ export default function Analysis() {
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <BorderlessEmotionChart 
+        <ProperEmotionChart 
           data={transformedEmotionPerformance}
           loading={isLoading}
           error={error}
         />
 
-        <BorderlessHourlyChart 
+        <ProperHourlyChart 
           data={transformedTradesByHour}
           loading={isLoading}
           error={error}
