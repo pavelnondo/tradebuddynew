@@ -23,8 +23,8 @@ import { Badge } from "@/components/ui/badge";
 import { useApiTrades } from '@/hooks/useApiTrades';
 import { useTradeAnalysis } from '@/hooks/useTradeAnalysis';
 import { useUserSettings } from '@/hooks/useUserSettings';
-import { RevolutionaryBalanceChart } from '@/components/charts/RevolutionaryBalanceChart';
-import { RevolutionaryWinLossChart } from '@/components/charts/RevolutionaryWinLossChart';
+import { ProfessionalBalanceChart } from '@/components/charts/ProfessionalBalanceChart';
+import { ProfessionalWinLossChart } from '@/components/charts/ProfessionalWinLossChart';
 import { cn } from "@/lib/utils";
 
 // Loading skeleton component
@@ -346,7 +346,7 @@ export default function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent className="h-80">
-            <RevolutionaryBalanceChart balanceOverTime={analysisData.balanceOverTime} />
+            <ProfessionalBalanceChart balanceOverTime={analysisData.balanceOverTime} />
           </CardContent>
         </Card>
 
@@ -361,7 +361,7 @@ export default function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent className="h-80">
-            <RevolutionaryWinLossChart data={analysisData.winLossData} />
+            <ProfessionalWinLossChart data={analysisData.winLossData} />
           </CardContent>
         </Card>
       </div>
