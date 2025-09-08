@@ -240,11 +240,10 @@ export default function Analysis() {
 
       {/* Balance Chart */}
       <Card>
-        <CardHeader>
-          <CardTitle>Balance Over Time</CardTitle>
-          <CardDescription>Account balance progression</CardDescription>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Balance Over Time</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           <div className="h-80">
             <ProfessionalBalanceChart balanceOverTime={balanceOverTime} />
           </div>
@@ -254,11 +253,10 @@ export default function Analysis() {
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Emotion Impact</CardTitle>
-            <CardDescription>How emotions correlate with performance</CardDescription>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Emotion Impact</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <div className="h-80">
               <ProfessionalEmotionsChart data={transformedEmotionPerformance} />
             </div>
@@ -266,11 +264,10 @@ export default function Analysis() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Hourly Performance</CardTitle>
-            <CardDescription>Profit/Loss and win rate by hour</CardDescription>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Hourly Performance</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <div className="h-80">
               <ProfessionalHourlyChart data={transformedTradesByHour} />
             </div>

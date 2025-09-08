@@ -145,11 +145,10 @@ export default function Dashboard() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Balance Over Time</CardTitle>
-            <CardDescription>Your account balance progression</CardDescription>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Balance Over Time</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <div className="h-80">
               <ProfessionalBalanceChart balanceOverTime={analysisData.balanceOverTime} />
             </div>
@@ -157,11 +156,10 @@ export default function Dashboard() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Win/Loss Distribution</CardTitle>
-            <CardDescription>Your trading performance breakdown</CardDescription>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Win/Loss Distribution</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <div className="h-80">
               <ProfessionalWinLossChart data={analysisData.winLossData} />
             </div>
