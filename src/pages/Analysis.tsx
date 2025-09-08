@@ -5,6 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useApiTrades } from '@/hooks/useApiTrades';
 import { useTradeAnalysis } from '@/hooks/useTradeAnalysis';
+import { ThemedBalanceChart } from '@/components/charts/ThemedBalanceChart';
+import { ThemedHourlyChart } from '@/components/charts/ThemedHourlyChart';
+import { ThemedEmotionChart } from '@/components/charts/ThemedEmotionChart';
 import { BarChart3, TrendingUp, Clock, Heart, Target, Filter } from 'lucide-react';
 
 export default function Analysis() {
@@ -180,162 +183,25 @@ export default function Analysis() {
 
         {/* Analysis Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Balance Evolution */}
-          <Card className="card-modern">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <TrendingUp className="h-5 w-5" />
-                <span>Balance Evolution</span>
-              </CardTitle>
-              <CardDescription>
-                Account balance progression over time
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-80">
-              {isLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              ) : error ? (
-                <div className="flex items-center justify-center h-full text-destructive">
-                  <div className="text-center">
-                    <p className="font-medium">Error loading data</p>
-                    <p className="text-sm text-muted-foreground">{error}</p>
-                  </div>
-                </div>
-              ) : analysisData.balanceOverTime.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  <div className="text-center">
-                    <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="font-medium">No data available</p>
-                    <p className="text-sm">Start trading to see your balance progression</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-foreground mb-2">
-                      ${(10000 + totalProfitLoss).toLocaleString()}
-                    </div>
-                    <div className="text-sm text-muted-foreground mb-4">
-                      Current Balance
-                    </div>
-                    <div className="text-lg font-semibold text-green-600">
-                      {totalProfitLoss >= 0 ? '+' : ''}${totalProfitLoss.toLocaleString()}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Total Change
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Hourly Performance */}
-          <Card className="card-modern">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Clock className="h-5 w-5" />
-                <span>Hourly Performance</span>
-              </CardTitle>
-              <CardDescription>
-                Profit/Loss and win rate by hour of day
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-80">
-              {isLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              ) : error ? (
-                <div className="flex items-center justify-center h-full text-destructive">
-                  <div className="text-center">
-                    <p className="font-medium">Error loading data</p>
-                    <p className="text-sm text-muted-foreground">{error}</p>
-                  </div>
-                </div>
-              ) : totalTrades === 0 ? (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  <div className="text-center">
-                    <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="font-medium">No data available</p>
-                    <p className="text-sm">Start trading to see hourly patterns</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-foreground mb-2">
-                      {totalTrades}
-                    </div>
-                    <div className="text-sm text-muted-foreground mb-4">
-                      Total Trades
-                    </div>
-                    <div className="text-lg font-semibold text-blue-600">
-                      {winRate.toFixed(1)}%
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Win Rate
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <ThemedBalanceChart 
+            balanceOverTime={analysisData.balanceOverTime}
+            loading={isLoading}
+            error={error}
+          />
+          
+          <ThemedHourlyChart 
+            data={analysisData.tradesByHour}
+            loading={isLoading}
+            error={error}
+          />
         </div>
 
         {/* Emotion Impact */}
-        <Card className="card-modern">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Heart className="h-5 w-5" />
-              <span>Emotion Impact</span>
-            </CardTitle>
-            <CardDescription>
-              How emotions correlate with trading performance
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-80">
-            {isLoading ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            ) : error ? (
-              <div className="flex items-center justify-center h-full text-destructive">
-                <div className="text-center">
-                  <p className="font-medium">Error loading data</p>
-                  <p className="text-sm text-muted-foreground">{error}</p>
-                </div>
-              </div>
-            ) : totalTrades === 0 ? (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                <div className="text-center">
-                  <Heart className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="font-medium">No data available</p>
-                  <p className="text-sm">Add trades with emotions to see patterns</p>
-                </div>
-              </div>
-            ) : (
-              <div className="h-full flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-foreground mb-2">
-                    {totalTrades}
-                  </div>
-                  <div className="text-sm text-muted-foreground mb-4">
-                    Trades with Emotions
-                  </div>
-                  <div className="text-lg font-semibold text-purple-600">
-                    {winRate.toFixed(1)}%
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Emotional Win Rate
-                  </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <ThemedEmotionChart 
+          data={analysisData.emotionPerformance}
+          loading={isLoading}
+          error={error}
+        />
       </div>
     </div>
   );

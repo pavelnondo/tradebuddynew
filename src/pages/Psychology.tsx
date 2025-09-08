@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useApiTrades } from '@/hooks/useApiTrades';
 import { useTradeAnalysis } from '@/hooks/useTradeAnalysis';
+import { ThemedEmotionChart } from '@/components/charts/ThemedEmotionChart';
 import { Brain, Heart, TrendingUp, Target, BarChart3, PieChart, Clock, Zap } from 'lucide-react';
 
 export default function Psychology() {
@@ -142,59 +143,11 @@ export default function Psychology() {
 
         {/* Psychology Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Emotion Performance */}
-          <Card className="card-modern">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Heart className="h-5 w-5" />
-                <span>Emotion Performance</span>
-              </CardTitle>
-              <CardDescription>
-                How different emotions correlate with your trading performance
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-80">
-              {isLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              ) : error ? (
-                <div className="flex items-center justify-center h-full text-destructive">
-                  <div className="text-center">
-                    <p className="font-medium">Error loading data</p>
-                    <p className="text-sm text-muted-foreground">{error}</p>
-                  </div>
-                </div>
-              ) : emotionEntries.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  <div className="text-center">
-                    <Heart className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="font-medium">No emotional data</p>
-                    <p className="text-sm">Add trades with emotions to see patterns</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="h-full flex flex-col justify-center space-y-4">
-                  {emotionEntries.slice(0, 5).map((emotion, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className={`w-3 h-3 rounded-full ${emotion.avgPnl >= 0 ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                        <span className="font-medium text-foreground capitalize">{emotion.emotion}</span>
-                      </div>
-                      <div className="text-right">
-                        <div className={`font-semibold ${emotion.avgPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {emotion.avgPnl >= 0 ? '+' : ''}${emotion.avgPnl.toFixed(0)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {emotion.winRate.toFixed(0)}% win rate
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <ThemedEmotionChart 
+            data={analysisData.emotionPerformance}
+            loading={isLoading}
+            error={error}
+          />
 
           {/* Confidence vs Performance */}
           <Card className="card-modern">
