@@ -107,25 +107,7 @@ export function ThemedBalanceChart({ balanceOverTime, loading, error }: ThemedBa
           </div>
         ) : (
           <div className="w-full h-full flex flex-col">
-            {/* Current balance display */}
-            {hasData && (
-              <div className="mb-4 flex justify-between items-center px-2">
-                <div className="text-center flex-1">
-                  <div className="text-2xl font-bold text-foreground">
-                    ${currentBalanceValue.toLocaleString()}
-                  </div>
-                  <div className="text-sm text-muted-foreground mt-1">Current Balance</div>
-                </div>
-                <div className="text-center flex-1">
-                  <div className={`text-xl font-semibold ${isProfit ? 'text-green-600' : 'text-red-600'}`}>
-                    {isProfit ? '+' : ''}${totalChange.toLocaleString()}
-                  </div>
-                  <div className="text-sm text-muted-foreground mt-1">Total Change</div>
-                </div>
-              </div>
-            )}
-
-            {/* Chart */}
+            {/* Chart - now takes full space */}
             <div className="flex-1 min-h-0">
               <svg width="100%" height="100%" viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="overflow-visible">
                 {/* Grid lines */}

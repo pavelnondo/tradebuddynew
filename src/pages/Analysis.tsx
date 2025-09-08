@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useApiTrades } from '@/hooks/useApiTrades';
 import { useTradeAnalysis } from '@/hooks/useTradeAnalysis';
 import { ThemedBalanceChart } from '@/components/charts/ThemedBalanceChart';
-import { ThemedHourlyChart } from '@/components/charts/ThemedHourlyChart';
+import { ThemedTradeCountChart } from '@/components/charts/ThemedTradeCountChart';
 import { ThemedEmotionChart } from '@/components/charts/ThemedEmotionChart';
 import { BarChart3, TrendingUp, Clock, Heart, Target, Filter } from 'lucide-react';
 
@@ -189,13 +189,8 @@ export default function Analysis() {
             error={error}
           />
           
-          <ThemedHourlyChart 
-            data={analysisData.tradesByHour.map(item => ({
-              hour: item.hourFormatted || `${item.hour}:00`,
-              profitLoss: item.profitLoss,
-              tradeCount: item.trades,
-              winRate: item.winRate
-            }))}
+          <ThemedTradeCountChart 
+            data={analysisData.tradeCountByDate}
             loading={isLoading}
             error={error}
           />

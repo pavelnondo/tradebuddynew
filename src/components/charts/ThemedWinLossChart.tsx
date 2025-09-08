@@ -126,32 +126,8 @@ export function ThemedWinLossChart({ data, loading, error }: ThemedWinLossChartP
               </div>
             </div>
 
-            {/* Legend with enhanced styling */}
-            <div className="space-y-1 w-full max-w-xs">
-              {segments.map((segment) => (
-                <div key={segment.index} className="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center space-x-2">
-                    <div
-                      className="w-3 h-3 rounded-full shadow-sm"
-                      style={{ backgroundColor: segment.color }}
-                    />
-                    <span className="text-sm font-medium text-foreground">
-                      {segment.label}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-foreground">
-                      {segment.value}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {segment.percentage}%
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
 
-            {/* Summary Stats with enhanced styling */}
+            {/* Summary Stats with enhanced styling - serves as chart key */}
             {hasData && (
               <div className="pt-1 border-t border-border w-full">
                 <div className="flex justify-between items-center text-xs">
@@ -160,11 +136,17 @@ export function ThemedWinLossChart({ data, loading, error }: ThemedWinLossChartP
                     <span className="text-sm font-semibold text-primary">{total}</span>
                   </div>
                   <div className="flex flex-col items-center flex-1 p-2 rounded-lg hover:bg-muted/30 transition-colors">
-                    <span className="text-xs text-muted-foreground font-medium">Win Rate</span>
+                    <div className="flex items-center space-x-1 mb-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-xs text-muted-foreground font-medium">Win Rate</span>
+                    </div>
                     <span className="text-sm font-semibold text-green-600">{winRate.toFixed(1)}%</span>
                   </div>
                   <div className="flex flex-col items-center flex-1 p-2 rounded-lg hover:bg-muted/30 transition-colors">
-                    <span className="text-xs text-muted-foreground font-medium">Loss Rate</span>
+                    <div className="flex items-center space-x-1 mb-1">
+                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                      <span className="text-xs text-muted-foreground font-medium">Loss Rate</span>
+                    </div>
                     <span className="text-sm font-semibold text-red-600">{lossRate.toFixed(1)}%</span>
                   </div>
                 </div>
