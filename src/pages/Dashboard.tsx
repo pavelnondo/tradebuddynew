@@ -333,28 +333,23 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Main Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Balance Over Time Chart */}
-        <div className="lg:col-span-2">
-          <Card className="card-modern">
-            <CardHeader>
-              <CardTitle className="flex items-center text-xl">
-                <BarChart3 className="w-6 h-6 mr-3" />
-                Balance Over Time
-              </CardTitle>
-              <CardDescription className="text-base">
-                Your account balance progression across time
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-96">
-              <ProfessionalBalanceChart balanceOverTime={analysisData.balanceOverTime} />
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      {/* Balance Over Time Chart - Full Width */}
+      <Card className="card-modern">
+        <CardHeader>
+          <CardTitle className="flex items-center text-xl">
+            <BarChart3 className="w-6 h-6 mr-3" />
+            Balance Over Time
+          </CardTitle>
+          <CardDescription className="text-base">
+            Your account balance progression across time
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="h-96">
+          <ProfessionalBalanceChart balanceOverTime={analysisData.balanceOverTime} />
+        </CardContent>
+      </Card>
 
-      {/* Secondary Charts Row */}
+      {/* Charts Row - Two Columns */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Win/Loss Distribution */}
         <Card className="card-modern">
