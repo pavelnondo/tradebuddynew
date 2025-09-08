@@ -13,8 +13,8 @@ import { Button } from "@/components/ui/button";
 import { useApiTrades } from '@/hooks/useApiTrades';
 import { useTradeAnalysis } from '@/hooks/useTradeAnalysis';
 import { useUserSettings } from '@/hooks/useUserSettings';
-import { BorderlessBalanceChart } from '@/components/charts/BorderlessBalanceChart';
-import { BorderlessWinLossChart } from '@/components/charts/BorderlessWinLossChart';
+import { ProperBalanceChart } from '@/components/charts/ProperBalanceChart';
+import { ProperWinLossChart } from '@/components/charts/ProperWinLossChart';
 
 export default function Dashboard() {
   const { settings } = useUserSettings();
@@ -144,13 +144,13 @@ export default function Dashboard() {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <BorderlessBalanceChart 
+        <ProperBalanceChart 
           balanceOverTime={analysisData.balanceOverTime}
           loading={isLoading}
           error={error}
         />
         
-        <BorderlessWinLossChart 
+        <ProperWinLossChart 
           data={analysisData.winLossData}
           loading={isLoading}
           error={error}
