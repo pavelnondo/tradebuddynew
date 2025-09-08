@@ -1,277 +1,342 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { 
-  TrendingUp, 
-  DollarSign, 
-  Target, 
-  Activity,
-  Award,
-  Clock,
-  Download,
-  Plus
-} from "lucide-react";
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useApiTrades } from '@/hooks/useApiTrades';
 import { useTradeAnalysis } from '@/hooks/useTradeAnalysis';
-import { ProperBalanceChart } from "@/components/charts/ProperBalanceChart";
-import { ProperHourlyChart } from "@/components/charts/ProperHourlyChart";
-import { ProperEmotionChart } from "@/components/charts/ProperEmotionChart";
-import { SetupPerformanceChart } from "@/components/charts/SetupPerformanceChart";
+import { BarChart3, TrendingUp, Clock, Heart, Target, Filter } from 'lucide-react';
 
 export default function Analysis() {
   const [timeframe, setTimeframe] = useState("all");
   const [selectedAsset, setSelectedAsset] = useState("all");
   const { trades, isLoading, error } = useApiTrades();
-  const navigate = useNavigate();
+  const analysisData = useTradeAnalysis(trades, 10000);
 
-  const filteredTrades = useMemo(() => {
-    if (!Array.isArray(trades)) return [];
-    let filtered = trades;
-
+  const safeTrades = Array.isArray(trades) ? trades : [];
+  
+  // Filter trades based on selected criteria
+  const filteredTrades = safeTrades.filter(trade => {
+    const tradeDate = new Date(trade.date);
+    const now = new Date();
+    
     if (timeframe !== "all") {
-      const now = new Date();
-      const cutoff = new Date();
-      switch (timeframe) {
-        case "week": cutoff.setDate(now.getDate() - 7); break;
-        case "month": cutoff.setMonth(now.getMonth() - 1); break;
-        case "quarter": cutoff.setMonth(now.getMonth() - 3); break;
-        case "year": cutoff.setFullYear(now.getFullYear() - 1); break;
-      }
-      filtered = filtered.filter(trade => new Date(trade.date) >= cutoff);
+      const daysBack = timeframe === "7d" ? 7 : timeframe === "30d" ? 30 : 90;
+      const cutoffDate = new Date(now.getTime() - (daysBack * 24 * 60 * 60 * 1000));
+      if (tradeDate < cutoffDate) return false;
     }
-
-    if (selectedAsset !== "all") {
-      filtered = filtered.filter(trade => trade.asset === selectedAsset);
+    
+    if (selectedAsset !== "all" && trade.asset !== selectedAsset) {
+      return false;
     }
+    
+    return true;
+  });
 
-    return filtered;
-  }, [trades, timeframe, selectedAsset]);
+  const totalTrades = filteredTrades.length;
+  const winningTrades = filteredTrades.filter(trade => trade.profitLoss > 0).length;
+  const losingTrades = filteredTrades.filter(trade => trade.profitLoss < 0).length;
+  const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
+  const totalProfitLoss = filteredTrades.reduce((sum, trade) => sum + (trade.profitLoss || 0), 0);
+  const avgProfitLoss = totalTrades > 0 ? totalProfitLoss / totalTrades : 0;
 
-  const uniqueAssets = useMemo(() => {
-    if (!Array.isArray(trades)) return [];
-    const assets = [...new Set(trades.map(t => t.asset))];
-    return assets.sort();
-  }, [trades]);
-
-  const analysisData = useTradeAnalysis(filteredTrades, 10000);
-
-  if (isLoading) {
-    return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold mb-6">Analysis</h1>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-4">
-                <div className="h-20 bg-gray-200 rounded animate-pulse"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-4">
-                <div className="h-64 bg-gray-200 rounded animate-pulse"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold mb-6">Analysis</h1>
-        <Card>
-          <CardContent className="p-6 text-center">
-            <p className="text-red-600 mb-4">{error}</p>
-            <Button onClick={() => window.location.reload()}>Retry</Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (filteredTrades.length === 0) {
-    return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold mb-6">Analysis</h1>
-        <Card>
-          <CardContent className="p-6 text-center">
-            <h3 className="text-xl font-semibold mb-2">No Data Available</h3>
-            <p className="text-gray-600 mb-4">Add some trades to see detailed analysis</p>
-            <Button onClick={() => navigate('/add-trade')}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Your First Trade
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  const { metrics, balanceOverTime, tradesByHour, emotionPerformance } = analysisData as any;
-  
-  const transformedEmotionPerformance = emotionPerformance?.map((item: any) => ({
-    emotion: item.emotion,
-    avgProfitLoss: item.trades > 0 ? item.profitLoss / item.trades : 0,
-    winRate: item.winRate,
-    tradeCount: item.trades
-  })) || [];
-  
-  const transformedTradesByHour = tradesByHour?.map((item: any) => ({
-    hour: item.hour,
-    profitLoss: item.profitLoss,
-    winRate: item.winRate,
-    tradeCount: item.trades
-  })) || [];
+  // Get unique assets for filter
+  const uniqueAssets = Array.from(new Set(safeTrades.map(trade => trade.asset).filter(Boolean)));
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Analysis</h1>
-        <Button variant="outline" onClick={() => {/* Export functionality */}}>
-          <Download className="w-4 h-4 mr-2" />
-          Export Report
-        </Button>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto p-6 space-y-8">
+        {/* Header Section */}
+        <div className="flex flex-col space-y-4">
+          <div className="flex items-center justify-between">
             <div>
-              <label className="text-sm font-medium mb-2 block">Timeframe</label>
-              <Select value={timeframe} onValueChange={setTimeframe}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Time</SelectItem>
-                  <SelectItem value="week">Last Week</SelectItem>
-                  <SelectItem value="month">Last Month</SelectItem>
-                  <SelectItem value="quarter">Last Quarter</SelectItem>
-                  <SelectItem value="year">Last Year</SelectItem>
-                </SelectContent>
-              </Select>
+              <h1 className="text-4xl font-bold text-foreground">Analysis</h1>
+              <p className="text-muted-foreground mt-2">Deep dive into your trading performance</p>
             </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Asset</label>
-              <Select value={selectedAsset} onValueChange={setSelectedAsset}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Assets</SelectItem>
-                  {uniqueAssets.map(asset => (
-                    <SelectItem key={asset} value={asset}>{asset}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex items-center space-x-4">
+              <Badge variant="outline" className="px-3 py-1">
+                {totalTrades} Trades Analyzed
+              </Badge>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total P&L</p>
-                <p className={`text-2xl font-bold ${metrics.totalProfitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {metrics.totalProfitLoss >= 0 ? '+' : ''}${metrics.totalProfitLoss.toLocaleString()}
-                </p>
+        {/* Filters */}
+        <Card className="card-modern">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Filter className="h-5 w-5" />
+              <span>Analysis Filters</span>
+            </CardTitle>
+            <CardDescription>
+              Customize your analysis view
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center space-x-2">
+                <label className="text-sm font-medium text-muted-foreground">Timeframe:</label>
+                <Select value={timeframe} onValueChange={setTimeframe}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="7d">Last 7 Days</SelectItem>
+                    <SelectItem value="30d">Last 30 Days</SelectItem>
+                    <SelectItem value="90d">Last 90 Days</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <DollarSign className="w-8 h-8 text-green-600" />
+              
+              <div className="flex items-center space-x-2">
+                <label className="text-sm font-medium text-muted-foreground">Asset:</label>
+                <Select value={selectedAsset} onValueChange={setSelectedAsset}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Assets</SelectItem>
+                    {uniqueAssets.map(asset => (
+                      <SelectItem key={asset} value={asset}>{asset}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Win Rate</p>
-                <p className="text-2xl font-bold">{metrics.winRate.toFixed(1)}%</p>
+        {/* Key Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="card-modern">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total Trades
+              </CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-foreground">
+                {totalTrades}
               </div>
-              <Target className="w-8 h-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
+              <p className="text-xs text-muted-foreground mt-1">
+                {winningTrades} wins, {losingTrades} losses
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Trades</p>
-                <p className="text-2xl font-bold">{metrics.totalTrades}</p>
+          <Card className="card-modern">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Win Rate
+              </CardTitle>
+              <Target className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-foreground">
+                {winRate.toFixed(1)}%
               </div>
-              <Activity className="w-8 h-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
+              <p className="text-xs text-muted-foreground mt-1">
+                Success rate
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Profit Factor</p>
-                <p className="text-2xl font-bold">{metrics.profitFactor.toFixed(2)}</p>
+          <Card className="card-modern">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total P&L
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${totalProfitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {totalProfitLoss >= 0 ? '+' : ''}${totalProfitLoss.toLocaleString()}
               </div>
-              <TrendingUp className="w-8 h-8 text-orange-600" />
-            </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {totalProfitLoss >= 0 ? 'Profit' : 'Loss'}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="card-modern">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Avg P&L
+              </CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${avgProfitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {avgProfitLoss >= 0 ? '+' : ''}${avgProfitLoss.toFixed(2)}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Per trade
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Analysis Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Balance Evolution */}
+          <Card className="card-modern">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <TrendingUp className="h-5 w-5" />
+                <span>Balance Evolution</span>
+              </CardTitle>
+              <CardDescription>
+                Account balance progression over time
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-80">
+              {isLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : error ? (
+                <div className="flex items-center justify-center h-full text-destructive">
+                  <div className="text-center">
+                    <p className="font-medium">Error loading data</p>
+                    <p className="text-sm text-muted-foreground">{error}</p>
+                  </div>
+                </div>
+              ) : analysisData.balanceOverTime.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <div className="text-center">
+                    <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="font-medium">No data available</p>
+                    <p className="text-sm">Start trading to see your balance progression</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-foreground mb-2">
+                      ${(10000 + totalProfitLoss).toLocaleString()}
+                    </div>
+                    <div className="text-sm text-muted-foreground mb-4">
+                      Current Balance
+                    </div>
+                    <div className="text-lg font-semibold text-green-600">
+                      {totalProfitLoss >= 0 ? '+' : ''}${totalProfitLoss.toLocaleString()}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Total Change
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Hourly Performance */}
+          <Card className="card-modern">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Clock className="h-5 w-5" />
+                <span>Hourly Performance</span>
+              </CardTitle>
+              <CardDescription>
+                Profit/Loss and win rate by hour of day
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-80">
+              {isLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : error ? (
+                <div className="flex items-center justify-center h-full text-destructive">
+                  <div className="text-center">
+                    <p className="font-medium">Error loading data</p>
+                    <p className="text-sm text-muted-foreground">{error}</p>
+                  </div>
+                </div>
+              ) : totalTrades === 0 ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <div className="text-center">
+                    <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="font-medium">No data available</p>
+                    <p className="text-sm">Start trading to see hourly patterns</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-foreground mb-2">
+                      {totalTrades}
+                    </div>
+                    <div className="text-sm text-muted-foreground mb-4">
+                      Total Trades
+                    </div>
+                    <div className="text-lg font-semibold text-blue-600">
+                      {winRate.toFixed(1)}%
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Win Rate
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Emotion Impact */}
+        <Card className="card-modern">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Heart className="h-5 w-5" />
+              <span>Emotion Impact</span>
+            </CardTitle>
+            <CardDescription>
+              How emotions correlate with trading performance
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="h-80">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : error ? (
+              <div className="flex items-center justify-center h-full text-destructive">
+                <div className="text-center">
+                  <p className="font-medium">Error loading data</p>
+                  <p className="text-sm text-muted-foreground">{error}</p>
+                </div>
+              </div>
+            ) : totalTrades === 0 ? (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                <div className="text-center">
+                  <Heart className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="font-medium">No data available</p>
+                  <p className="text-sm">Add trades with emotions to see patterns</p>
+                </div>
+              </div>
+            ) : (
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-foreground mb-2">
+                    {totalTrades}
+                  </div>
+                  <div className="text-sm text-muted-foreground mb-4">
+                    Trades with Emotions
+                  </div>
+                  <div className="text-lg font-semibold text-purple-600">
+                    {winRate.toFixed(1)}%
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Emotional Win Rate
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
-
-      {/* Balance Chart */}
-      <ProperBalanceChart 
-        balanceOverTime={balanceOverTime}
-        loading={isLoading}
-        error={error}
-      />
-
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ProperEmotionChart 
-          data={transformedEmotionPerformance}
-          loading={isLoading}
-          error={error}
-        />
-
-        <ProperHourlyChart 
-          data={transformedTradesByHour}
-          loading={isLoading}
-          error={error}
-        />
-      </div>
-
-      {/* Setup Performance */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Setup Performance</CardTitle>
-          <CardDescription>Performance analysis by trading setup</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64">
-            <SetupPerformanceChart data={[]} isLoading={false} />
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
