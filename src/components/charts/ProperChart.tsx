@@ -15,10 +15,10 @@ interface ProperChartProps {
 }
 
 const heightClasses = {
-  sm: 'h-48',
-  md: 'h-64', 
-  lg: 'h-80',
-  xl: 'h-96'
+  sm: 'h-64',
+  md: 'h-80', 
+  lg: 'h-96',
+  xl: 'h-[28rem]'
 };
 
 export function ProperChart({
@@ -34,12 +34,12 @@ export function ProperChart({
 }: ProperChartProps) {
   return (
     <Card className={cn('w-full', className)}>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg font-semibold leading-none tracking-tight">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-xl font-semibold leading-tight tracking-tight">
           {title}
         </CardTitle>
         {description && (
-          <CardDescription className="text-sm text-muted-foreground mt-1">
+          <CardDescription className="text-sm text-muted-foreground mt-2">
             {description}
           </CardDescription>
         )}
