@@ -1075,8 +1075,10 @@ app.get('/api/accounts', authenticateToken, async (req, res) => {
       currentBalance: parseFloat(row.current_balance),
       isActive: row.is_active,
       isBlown: row.is_blown,
+      isPassed: row.is_passed,
       createdAt: row.created_at,
       blownAt: row.blown_at,
+      passedAt: row.passed_at,
       totalTrades: parseInt(row.total_trades),
       totalPnL: parseFloat(row.total_pnl),
       winRate: parseFloat(row.win_rate)
@@ -1099,8 +1101,8 @@ app.post('/api/accounts', authenticateToken, async (req, res) => {
     }
 
     const result = await db.query(`
-      INSERT INTO accounts (user_id, name, initial_balance, current_balance, is_active, is_blown, created_at)
-      VALUES ($1, $2, $3, $3, false, false, NOW())
+      INSERT INTO accounts (user_id, name, initial_balance, current_balance, is_active, is_blown, is_passed, created_at)
+      VALUES ($1, $2, $3, $3, false, false, false, NOW())
       RETURNING *
     `, [req.user.id, name, initialBalance]);
 
@@ -1111,6 +1113,7 @@ app.post('/api/accounts', authenticateToken, async (req, res) => {
       currentBalance: parseFloat(result.rows[0].current_balance),
       isActive: result.rows[0].is_active,
       isBlown: result.rows[0].is_blown,
+      isPassed: result.rows[0].is_passed,
       createdAt: result.rows[0].created_at,
       totalTrades: 0,
       totalPnL: 0,
@@ -1136,12 +1139,12 @@ app.post('/api/accounts/:id/activate', authenticateToken, async (req, res) => {
     const result = await db.query(`
       UPDATE accounts 
       SET is_active = true 
-      WHERE id = $1 AND user_id = $2 AND is_blown = false
+      WHERE id = $1 AND user_id = $2 AND is_blown = false AND is_passed = false
       RETURNING *
     `, [id, req.user.id]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Account not found or already blown' });
+      return res.status(404).json({ error: 'Account not found or already blown/passed' });
     }
 
     res.json({ message: 'Account activated successfully' });
@@ -1170,6 +1173,29 @@ app.post('/api/accounts/:id/blow', authenticateToken, async (req, res) => {
     res.json({ message: 'Account marked as blown successfully' });
   } catch (error) {
     console.error('Mark account as blown error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Mark account as passed
+app.post('/api/accounts/:id/pass', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await db.query(`
+      UPDATE accounts 
+      SET is_active = false, is_passed = true, passed_at = NOW()
+      WHERE id = $1 AND user_id = $2
+      RETURNING *
+    `, [id, req.user.id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Account not found' });
+    }
+
+    res.json({ message: 'Account marked as passed successfully' });
+  } catch (error) {
+    console.error('Mark account as passed error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
