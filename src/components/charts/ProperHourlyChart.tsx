@@ -46,16 +46,16 @@ export function ProperHourlyChart({ data, loading, error }: ProperHourlyChartPro
   const hasData = validData.length > 0;
   const noDataMessage = 'Add trades to see your hourly performance patterns';
 
-  // Calculate chart dimensions
+  // Calculate chart dimensions with perfect proportions
   const maxProfitLoss = hasData ? Math.max(...validData.map(d => Math.abs(d.profitLoss))) : 1000;
-  const chartWidth = 600;
-  const chartHeight = 300;
-  const margin = { top: 20, right: 30, bottom: 40, left: 60 };
+  const chartWidth = 800;
+  const chartHeight = 400;
+  const margin = { top: 30, right: 40, bottom: 50, left: 80 };
   const plotWidth = chartWidth - margin.left - margin.right;
   const plotHeight = chartHeight - margin.top - margin.bottom;
 
-  // Calculate bar dimensions
-  const barWidth = Math.min(30, plotWidth / Math.max(validData.length, 1) - 5);
+  // Calculate bar dimensions with perfect proportions
+  const barWidth = Math.min(40, plotWidth / Math.max(validData.length, 1) - 8);
   const barSpacing = (plotWidth - (validData.length * barWidth)) / (validData.length + 1);
 
   return (
@@ -69,28 +69,28 @@ export function ProperHourlyChart({ data, loading, error }: ProperHourlyChartPro
       height="lg"
     >
       <div className="w-full h-full flex flex-col">
-        {/* Summary Stats */}
+        {/* Summary Stats with perfect symmetry */}
         {hasData && (
-          <div className="mb-4 grid grid-cols-3 gap-4 text-center">
-            <div className="p-3 bg-muted/50 rounded-lg">
-              <div className="text-sm text-muted-foreground">Best Hour</div>
-              <div className="text-lg font-semibold text-green-600">
+          <div className="mb-6 grid grid-cols-3 gap-6 text-center">
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <div className="text-sm text-muted-foreground mb-2">Best Hour</div>
+              <div className="text-xl font-semibold text-green-600">
                 {validData.reduce((best, current) => 
                   current.profitLoss > best.profitLoss ? current : best
                 ).hourFormatted}
               </div>
             </div>
-            <div className="p-3 bg-muted/50 rounded-lg">
-              <div className="text-sm text-muted-foreground">Worst Hour</div>
-              <div className="text-lg font-semibold text-red-600">
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <div className="text-sm text-muted-foreground mb-2">Worst Hour</div>
+              <div className="text-xl font-semibold text-red-600">
                 {validData.reduce((worst, current) => 
                   current.profitLoss < worst.profitLoss ? current : worst
                 ).hourFormatted}
               </div>
             </div>
-            <div className="p-3 bg-muted/50 rounded-lg">
-              <div className="text-sm text-muted-foreground">Total Trades</div>
-              <div className="text-lg font-semibold text-blue-600">
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <div className="text-sm text-muted-foreground mb-2">Total Trades</div>
+              <div className="text-xl font-semibold text-blue-600">
                 {validData.reduce((sum, item) => sum + item.tradeCount, 0)}
               </div>
             </div>
@@ -150,22 +150,22 @@ export function ProperHourlyChart({ data, loading, error }: ProperHourlyChartPro
                     rx="2"
                   />
                   
-                  {/* Hour label */}
+                  {/* Hour label with proper spacing */}
                   <text
                     x={x + barWidth / 2}
-                    y={chartHeight - 10}
+                    y={chartHeight - 15}
                     textAnchor="middle"
-                    className="text-xs fill-muted-foreground font-medium"
+                    className="text-sm fill-muted-foreground font-medium"
                   >
                     {item.hourFormatted}
                   </text>
                   
-                  {/* Value label */}
+                  {/* Value label with proper spacing */}
                   <text
                     x={x + barWidth / 2}
-                    y={y - 5}
+                    y={y - 8}
                     textAnchor="middle"
-                    className="text-xs fill-foreground font-semibold"
+                    className="text-sm fill-foreground font-semibold"
                   >
                     ${item.profitLoss.toFixed(0)}
                   </text>
@@ -173,17 +173,17 @@ export function ProperHourlyChart({ data, loading, error }: ProperHourlyChartPro
               );
             })}
 
-            {/* Y-axis labels */}
+            {/* Y-axis labels with proper spacing */}
             {[0, 0.25, 0.5, 0.75, 1].map((ratio, index) => {
               const value = maxProfitLoss * (1 - ratio);
               const y = margin.top + ratio * plotHeight;
               return (
                 <text
                   key={index}
-                  x={margin.left - 10}
-                  y={y + 4}
+                  x={margin.left - 15}
+                  y={y + 5}
                   textAnchor="end"
-                  className="text-xs fill-muted-foreground"
+                  className="text-sm fill-muted-foreground font-medium"
                 >
                   ${value.toFixed(0)}
                 </text>

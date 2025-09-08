@@ -33,15 +33,15 @@ export function ProperBalanceChart({ balanceOverTime, loading, error }: ProperBa
   const hasData = validData.length > 0;
   const noDataMessage = 'Add trades to see your balance progression over time';
 
-  // Calculate chart dimensions
+  // Calculate chart dimensions with perfect proportions
   const minBalance = hasData ? Math.min(...validData.map(d => d.balance)) : 0;
   const maxBalance = hasData ? Math.max(...validData.map(d => d.balance)) : 10000;
   const balanceRange = maxBalance - minBalance;
   const padding = balanceRange * 0.1; // 10% padding
   
-  const chartWidth = 600;
-  const chartHeight = 300;
-  const margin = { top: 20, right: 30, bottom: 40, left: 60 };
+  const chartWidth = 800;
+  const chartHeight = 400;
+  const margin = { top: 30, right: 40, bottom: 50, left: 80 };
   const plotWidth = chartWidth - margin.left - margin.right;
   const plotHeight = chartHeight - margin.top - margin.bottom;
 
@@ -124,21 +124,21 @@ export function ProperBalanceChart({ balanceOverTime, loading, error }: ProperBa
       height="lg"
     >
       <div className="w-full h-full flex flex-col">
-        {/* Current balance display */}
+        {/* Current balance display with perfect symmetry */}
         {hasData && (
-          <div className="mb-4 flex justify-between items-center">
-            <div>
-              <span className="text-2xl font-bold text-foreground">
+          <div className="mb-6 flex justify-between items-center px-2">
+            <div className="text-center flex-1">
+              <div className="text-3xl font-bold text-foreground">
                 ${validData[validData.length - 1].balance.toLocaleString()}
-              </span>
-              <div className="text-sm text-muted-foreground">Current Balance</div>
+              </div>
+              <div className="text-sm text-muted-foreground mt-1">Current Balance</div>
             </div>
-            <div className="text-right">
-              <div className={`text-lg font-semibold ${validData[validData.length - 1].balance >= validData[0].balance ? 'text-green-600' : 'text-red-600'}`}>
+            <div className="text-center flex-1">
+              <div className={`text-2xl font-semibold ${validData[validData.length - 1].balance >= validData[0].balance ? 'text-green-600' : 'text-red-600'}`}>
                 {validData[validData.length - 1].balance >= validData[0].balance ? '+' : ''}
                 ${(validData[validData.length - 1].balance - validData[0].balance).toLocaleString()}
               </div>
-              <div className="text-sm text-muted-foreground">Total Change</div>
+              <div className="text-sm text-muted-foreground mt-1">Total Change</div>
             </div>
           </div>
         )}
@@ -195,27 +195,27 @@ export function ProperBalanceChart({ balanceOverTime, loading, error }: ProperBa
               />
             ))}
             
-            {/* Y-axis labels */}
+            {/* Y-axis labels with proper spacing */}
             {yAxisLabels.map((label, index) => (
               <text
                 key={index}
-                x={margin.left - 10}
-                y={label.y + 4}
+                x={margin.left - 15}
+                y={label.y + 5}
                 textAnchor="end"
-                className="text-xs fill-muted-foreground"
+                className="text-sm fill-muted-foreground font-medium"
               >
                 ${label.value.toLocaleString()}
               </text>
             ))}
             
-            {/* X-axis labels */}
+            {/* X-axis labels with proper spacing */}
             {xAxisLabels.map((label, index) => (
               <text
                 key={index}
                 x={label.x}
-                y={chartHeight - 10}
+                y={chartHeight - 15}
                 textAnchor="middle"
-                className="text-xs fill-muted-foreground"
+                className="text-sm fill-muted-foreground font-medium"
               >
                 {label.label}
               </text>

@@ -57,17 +57,17 @@ export function ProperEmotionChart({ data, loading, error }: ProperEmotionChartP
   const hasData = validData.length > 0;
   const noDataMessage = 'Add trades with emotions to see emotional patterns';
 
-  // Calculate chart dimensions
+  // Calculate chart dimensions with perfect proportions
   const maxProfitLoss = hasData ? Math.max(...validData.map(d => Math.abs(d.avgProfitLoss))) : 1000;
-  const chartWidth = 600;
-  const chartHeight = 300;
-  const margin = { top: 20, right: 30, bottom: 40, left: 80 };
+  const chartWidth = 800;
+  const chartHeight = 400;
+  const margin = { top: 30, right: 40, bottom: 50, left: 100 };
   const plotWidth = chartWidth - margin.left - margin.right;
   const plotHeight = chartHeight - margin.top - margin.bottom;
 
-  // Calculate bar dimensions
-  const barHeight = 20;
-  const barSpacing = 8;
+  // Calculate bar dimensions with perfect proportions
+  const barHeight = 28;
+  const barSpacing = 12;
   const totalBarHeight = barHeight + barSpacing;
 
   return (
@@ -81,28 +81,28 @@ export function ProperEmotionChart({ data, loading, error }: ProperEmotionChartP
       height="lg"
     >
       <div className="w-full h-full flex flex-col">
-        {/* Summary Stats */}
+        {/* Summary Stats with perfect symmetry */}
         {hasData && (
-          <div className="mb-4 grid grid-cols-3 gap-4 text-center">
-            <div className="p-3 bg-muted/50 rounded-lg">
-              <div className="text-sm text-muted-foreground">Best Emotion</div>
-              <div className="text-lg font-semibold text-green-600">
+          <div className="mb-6 grid grid-cols-3 gap-6 text-center">
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <div className="text-sm text-muted-foreground mb-2">Best Emotion</div>
+              <div className="text-xl font-semibold text-green-600">
                 {validData.reduce((best, current) => 
                   current.avgProfitLoss > best.avgProfitLoss ? current : best
                 ).emotion}
               </div>
             </div>
-            <div className="p-3 bg-muted/50 rounded-lg">
-              <div className="text-sm text-muted-foreground">Worst Emotion</div>
-              <div className="text-lg font-semibold text-red-600">
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <div className="text-sm text-muted-foreground mb-2">Worst Emotion</div>
+              <div className="text-xl font-semibold text-red-600">
                 {validData.reduce((worst, current) => 
                   current.avgProfitLoss < worst.avgProfitLoss ? current : worst
                 ).emotion}
               </div>
             </div>
-            <div className="p-3 bg-muted/50 rounded-lg">
-              <div className="text-sm text-muted-foreground">Total Emotions</div>
-              <div className="text-lg font-semibold text-blue-600">
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <div className="text-sm text-muted-foreground mb-2">Total Emotions</div>
+              <div className="text-xl font-semibold text-blue-600">
                 {validData.length}
               </div>
             </div>
@@ -162,30 +162,30 @@ export function ProperEmotionChart({ data, loading, error }: ProperEmotionChartP
                     rx="2"
                   />
                   
-                  {/* Emotion label */}
+                  {/* Emotion label with proper spacing */}
                   <text
-                    x={margin.left - 10}
-                    y={y + barHeight / 2 + 4}
+                    x={margin.left - 15}
+                    y={y + barHeight / 2 + 5}
                     textAnchor="end"
-                    className="text-xs fill-foreground font-medium"
+                    className="text-sm fill-foreground font-medium"
                   >
                     {emotionIcons[item.emotion.toLowerCase()] || '😐'} {item.emotion}
                   </text>
                   
-                  {/* Value label */}
+                  {/* Value label with proper spacing */}
                   <text
-                    x={x + (item.avgProfitLoss >= 0 ? barWidth + 5 : -5)}
-                    y={y + barHeight / 2 + 4}
+                    x={x + (item.avgProfitLoss >= 0 ? barWidth + 8 : -8)}
+                    y={y + barHeight / 2 + 5}
                     textAnchor={item.avgProfitLoss >= 0 ? 'start' : 'end'}
-                    className="text-xs fill-foreground font-semibold"
+                    className="text-sm fill-foreground font-semibold"
                   >
                     ${item.avgProfitLoss.toFixed(0)}
                   </text>
                   
-                  {/* Trade count */}
+                  {/* Trade count with proper spacing */}
                   <text
-                    x={x + (item.avgProfitLoss >= 0 ? barWidth + 5 : -5)}
-                    y={y + barHeight / 2 + 16}
+                    x={x + (item.avgProfitLoss >= 0 ? barWidth + 8 : -8)}
+                    y={y + barHeight / 2 + 18}
                     textAnchor={item.avgProfitLoss >= 0 ? 'start' : 'end'}
                     className="text-xs fill-muted-foreground"
                   >
@@ -195,7 +195,7 @@ export function ProperEmotionChart({ data, loading, error }: ProperEmotionChartP
               );
             })}
 
-            {/* X-axis labels */}
+            {/* X-axis labels with proper spacing */}
             {[0, 0.25, 0.5, 0.75, 1].map((ratio, index) => {
               const value = maxProfitLoss * (1 - ratio);
               const x = margin.left + ratio * plotWidth;
@@ -203,9 +203,9 @@ export function ProperEmotionChart({ data, loading, error }: ProperEmotionChartP
                 <text
                   key={index}
                   x={x}
-                  y={chartHeight - 10}
+                  y={chartHeight - 15}
                   textAnchor="middle"
-                  className="text-xs fill-muted-foreground"
+                  className="text-sm fill-muted-foreground font-medium"
                 >
                   ${value.toFixed(0)}
                 </text>
