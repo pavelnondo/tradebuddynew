@@ -5,9 +5,12 @@ export type EmotionType = "Confident" | "Nervous" | "Greedy" | "Fearful" | "Calm
 
 export interface Trade {
   id: string;
+  accountId?: string;
   date: string;
   asset: string;
   tradeType: TradeType;
+  // Backend sometimes sends lowercase buy/sell in `type`; keep for filters
+  type?: string;
   entryPrice: number;
   exitPrice: number;
   positionSize: number;

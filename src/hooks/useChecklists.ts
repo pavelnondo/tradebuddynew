@@ -23,7 +23,7 @@ export function useChecklists() {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/checklists`, {
+      const res = await fetch(`${API_BASE_URL}/api/checklists`, {
         headers: getAuthHeaders(),
       });
       if (!res.ok) throw new Error('Failed to fetch checklists');
@@ -50,7 +50,7 @@ export function useChecklists() {
     setError(null);
     try {
       // Fetch specific checklist by id (items are included in the main response now)
-      const checklistRes = await fetch(`${API_BASE_URL}/checklists/${id}`, {
+      const checklistRes = await fetch(`${API_BASE_URL}/api/checklists/${id}`, {
         headers: getAuthHeaders(),
       });
       if (!checklistRes.ok) throw new Error('Failed to fetch checklist');
@@ -80,7 +80,7 @@ export function useChecklists() {
       console.log('🔄 Frontend creating checklist:', checklist);
       
       // Create the checklist with items in a single call
-      const res = await fetch(`${API_BASE_URL}/checklists`, {
+      const res = await fetch(`${API_BASE_URL}/api/checklists`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -127,7 +127,7 @@ export function useChecklists() {
       console.log('🔄 Frontend updating checklist:', { id, updates });
       
       // Update checklist with name, description, and items in a single call
-      const res = await fetch(`${API_BASE_URL}/checklists/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/checklists/${id}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -171,7 +171,7 @@ export function useChecklists() {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/checklists/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/checklists/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });

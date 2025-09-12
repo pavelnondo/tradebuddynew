@@ -53,7 +53,7 @@ export default function TradeDetails() {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/trades/${tradeId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/trades/${tradeId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Cache-Control': 'no-cache'

@@ -25,7 +25,7 @@ export const tradeApi = {
       });
     }
     
-    const url = `${API_BASE_URL}/trades${searchParams.toString() ? `?${searchParams}` : ''}`;
+    const url = `${API_BASE_URL}/api/trades${searchParams.toString() ? `?${searchParams}` : ''}`;
     const response = await fetch(url, {
       headers: getAuthHeaders(),
     });
@@ -39,7 +39,7 @@ export const tradeApi = {
 
   // Add a new trade
   async addTrade(tradeData: any) {
-    const response = await fetch(`${API_BASE_URL}/trades`, {
+    const response = await fetch(`${API_BASE_URL}/api/trades`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(tradeData),
@@ -55,7 +55,7 @@ export const tradeApi = {
 
   // Update a trade
   async updateTrade(id: string | number, tradeData: any) {
-    const response = await fetch(`${API_BASE_URL}/trades/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/trades/${id}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(tradeData),
@@ -71,7 +71,7 @@ export const tradeApi = {
 
   // Delete a trade
   async deleteTrade(id: string | number) {
-    const response = await fetch(`${API_BASE_URL}/trades/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/trades/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
@@ -86,7 +86,7 @@ export const tradeApi = {
 
   // Get a single trade by ID
   async getTrade(id: string | number) {
-    const response = await fetch(`${API_BASE_URL}/trades/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/trades/${id}`, {
       headers: getAuthHeaders(),
     });
     

@@ -15,7 +15,7 @@ export function useAccountManagement() {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No authentication token');
 
-      const response = await fetch(`${API_BASE_URL}/accounts`, {
+      const response = await fetch(`${API_BASE_URL}/api/accounts`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -46,7 +46,7 @@ export function useAccountManagement() {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No authentication token');
 
-      const response = await fetch(`${API_BASE_URL}/accounts`, {
+      const response = await fetch(`${API_BASE_URL}/api/accounts`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -77,7 +77,7 @@ export function useAccountManagement() {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No authentication token');
 
-      const response = await fetch(`${API_BASE_URL}/accounts/${accountId}/activate`, {
+      const response = await fetch(`${API_BASE_URL}/api/accounts/${accountId}/activate`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -112,7 +112,7 @@ export function useAccountManagement() {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No authentication token');
 
-      const response = await fetch(`${API_BASE_URL}/accounts/${accountId}/blow`, {
+      const response = await fetch(`${API_BASE_URL}/api/accounts/${accountId}/blow`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -150,7 +150,7 @@ export function useAccountManagement() {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No authentication token');
 
-      const response = await fetch(`${API_BASE_URL}/accounts/${accountId}/pass`, {
+      const response = await fetch(`${API_BASE_URL}/api/accounts/${accountId}/pass`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

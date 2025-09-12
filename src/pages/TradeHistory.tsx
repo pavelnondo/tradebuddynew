@@ -36,6 +36,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useApiTrades } from '@/hooks/useApiTrades';
+import { useAccountManagement } from '@/hooks/useAccountManagement';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { tradeApi } from '@/services/tradeApi';
 import { cn } from "@/lib/utils";
@@ -423,6 +425,8 @@ export default function TradeHistory() {
   const [tradeToDelete, setTradeToDelete] = useState<any>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { trades, isLoading, error, fetchTrades } = useApiTrades();
+  const { accounts, activeAccount } = useAccountManagement();
+  const [selectedAccount, setSelectedAccount] = useState<string>('all');
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -435,6 +439,7 @@ export default function TradeHistory() {
     // Ensure trades is always an array to prevent filter errors
     const safeTrades = Array.isArray(trades) ? trades : [];
     return safeTrades.filter(trade => {
+      const matchesAccount = selectedAccount === 'all' || trade.accountId === selectedAccount;
       const matchesSearch = searchTerm === "" || 
         trade.asset?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         trade.notes?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -452,8 +457,8 @@ export default function TradeHistory() {
       
       // Duration filtering
       let matchesDuration = durationFilter === "All";
-      if (!matchesDuration && trade.duration) {
-        const duration = parseInt(trade.duration);
+      if (!matchesDuration && trade.duration != null) {
+        const duration = typeof trade.duration === 'number' ? trade.duration : parseInt(String(trade.duration), 10);
         switch (durationFilter) {
           case "< 5min":
             matchesDuration = duration < 5;
@@ -494,9 +499,9 @@ export default function TradeHistory() {
         if (endDate && tradeDate > endDate) matchesDateRange = false;
       }
       
-      return matchesSearch && matchesType && matchesEmotion && matchesDuration && matchesDate && matchesDateRange;
+      return matchesAccount && matchesSearch && matchesType && matchesEmotion && matchesDuration && matchesDate && matchesDateRange;
     });
-  }, [trades, searchTerm, selectedType, selectedEmotion, durationFilter, customDuration, dateFilter, startDate, endDate]);
+  }, [trades, selectedAccount, searchTerm, selectedType, selectedEmotion, durationFilter, customDuration, dateFilter, startDate, endDate]);
 
   const handleEditTrade = (trade: any) => {
     // Navigate to edit trade page with trade data
@@ -590,6 +595,19 @@ export default function TradeHistory() {
           </p>
         </div>
         <div className="flex items-center space-x-3">
+          <div className="w-56">
+            <Select value={selectedAccount} onValueChange={setSelectedAccount}>
+              <SelectTrigger className="input-modern">
+                <SelectValue placeholder="All Accounts" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Accounts</SelectItem>
+                {accounts.map(acc => (
+                  <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Button 
             variant="outline" 
             onClick={() => {/* Export functionality */}}

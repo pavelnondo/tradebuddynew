@@ -1051,81 +1051,7 @@ app.use((error, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Account Management API
-// Get all accounts for user
-app.get('/api/accounts', authenticateToken, async (req, res) => {
-  try {
-    const result = await db.query(`
-      SELECT 
-        a.*,
-        COUNT(t.id) as total_trades,
-        COALESCE(SUM(t.pnl), 0) as total_pnl,
-        COALESCE(AVG(CASE WHEN t.pnl > 0 THEN 1.0 ELSE 0.0 END) * 100, 0) as win_rate
-      FROM accounts a
-      LEFT JOIN trades t ON a.id = t.account_id
-      WHERE a.user_id = $1
-      GROUP BY a.id
-      ORDER BY a.created_at DESC
-    `, [req.user.id]);
 
-    const accounts = result.rows.map(row => ({
-      id: row.id,
-      name: row.name,
-      initialBalance: parseFloat(row.initial_balance),
-      currentBalance: parseFloat(row.current_balance),
-      isActive: row.is_active,
-      isBlown: row.is_blown,
-      isPassed: row.is_passed,
-      createdAt: row.created_at,
-      blownAt: row.blown_at,
-      passedAt: row.passed_at,
-      totalTrades: parseInt(row.total_trades),
-      totalPnL: parseFloat(row.total_pnl),
-      winRate: parseFloat(row.win_rate)
-    }));
-
-    res.json({ accounts });
-  } catch (error) {
-    console.error('Get accounts error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Create new account
-app.post('/api/accounts', authenticateToken, async (req, res) => {
-  try {
-    const { name, initialBalance } = req.body;
-    
-    if (!name || !initialBalance) {
-      return res.status(400).json({ error: 'Name and initial balance are required' });
-    }
-
-    const result = await db.query(`
-      INSERT INTO accounts (user_id, name, initial_balance, current_balance, is_active, is_blown, is_passed, created_at)
-      VALUES ($1, $2, $3, $3, false, false, false, NOW())
-      RETURNING *
-    `, [req.user.id, name, initialBalance]);
-
-    const account = {
-      id: result.rows[0].id,
-      name: result.rows[0].name,
-      initialBalance: parseFloat(result.rows[0].initial_balance),
-      currentBalance: parseFloat(result.rows[0].current_balance),
-      isActive: result.rows[0].is_active,
-      isBlown: result.rows[0].is_blown,
-      isPassed: result.rows[0].is_passed,
-      createdAt: result.rows[0].created_at,
-      totalTrades: 0,
-      totalPnL: 0,
-      winRate: 0
-    };
-
-    res.status(201).json(account);
-  } catch (error) {
-    console.error('Create account error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
 
 // Activate account (switch to it)
 app.post('/api/accounts/:id/activate', authenticateToken, async (req, res) => {
@@ -1133,13 +1059,13 @@ app.post('/api/accounts/:id/activate', authenticateToken, async (req, res) => {
     const { id } = req.params;
     
     // First, deactivate all accounts for this user
-    await db.query('UPDATE accounts SET is_active = false WHERE user_id = $1', [req.user.id]);
+    await db.query('UPDATE trading_accounts SET is_active = false WHERE user_id = $1', [req.user.id]);
     
     // Then activate the selected account
     const result = await db.query(`
-      UPDATE accounts 
+      UPDATE trading_accounts 
       SET is_active = true 
-      WHERE id = $1 AND user_id = $2 AND is_blown = false AND is_passed = false
+      WHERE id = $1 AND user_id = $2
       RETURNING *
     `, [id, req.user.id]);
 
@@ -1160,8 +1086,8 @@ app.post('/api/accounts/:id/blow', authenticateToken, async (req, res) => {
     const { id } = req.params;
     
     const result = await db.query(`
-      UPDATE accounts 
-      SET is_active = false, is_blown = true, blown_at = NOW()
+      UPDATE trading_accounts 
+      SET is_active = false
       WHERE id = $1 AND user_id = $2
       RETURNING *
     `, [id, req.user.id]);
@@ -1183,8 +1109,8 @@ app.post('/api/accounts/:id/pass', authenticateToken, async (req, res) => {
     const { id } = req.params;
     
     const result = await db.query(`
-      UPDATE accounts 
-      SET is_active = false, is_passed = true, passed_at = NOW()
+      UPDATE trading_accounts 
+      SET is_active = false
       WHERE id = $1 AND user_id = $2
       RETURNING *
     `, [id, req.user.id]);

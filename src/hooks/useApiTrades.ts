@@ -14,7 +14,7 @@ export function useApiTrades() {
     try {
       const apiBaseUrl = API_BASE_URL;
       const token = localStorage.getItem('token');
-      const res = await fetch(`${apiBaseUrl}/trades`, {
+      const res = await fetch(`${apiBaseUrl}/api/trades`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -56,6 +56,7 @@ export function useApiTrades() {
           asset: trade.symbol || '',
           tradeType: trade.trade_type || trade.type || '', // Prefer trade_type (Long/Short) over type (buy/sell)
           type: trade.type || '', // Keep original type for backend compatibility
+          accountId: trade.account_id || trade.accountId,
           entryPrice: safeNumber(trade.entry_price, 0),
           exitPrice: safeNumber(trade.exit_price, 0),
           positionSize: safeNumber(trade.quantity, 0),

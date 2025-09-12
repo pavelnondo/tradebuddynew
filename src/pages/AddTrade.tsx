@@ -166,7 +166,7 @@ export default function AddTrade() {
     const hydrateFromFullTrade = async (tradeId: string | number) => {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE_URL}/trades/${tradeId}`, {
+        const res = await fetch(`${API_BASE_URL}/api/trades/${tradeId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) return;
@@ -344,7 +344,7 @@ export default function AddTrade() {
     const token = localStorage.getItem('token');
     const formData = new FormData();
     formData.append('file', screenshotFile);
-    const res = await fetch(`${API_BASE_URL}/upload`, {
+    const res = await fetch(`${API_BASE_URL}/api/upload`, {
       method: 'POST',
       headers: token ? { 'Authorization': `Bearer ${token}` } as any : undefined,
       body: formData,
@@ -776,9 +776,7 @@ export default function AddTrade() {
                 ...formData,
                 asset: template.symbol,
                 tradeType: template.tradeType,
-                setupType: template.setupType,
-                marketCondition: template.marketCondition,
-                confidenceLevel: template.confidenceLevel,
+                setup: template.setupType,
                 notes: template.notes,
               });
               toast({
@@ -821,14 +819,14 @@ export default function AddTrade() {
           <SmartSuggestions
             currentTrade={{
               symbol: formData.asset,
-              tradeType: formData.tradeType,
+              tradeType: (formData.tradeType as any) || '',
               entryPrice: parseFloat(formData.entryPrice) || 0,
               exitPrice: parseFloat(formData.exitPrice) || 0,
               positionSize: parseFloat(formData.positionSize) || 0,
               emotion: formData.emotion,
-              confidenceLevel: formData.confidenceLevel,
-              setupType: formData.setupType,
-              marketCondition: formData.marketCondition,
+              confidenceLevel: 5,
+              setupType: formData.setup,
+              marketCondition: 'normal',
             }}
             recentTrades={[]} // This would come from your trades data
             onApplySuggestion={(suggestion) => {
