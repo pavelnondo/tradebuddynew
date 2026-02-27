@@ -63,7 +63,7 @@ psql postgres
 In the PostgreSQL prompt, run:
 
 ```sql
-ALTER USER postgres PASSWORD 'your_db_password_here';
+ALTER USER postgres PASSWORD 'YOUR_DB_PASSWORD';
 \q
 ```
 

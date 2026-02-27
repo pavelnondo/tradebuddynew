@@ -7,13 +7,11 @@ This document explains how to integrate your n8n workflow with the Trade Buddy T
 
 ### Backend Webhook URL
 ```
-[REDACTED]
+YOUR_N8N_WEBHOOK_URL
 ```
 
 ### Bot Token
-```
-[REDACTED]
-```
+Set `TELEGRAM_BOT_TOKEN` in your environment; do not commit it. Example format: `123456:ABC-DEF...`
 
 ## Expected Input Format
 

@@ -10,7 +10,7 @@ class CSVHandler {
     this.pool = new Pool({
       host: process.env.PGHOST || 'localhost',
       user: process.env.PGUSER || 'tradebuddy_user',
-      password: process.env.PGPASSWORD || 'your_db_password_here',
+      password: process.env.PGPASSWORD,
       database: process.env.PGDATABASE || 'tradebuddy',
       port: process.env.PGPORT || 5432,
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false

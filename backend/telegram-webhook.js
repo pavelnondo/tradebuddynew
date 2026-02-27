@@ -15,15 +15,19 @@ app.use(express.json());
 const pool = new Pool({
   host: process.env.PGHOST || 'localhost',
   user: process.env.PGUSER || 'tradebuddy_user',
-  password: process.env.PGPASSWORD || 'your_db_password_here',
+  password: process.env.PGPASSWORD,
   database: process.env.PGDATABASE || 'tradebuddy',
   port: process.env.PGPORT || 5432,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
 // Configuration
-const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || '[REDACTED]';
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '[REDACTED]';
+const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL;
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+if (!TELEGRAM_BOT_TOKEN || !N8N_WEBHOOK_URL) {
+  console.error('Missing TELEGRAM_BOT_TOKEN or N8N_WEBHOOK_URL in environment');
+  process.exit(1);
+}
 
 // Telegram Webhook Handler
 app.post('/telegram-webhook', async (req, res) => {

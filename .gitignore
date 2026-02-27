@@ -23,7 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 
-# Environment / secrets (do not commit)
+# Environment / secrets (do not commit - use config.env.example as template)
 .env
 backend/.env
 backend/uploads/

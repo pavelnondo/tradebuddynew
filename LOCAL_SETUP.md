@@ -46,7 +46,7 @@ psql -h localhost -U postgres -d tradebuddy -f backend/setup-local-db.sql
 
 The application is already configured for local development:
 
-- **Database**: `postgresql://postgres:your_db_password_here@localhost:5432/tradebuddy`
+- **Database**: `postgresql://postgres:YOUR_DB_PASSWORD@localhost:5432/tradebuddy`
 - **Backend API**: `http://localhost:3000`
 - **Frontend**: `http://localhost:5173`
 
@@ -79,7 +79,7 @@ The frontend will start on `http://localhost:5173`
 - **Port**: 5432
 - **Database**: tradebuddy
 - **Username**: postgres
-- **Password**: your_db_password_here
+- **Password**: Set in .env as PGPASSWORD (do not commit)
 
 ## Troubleshooting
 
