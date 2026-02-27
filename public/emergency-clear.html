@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergency Cache Clear - TradeBuddy</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .container {
+      text-align: center;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 3rem;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+      max-width: 500px;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+    .status {
+      font-size: 1.2rem;
+      margin: 2rem 0;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      min-height: 60px;
+    }
+    .btn {
+      background: white;
+      color: #667eea;
+      border: none;
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+      font-weight: bold;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: transform 0.2s;
+      margin: 0.5rem;
+    }
+    .btn:hover {
+      transform: scale(1.05);
+    }
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .success {
+      color: #4ade80;
+    }
+    .log {
+      margin-top: 2rem;
+      text-align: left;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 1rem;
+      border-radius: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧹 Emergency Cache Clear</h1>
+    <p>This will clear all caches and service workers</p>
+    
+    <div class="status" id="status">
+      Ready to clear...
+    </div>
+
+    <button class="btn" id="clearBtn" onclick="clearEverything()">
+      Clear All Caches Now
+    </button>
+
+    <button class="btn" id="returnBtn" onclick="goHome()" style="display: none;">
+      Return to TradeBuddy
+    </button>
+
+    <div class="log" id="log" style="display: none;"></div>
+  </div>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const logEl = document.getElementById('log');
+    const clearBtn = document.getElementById('clearBtn');
+    const returnBtn = document.getElementById('returnBtn');
+
+    function log(message) {
+      console.log(message);
+      logEl.style.display = 'block';
+      logEl.innerHTML += `<div>${new Date().toLocaleTimeString()}: ${message}</div>`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    async function clearEverything() {
+      clearBtn.disabled = true;
+      statusEl.textContent = 'Clearing...';
+      log('🧹 Starting complete cache clear...');
+
+      try {
+        // 1. Clear all caches
+        log('📦 Checking for caches...');
+        const cacheNames = await caches.keys();
+        log(`Found ${cacheNames.length} caches: ${cacheNames.join(', ')}`);
+        
+        for (const cacheName of cacheNames) {
+          log(`🗑️ Deleting cache: ${cacheName}`);
+          await caches.delete(cacheName);
+        }
+        log('✅ All caches deleted');
+
+        // 2. Unregister all service workers
+        log('🔧 Checking for service workers...');
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        log(`Found ${registrations.length} service workers`);
+        
+        for (const registration of registrations) {
+          log(`🗑️ Unregistering service worker...`);
+          await registration.unregister();
+        }
+        log('✅ All service workers unregistered');
+
+        // 3. Clear localStorage
+        log('💾 Clearing localStorage...');
+        const localStorageSize = localStorage.length;
+        localStorage.clear();
+        log(`✅ Cleared ${localStorageSize} localStorage items`);
+
+        // 4. Clear sessionStorage
+        log('💾 Clearing sessionStorage...');
+        sessionStorage.clear();
+        log('✅ SessionStorage cleared');
+
+        // 5. Clear IndexedDB
+        log('🗄️ Clearing IndexedDB...');
+        const databases = await indexedDB.databases();
+        for (const db of databases) {
+          if (db.name) {
+            indexedDB.deleteDatabase(db.name);
+            log(`🗑️ Deleted database: ${db.name}`);
+          }
+        }
+        log('✅ IndexedDB cleared');
+
+        statusEl.innerHTML = '<span class="success">✅ Everything Cleared Successfully!</span>';
+        statusEl.innerHTML += '<br><br>Now refresh the page (Cmd+Shift+R or Ctrl+Shift+R)';
+        returnBtn.style.display = 'inline-block';
+        log('🎉 Cache clear complete! Ready for fresh load.');
+        
+      } catch (error) {
+        statusEl.textContent = '❌ Error: ' + error.message;
+        log('❌ Error: ' + error.message);
+        clearBtn.disabled = false;
+      }
+    }
+
+    function goHome() {
+      log('🏠 Redirecting to home...');
+      window.location.href = '/';
+    }
+
+    // Auto-run on load
+    log('📍 Emergency Clear page loaded');
+    log('👉 Click "Clear All Caches Now" to proceed');
+  </script>
+</body>
+</html>
+

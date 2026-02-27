@@ -1,0 +1,50 @@
+{
+  "name": "TradeBuddy Data Analyzer",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tradebuddy-insights",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "tradebuddy-insights"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst trades = input.trades || input.body?.trades || input;\n\nif (!Array.isArray(trades) || trades.length === 0) {\n  return [{\n    json: {\n      summary: \"No trades to analyze.\",\n      habits: [],\n      recommendations: [\"Add more trades to get personalized insights.\"],\n      metrics: { totalTrades: 0 }\n    }\n  }];\n}\n\nconst wins = trades.filter(t => (t.pnl || 0) > 0);\nconst losses = trades.filter(t => (t.pnl || 0) < 0);\nconst breakeven = trades.filter(t => (t.pnl || 0) === 0);\nconst winRate = ((wins.length / trades.length) * 100).toFixed(1);\nconst totalPnl = trades.reduce((s, t) => s + (t.pnl || 0), 0);\nconst avgWin = wins.length ? wins.reduce((s, t) => s + (t.pnl || 0), 0) / wins.length : 0;\nconst avgLoss = losses.length ? Math.abs(losses.reduce((s, t) => s + (t.pnl || 0), 0) / losses.length) : 0;\nconst profitFactor = avgLoss > 0 ? (avgWin * wins.length) / (avgLoss * losses.length) : wins.length > 0 ? 999 : 0;\n\nconst bySymbol = {};\nconst byEmotion = {};\nconst bySession = {};\nconst bySetup = {};\nconst symbolPnL = {};\ntrades.forEach(t => {\n  const sym = t.symbol || 'Unknown';\n  bySymbol[sym] = (bySymbol[sym] || 0) + 1;\n  symbolPnL[sym] = (symbolPnL[sym] || 0) + (t.pnl || 0);\n  const em = t.emotion || 'unknown';\n  byEmotion[em] = (byEmotion[em] || 0) + 1;\n  const ses = t.session || 'Other';\n  bySession[ses] = (bySession[ses] || 0) + 1;\n  const setup = t.setup_type || 'Unspecified';\n  bySetup[setup] = (bySetup[setup] || 0) + 1;\n});\n\nconst topSymbol = Object.entries(bySymbol).sort((a,b) => b[1]-a[1])[0];\nconst bestSymbol = Object.entries(symbolPnL).sort((a,b) => b[1]-a[1])[0];\nconst worstSymbol = Object.entries(symbolPnL).sort((a,b) => a[1]-b[1])[0];\nconst topEmotion = Object.entries(byEmotion).sort((a,b) => b[1]-a[1])[0];\nconst topSession = Object.entries(bySession).sort((a,b) => b[1]-a[1])[0];\n\nconst rValues = trades.map(t => t.r_multiple).filter(r => r != null && !isNaN(r));\nconst avgR = rValues.length ? (rValues.reduce((a,b)=>a+b,0)/rValues.length).toFixed(2) : null;\n\nconst checklistTrades = trades.filter(t => t.checklist_completion_percent != null);\nconst highChecklist = checklistTrades.filter(t => t.checklist_completion_percent >= 80);\nconst lowChecklist = checklistTrades.filter(t => t.checklist_completion_percent < 50);\nconst checklistWinRate = highChecklist.length ? ((highChecklist.filter(t=>(t.pnl||0)>0).length/highChecklist.length)*100).toFixed(1) : null;\n\nconst habits = [\n  `Win rate: ${winRate}% (${wins.length}W / ${losses.length}L / ${breakeven.length}BE)`,\n  `Profit factor: ${profitFactor.toFixed(2)}`,\n  `Most traded: ${topSymbol?.[0] || 'N/A'} (${topSymbol?.[1] || 0} trades)`,\n  `Best performer: ${bestSymbol?.[0] || 'N/A'} (+${(bestSymbol?.[1]||0).toFixed(2)} total)`,\n  `Worst performer: ${worstSymbol?.[0] || 'N/A'} (${(worstSymbol?.[1]||0).toFixed(2)} total)`,\n  `Dominant emotion: ${topEmotion?.[0] || 'N/A'}`,\n  `Best session: ${topSession?.[0] || 'N/A'}`,\n  avgR ? `Avg R-multiple: ${avgR}R` : null,\n  checklistWinRate ? `Win rate when checklist ≥80%: ${checklistWinRate}%` : null\n].filter(Boolean);\n\nconst recommendations = [];\nif (parseFloat(winRate) < 45) recommendations.push(\"Focus on quality over quantity. Fewer, higher-conviction trades may improve results.\");\nif (losses.length > wins.length && losses.length >= 5) recommendations.push(\"Consider stricter stop-losses and taking partial profits at targets.\");\nif (avgR && parseFloat(avgR) < 0.5) recommendations.push(\"Aim for higher R-multiples. Let winners run and cut losers faster.\");\nif (checklistWinRate && parseFloat(checklistWinRate) > parseFloat(winRate) + 10) recommendations.push(\"Your checklist discipline pays off. Stick to it on every trade.\");\nif (Object.keys(byEmotion).length > 0) {\n  const fearful = (byEmotion.fearful || 0) + (byEmotion.nervous || 0);\n  if (fearful > trades.length * 0.3) recommendations.push(\"Fear/nervousness appear often. Consider paper trading or smaller size to build confidence.\");\n}\nif (recommendations.length === 0) recommendations.push(\"Keep logging trades. More data will unlock deeper insights.\");\n\nreturn [{\n  json: {\n    summary: `Analyzed ${trades.length} trades. Total P&L: ${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}. Win rate ${winRate}%.`,\n    habits,\n    recommendations,\n    metrics: {\n      totalTrades: trades.length,\n      winRate: parseFloat(winRate),\n      totalPnl,\n      profitFactor: Math.round(profitFactor * 100) / 100,\n      avgR: avgR ? parseFloat(avgR) : null\n    }\n  }\n}];\n"
+      },
+      "id": "analyze-trades",
+      "name": "Analyze Trades",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "respond",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Analyze Trades", "type": "main", "index": 0 }]] },
+    "Analyze Trades": { "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]] }
+  },
+  "pinData": {},
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "versionId": "1"
+}

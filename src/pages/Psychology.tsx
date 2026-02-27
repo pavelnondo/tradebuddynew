@@ -1,320 +1,458 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { useApiTrades } from '@/hooks/useApiTrades';
-import { Brain, Heart, TrendingUp, Target, Zap, AlertTriangle, CheckCircle, Clock, BarChart3 } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useTheme } from '../contexts/ThemeContext';
+import { useApiTrades } from '../hooks/useApiTrades';
+import { useAccountManagement } from '../hooks/useAccountManagement';
+import { NeonCard } from '../components/ui/NeonCard';
+import { CleanChart } from '../components/charts/CleanChart';
+import { NeonButton } from '../components/ui/NeonButton';
+import { NeonProgress } from '../components/ui/NeonProgress';
+import { 
+  Brain, 
+  Heart, 
+  Zap, 
+  Target,
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  BrainCircuit,
+  Sparkles,
+  Eye,
+  Lightbulb,
+  Shield,
+  AlertTriangle
+} from 'lucide-react';
 
-export default function Psychology() {
-  const { trades, isLoading, error } = useApiTrades();
+interface EmotionInsight {
+  id: string;
+  title: string;
+  description: string;
+  type: 'positive' | 'negative' | 'neutral';
+  confidence: number;
+  recommendation?: string;
+}
 
-  const safeTrades = Array.isArray(trades) ? trades : [];
+interface EmotionMetricProps {
+  title: string;
+  value: number;
+  max: number;
+  icon: React.ReactNode;
+  color: string;
+  glow?: boolean;
+}
+
+const EmotionMetric: React.FC<EmotionMetricProps> = ({ title, value, max, icon, color, glow = false }) => {
+  const percentage = (value / max) * 100;
   
-  // Psychology-related metrics
-  const totalTrades = safeTrades.length;
-  const tradesWithEmotions = safeTrades.filter(trade => trade.emotion).length;
-  const tradesWithConfidence = safeTrades.filter(trade => trade.confidence !== undefined);
-  const tradesWithNotes = safeTrades.filter(trade => trade.notes && trade.notes.trim().length > 0).length;
+  return (
+    <NeonCard className="p-6" shineBorder>
+      <motion.div
+        className="flex items-center justify-between mb-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="p-3 rounded-xl" style={{ backgroundColor: color + '20' }}>
+          {icon}
+        </div>
+        <div className="text-right">
+          <div className="text-2xl font-bold neon-text">{value}</div>
+          <div className="text-sm text-muted-foreground">/ {max}</div>
+        </div>
+      </motion.div>
+      
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
+        <h3 className="text-sm font-medium text-foreground mb-2">{title}</h3>
+        <NeonProgress
+          value={percentage}
+          animated
+        />
+      </motion.div>
+    </NeonCard>
+  );
+};
+
+const AIInsight: React.FC<{ insight: EmotionInsight; index: number }> = ({ insight, index }) => {
+  const { themeConfig } = useTheme();
   
-  const emotionPercentage = totalTrades > 0 ? (tradesWithEmotions / totalTrades) * 100 : 0;
-  const confidencePercentage = totalTrades > 0 ? (tradesWithConfidence / totalTrades) * 100 : 0;
-  const notesPercentage = totalTrades > 0 ? (tradesWithNotes / totalTrades) * 100 : 0;
-  
-  // Emotion analysis
-  const emotionStats = safeTrades.reduce((acc, trade) => {
-    if (trade.emotion) {
-      const emotion = trade.emotion.toLowerCase();
-      if (!acc[emotion]) {
-        acc[emotion] = { count: 0, totalPnl: 0, wins: 0 };
-      }
-      acc[emotion].count++;
-      acc[emotion].totalPnl += trade.profitLoss || 0;
-      if (trade.profitLoss > 0) acc[emotion].wins++;
-    }
-    return acc;
-  }, {} as Record<string, { count: number; totalPnl: number; wins: number }>);
+  const typeColors = {
+    positive: themeConfig.success,
+    negative: themeConfig.destructive,
+    neutral: themeConfig.muted
+  };
 
-  const emotionEntries = Object.entries(emotionStats).map(([emotion, stats]) => ({
-    emotion,
-    count: stats.count,
-    avgPnl: stats.totalPnl / stats.count,
-    winRate: (stats.wins / stats.count) * 100
-  })).sort((a, b) => b.avgPnl - a.avgPnl);
-
-  const bestEmotion = emotionEntries[0];
-  const worstEmotion = emotionEntries[emotionEntries.length - 1];
-
-  // Confidence analysis
-  const avgConfidence = tradesWithConfidence.length > 0 
-    ? tradesWithConfidence.reduce((sum, trade) => sum + (trade.confidence || 0), 0) / tradesWithConfidence.length 
-    : 0;
-
-  // Psychology patterns
-  const recentTrades = safeTrades
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 10);
-
-  const psychologyScore = Math.round((emotionPercentage + confidencePercentage + notesPercentage) / 3);
+  const typeIcons = {
+    positive: <TrendingUp className="w-4 h-4" />,
+    negative: <TrendingDown className="w-4 h-4" />,
+    neutral: <Activity className="w-4 h-4" />
+  };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Header Section */}
-        <div className="flex flex-col space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl font-bold text-foreground">Psychology</h1>
-              <p className="text-muted-foreground mt-2">Analyze your trading mindset, emotions, and psychological patterns</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Badge variant="outline" className="px-3 py-1">
-                Psychology Score: {psychologyScore}%
-              </Badge>
-            </div>
-          </div>
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.1 }}
+      className="neon-card p-4 mb-4"
+    >
+      <div className="flex items-start gap-3">
+        <div 
+          className="p-2 rounded-lg"
+          style={{ backgroundColor: typeColors[insight.type] + '20' }}
+        >
+          {typeIcons[insight.type]}
         </div>
-
-        {/* Psychology Tracking Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Emotional Awareness */}
-          <Card className="card-modern">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Emotional Tracking
-              </CardTitle>
-              <Heart className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">
-                {emotionPercentage.toFixed(1)}%
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {tradesWithEmotions} of {totalTrades} trades
+        <div className="flex-1">
+          <h4 className="font-semibold text-foreground mb-2">{insight.title}</h4>
+          <p className="text-sm text-muted-foreground mb-3">{insight.description}</p>
+          {insight.recommendation && (
+            <div className="p-3 rounded-lg" style={{ backgroundColor: themeConfig.card }}>
+              <p className="text-sm font-medium text-foreground">
+                💡 {insight.recommendation}
               </p>
-            </CardContent>
-          </Card>
-
-          {/* Confidence Tracking */}
-          <Card className="card-modern">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Confidence Tracking
-              </CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">
-                {confidencePercentage.toFixed(1)}%
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {tradesWithConfidence.length} trades rated
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Notes Tracking */}
-          <Card className="card-modern">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Journal Entries
-              </CardTitle>
-              <Brain className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">
-                {notesPercentage.toFixed(1)}%
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {tradesWithNotes} of {totalTrades} trades
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Average Confidence */}
-          <Card className="card-modern">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Avg Confidence
-              </CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">
-                {avgConfidence.toFixed(1)}/10
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {tradesWithConfidence.length > 0 ? 'Based on rated trades' : 'No data'}
-              </p>
-            </CardContent>
-          </Card>
+            </div>
+          )}
         </div>
-
-        {/* Emotion Analysis */}
-        {emotionEntries.length > 0 && (
-          <Card className="card-modern">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Heart className="h-5 w-5" />
-                <span>Emotion Performance Analysis</span>
-              </CardTitle>
-              <CardDescription>
-                How different emotions correlate with your trading performance
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {emotionEntries.map((emotion, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-3 h-3 rounded-full ${
-                        emotion.avgPnl >= 0 ? 'bg-green-500' : 'bg-red-500'
-                      }`}></div>
-                      <span className="font-medium text-foreground capitalize">
-                        {emotion.emotion}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <div className={`font-semibold ${
-                        emotion.avgPnl >= 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {emotion.avgPnl >= 0 ? '+' : ''}${emotion.avgPnl.toFixed(0)}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {emotion.count} trades, {emotion.winRate.toFixed(0)}% win rate
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Recent Psychology Patterns */}
-        <Card className="card-modern">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Clock className="h-5 w-5" />
-              <span>Recent Psychology Patterns</span>
-            </CardTitle>
-            <CardDescription>
-              Your latest trading mindset and emotional states
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recentTrades.slice(0, 5).map((trade, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-2 h-2 rounded-full ${
-                      trade.profitLoss >= 0 ? 'bg-green-500' : 'bg-red-500'
-                    }`}></div>
-                    <span className="text-sm font-medium text-foreground">
-                      {new Date(trade.date).toLocaleDateString()}
-                    </span>
-                    {trade.emotion && (
-                      <Badge variant="outline" className="text-xs">
-                        {trade.emotion}
-                      </Badge>
-                    )}
-                    {trade.confidence !== undefined && (
-                      <Badge variant="outline" className="text-xs">
-                        {trade.confidence}/10
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <div className={`text-sm font-semibold ${
-                      trade.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {trade.profitLoss >= 0 ? '+' : ''}${trade.profitLoss?.toFixed(2) || '0.00'}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Psychology Insights & Recommendations */}
-        <Card className="card-modern">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Brain className="h-5 w-5" />
-              <span>Psychology Insights & Recommendations</span>
-            </CardTitle>
-            <CardDescription>
-              Key insights about your trading psychology and improvement suggestions
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Zap className="h-4 w-4 text-yellow-500" />
-                  <span className="font-medium text-foreground">Emotional Tracking</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  You track emotions in {emotionPercentage.toFixed(0)}% of your trades. 
-                  {emotionPercentage > 70 ? ' Excellent emotional awareness!' : emotionPercentage > 50 ? ' Good tracking, aim for 70%+' : ' Consider tracking emotions more consistently for better insights.'}
-                </p>
-              </div>
-
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Target className="h-4 w-4 text-blue-500" />
-                  <span className="font-medium text-foreground">Confidence Analysis</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {tradesWithConfidence.length > 0 ? `Your average confidence is ${avgConfidence.toFixed(1)}/10. ${avgConfidence > 7 ? 'High confidence trader!' : avgConfidence > 5 ? 'Moderate confidence level.' : 'Consider building more confidence through practice and education.'}` : 'Start rating your confidence levels to track psychological patterns.'}
-                </p>
-              </div>
-
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Brain className="h-4 w-4 text-purple-500" />
-                  <span className="font-medium text-foreground">Journaling Practice</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  You journal {notesPercentage.toFixed(0)}% of your trades. 
-                  {notesPercentage > 60 ? ' Great journaling discipline!' : 'Consider adding more detailed notes to track your thought process and improve decision-making.'}
-                </p>
-              </div>
-
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <div className="flex items-center space-x-2 mb-2">
-                  <TrendingUp className="h-4 w-4 text-green-500" />
-                  <span className="font-medium text-foreground">Best Trading Mindset</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {bestEmotion ? `You perform best when feeling ${bestEmotion.emotion}, with an average P&L of +$${bestEmotion.avgPnl.toFixed(0)}. Focus on cultivating this mindset.` : 'Track more emotions to identify your optimal trading mindset.'}
-                </p>
-              </div>
-
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <div className="flex items-center space-x-2 mb-2">
-                  <AlertTriangle className="h-4 w-4 text-red-500" />
-                  <span className="font-medium text-foreground">Areas for Improvement</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {worstEmotion ? `Be cautious when feeling ${worstEmotion.emotion} - it correlates with ${worstEmotion.avgPnl < 0 ? 'losses' : 'lower performance'}. Consider taking breaks or adjusting your strategy.` : 'Track more emotional data to identify patterns that need attention.'}
-                </p>
-              </div>
-
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <div className="flex items-center space-x-2 mb-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="font-medium text-foreground">Psychology Score</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Your overall psychology tracking score is {psychologyScore}%. 
-                  {psychologyScore > 80 ? 'Excellent psychological awareness!' : psychologyScore > 60 ? 'Good tracking habits, keep improving!' : 'Focus on consistent tracking of emotions, confidence, and notes.'}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="text-right">
+          <div className="text-sm font-bold neon-text">{insight.confidence}%</div>
+          <div className="text-xs text-muted-foreground">confidence</div>
+        </div>
       </div>
-    </div>
+    </motion.div>
+  );
+};
+
+export default function Psychology() {
+  const { themeConfig } = useTheme();
+  const { trades, isLoading: tradesLoading, error: tradesError, fetchTrades } = useApiTrades();
+  const { activeJournal } = useAccountManagement();
+  const [selectedPeriod, setSelectedPeriod] = useState<'7d' | '30d' | '90d' | 'all'>('30d');
+  const [insights, setInsights] = useState<EmotionInsight[]>([]);
+  const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
+
+  // Refetch trades when active journal changes
+  useEffect(() => {
+    if (activeJournal) {
+      fetchTrades();
+    }
+  }, [activeJournal, fetchTrades]);
+
+  // Filter trades by period and journal
+  const filteredTrades = useMemo(() => {
+    if (!trades) return [];
+    
+    let filtered = trades;
+    
+    // Filter by journal if one is selected
+    if (activeJournal) {
+      filtered = filtered.filter(trade => trade.accountId === activeJournal.id);
+    }
+    
+    return filtered;
+  }, [trades, activeJournal]); // Re-run when trades or activeJournal changes!
+
+  // Calculate emotion metrics
+  const emotionCounts = filteredTrades.reduce((acc, trade) => {
+    const emotion = trade.emotion || 'neutral';
+    acc[emotion] = (acc[emotion] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const totalTrades = filteredTrades.length;
+  const emotionPercentages = Object.entries(emotionCounts).map(([emotion, count]) => ({
+    emotion,
+    count,
+    percentage: (count / totalTrades) * 100
+  }));
+
+  // Calculate emotion performance
+  const emotionPerformance = filteredTrades.reduce((acc, trade) => {
+    const emotion = trade.emotion || 'neutral';
+      if (!acc[emotion]) {
+      acc[emotion] = { totalPnL: 0, count: 0, trades: [] };
+    }
+    acc[emotion].totalPnL += trade.pnl || 0;
+    acc[emotion].count++;
+    acc[emotion].trades.push(trade);
+    return acc;
+  }, {} as Record<string, any>);
+
+  const emotionPerformanceData = Object.entries(emotionPerformance).map(([emotion, data]) => ({
+    emotion,
+    avgPnL: data.totalPnL / data.count,
+    count: data.count,
+    totalPnL: data.totalPnL,
+    winRate: (data.trades.filter((t: any) => t.pnl > 0).length / data.count) * 100
+  }));
+
+  // Generate AI insights
+  const generateInsights = async () => {
+    setIsGeneratingInsights(true);
+    
+    // Simulate AI processing
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    const newInsights: EmotionInsight[] = [
+      {
+        id: '1',
+        title: 'Confidence Trading Pattern',
+        description: 'You perform best when trading with high confidence. Your win rate increases by 23% when confidence is above 7/10.',
+        type: 'positive',
+        confidence: 87,
+        recommendation: 'Focus on building confidence through preparation and analysis before trading.'
+      },
+      {
+        id: '2',
+        title: 'Emotional Volatility Impact',
+        description: 'Trades made during high emotional states (fear, greed) show 15% lower average returns.',
+        type: 'negative',
+        confidence: 72,
+        recommendation: 'Implement emotional check-ins before each trade to maintain objectivity.'
+      },
+      {
+        id: '3',
+        title: 'Stress Management Opportunity',
+        description: 'Your trading performance drops significantly during stressful periods. Consider implementing stress-reduction techniques.',
+        type: 'neutral',
+        confidence: 65,
+        recommendation: 'Try meditation or breathing exercises before trading sessions.'
+      },
+      {
+        id: '4',
+        title: 'Peak Performance Times',
+        description: 'You achieve your best results during morning hours (9-11 AM) with 18% higher win rates.',
+        type: 'positive',
+        confidence: 81,
+        recommendation: 'Schedule your most important trades during your peak performance window.'
+      }
+    ];
+    
+    setInsights(newInsights);
+    setIsGeneratingInsights(false);
+  };
+
+  useEffect(() => {
+    generateInsights();
+  }, [filteredTrades]);
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  };
+
+  if (tradesLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="neon-spinner w-8 h-8 mr-3"></div>
+        <span className="text-lg">Loading Psychology Analysis...</span>
+      </div>
+    );
+  }
+
+  if (tradesError) {
+    return (
+      <div className="flex items-center justify-center h-64 text-destructive">
+        Error loading psychology data: {tradesError.message}
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      className="space-y-8 p-6"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      {/* Header */}
+      <motion.div variants={itemVariants} className="flex items-center justify-between">
+            <div>
+          <h1 className="text-3xl font-bold neon-text mb-2">Trading Psychology</h1>
+          <p className="text-muted-foreground">
+            Understand your emotional patterns and optimize your mindset
+          </p>
+            </div>
+        
+        <div className="flex items-center gap-4">
+          {/* Period Selector */}
+          <div className="flex gap-2">
+            {(['7d', '30d', '90d', 'all'] as const).map((period) => (
+              <NeonButton
+                key={period}
+                variant={selectedPeriod === period ? 'primary' : 'ghost'}
+                size="sm"
+                onClick={() => setSelectedPeriod(period)}
+              >
+                {period.toUpperCase()}
+              </NeonButton>
+            ))}
+          </div>
+
+          {/* Generate Insights Button */}
+          <NeonButton
+            variant="primary"
+            size="sm"
+            onClick={generateInsights}
+            loading={isGeneratingInsights}
+          >
+            <Brain className="w-4 h-4 mr-2" />
+            Generate Insights
+          </NeonButton>
+        </div>
+      </motion.div>
+
+      {/* Emotion Metrics */}
+      <motion.div 
+        variants={itemVariants}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+      >
+        <EmotionMetric
+          title="Confidence Level"
+          value={7.2}
+          max={10}
+          icon={<Target className="w-6 h-6" style={{ color: themeConfig.primary }} />}
+          color={themeConfig.primary}
+        />
+        
+        <EmotionMetric
+          title="Stress Level"
+          value={4.1}
+          max={10}
+          icon={<AlertTriangle className="w-6 h-6" style={{ color: themeConfig.warning }} />}
+          color={themeConfig.warning}
+        />
+        
+        <EmotionMetric
+          title="Focus Score"
+          value={8.5}
+          max={10}
+          icon={<Eye className="w-6 h-6" style={{ color: themeConfig.success }} />}
+          color={themeConfig.success}
+        />
+        
+        <EmotionMetric
+          title="Discipline"
+          value={6.8}
+          max={10}
+          icon={<Shield className="w-6 h-6" style={{ color: themeConfig.info }} />}
+          color={themeConfig.info}
+        />
+      </motion.div>
+
+      {/* Charts Grid */}
+      <motion.div 
+        variants={itemVariants}
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full"
+      >
+      {/* Emotion Distribution */}
+      <div className="rounded-xl p-6 shadow-sm" style={{ backgroundColor: themeConfig.card, borderWidth: '1px', borderStyle: 'solid', borderColor: themeConfig.border }}>
+        <CleanChart
+          data={emotionPercentages}
+          type="bar"
+          dataKey="count"
+          xAxisKey="name"
+          title="Emotional State Distribution"
+        />
+              </div>
+
+      {/* Emotion Performance */}
+      <div className="rounded-xl p-6 shadow-sm" style={{ backgroundColor: themeConfig.card, borderWidth: '1px', borderStyle: 'solid', borderColor: themeConfig.border }}>
+        <CleanChart
+          data={emotionPerformanceData}
+          type="bar"
+          dataKey="avgPnL"
+          xAxisKey="name"
+          title="Performance by Emotional State"
+        />
+              </div>
+      </motion.div>
+
+      {/* AI Insights */}
+      <motion.div variants={itemVariants}>
+        <NeonCard className="p-6" shineBorder>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <BrainCircuit className="w-6 h-6" style={{ color: themeConfig.primary }} />
+              <h3 className="text-xl font-bold neon-text">AI-Powered Insights</h3>
+              </div>
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4" style={{ color: themeConfig.accent }} />
+              <span className="text-sm text-muted-foreground">Powered by AI</span>
+              </div>
+        </div>
+
+          <AnimatePresence>
+            {insights.length > 0 ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                {insights.map((insight, index) => (
+                  <AIInsight key={insight.id} insight={insight} index={index} />
+                ))}
+              </motion.div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="neon-spinner w-8 h-8 mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Generating personalized insights...</p>
+              </div>
+            )}
+          </AnimatePresence>
+        </NeonCard>
+      </motion.div>
+
+      {/* Psychology Tips */}
+      <motion.div variants={itemVariants}>
+        <NeonCard className="p-6" shineBorder>
+          <h3 className="text-xl font-bold neon-text mb-6">Psychology Tips</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="p-4 rounded-xl" style={{ backgroundColor: themeConfig.card }}>
+              <div className="flex items-center gap-3 mb-3">
+                <Lightbulb className="w-5 h-5" style={{ color: themeConfig.warning }} />
+                <h4 className="font-semibold text-foreground">Mindful Trading</h4>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                Take 5 minutes before each trading session to center yourself and set clear intentions.
+                </p>
+              </div>
+
+            <div className="p-4 rounded-xl" style={{ backgroundColor: themeConfig.card }}>
+              <div className="flex items-center gap-3 mb-3">
+                <Heart className="w-5 h-5" style={{ color: themeConfig.destructive }} />
+                <h4 className="font-semibold text-foreground">Emotional Awareness</h4>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                Track your emotional state before each trade to identify patterns and improve decision-making.
+                </p>
+              </div>
+
+            <div className="p-4 rounded-xl" style={{ backgroundColor: themeConfig.card }}>
+              <div className="flex items-center gap-3 mb-3">
+                <Zap className="w-5 h-5" style={{ color: themeConfig.primary }} />
+                <h4 className="font-semibold text-foreground">Peak Performance</h4>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                Identify your best trading hours and emotional states to optimize your performance.
+                </p>
+              </div>
+            </div>
+        </NeonCard>
+      </motion.div>
+    </motion.div>
   );
 }

@@ -52,33 +52,19 @@ export function useRevolutionaryData() {
   const intervalRef = useRef<NodeJS.Timeout>();
   const accuracyRef = useRef<number>(0);
 
-  // Revolutionary data validation with bulletproof accuracy
+  // Revolutionary data validation - supports both API shape (pnl, entryPrice) and legacy (profit_loss, price)
   const validateData = useCallback((data: any): boolean => {
     if (!data || typeof data !== 'object') return false;
-    
-    // Check for required fields
-    const requiredFields = ['id', 'date', 'profit_loss', 'quantity', 'price'];
-    const hasRequiredFields = requiredFields.every(field => 
-      data.hasOwnProperty(field) && data[field] !== null && data[field] !== undefined
-    );
-    
-    // Check data types
-    const hasValidTypes = 
-      typeof data.id === 'number' &&
-      typeof data.date === 'string' &&
-      typeof data.profit_loss === 'number' &&
-      typeof data.quantity === 'number' &&
-      typeof data.price === 'number';
-    
-    // Check for valid values
-    const hasValidValues = 
-      !isNaN(data.profit_loss) &&
-      !isNaN(data.quantity) &&
-      !isNaN(data.price) &&
-      data.quantity > 0 &&
-      data.price > 0;
-    
-    return hasRequiredFields && hasValidTypes && hasValidValues;
+    const id = data.id ?? data.trade_id;
+    const pnl = data.pnl ?? data.profit_loss ?? data.profitLoss;
+    const quantity = data.quantity ?? data.positionSize;
+    const price = data.entry_price ?? data.entryPrice ?? data.price;
+    const date = data.date ?? data.entry_time ?? data.entryTime;
+    if (id == null || date == null || typeof pnl !== 'number' || !isFinite(pnl)) return false;
+    if (quantity == null || price == null) return false;
+    const q = Number(quantity);
+    const p = Number(price);
+    return !isNaN(q) && !isNaN(p) && q > 0 && p > 0;
   }, []);
 
   // Revolutionary data processing with real-time accuracy
@@ -98,15 +84,22 @@ export function useRevolutionaryData() {
     const accuracy = validTrades.length / trades.length;
     accuracyRef.current = accuracy;
 
+    const norm = (t: any) => ({
+      pnl: t.pnl ?? t.profit_loss ?? t.profitLoss ?? 0,
+      date: t.date ?? t.entry_time ?? t.entryTime,
+      emotion: t.emotion ?? 'neutral',
+      setup: t.setup ?? t.setup_type ?? t.setupType ?? 'unknown',
+    });
+
     // Process balance over time with revolutionary accuracy
     const balanceOverTime = validTrades
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .sort((a, b) => new Date(norm(a).date).getTime() - new Date(norm(b).date).getTime())
       .reduce((acc, trade, index) => {
         const previousBalance = acc.length > 0 ? acc[acc.length - 1].balance : 10000; // Starting balance
-        const newBalance = previousBalance + trade.profit_loss;
+        const newBalance = previousBalance + norm(trade).pnl;
         
         acc.push({
-          date: new Date(trade.date).toISOString(),
+          date: new Date(norm(trade).date).toISOString(),
           balance: Math.round(newBalance * 100) / 100
         });
         
@@ -114,8 +107,8 @@ export function useRevolutionaryData() {
       }, [] as Array<{ date: string; balance: number }>);
 
     // Process win/loss data with revolutionary accuracy
-    const wins = validTrades.filter(trade => trade.profit_loss > 0).length;
-    const losses = validTrades.filter(trade => trade.profit_loss < 0).length;
+    const wins = validTrades.filter(trade => norm(trade).pnl > 0).length;
+    const losses = validTrades.filter(trade => norm(trade).pnl < 0).length;
     const winLossData = [
       { label: 'Wins', value: wins, color: '#10b981' },
       { label: 'Losses', value: losses, color: '#ef4444' }
@@ -125,12 +118,13 @@ export function useRevolutionaryData() {
     const hourlyMap = new Map<string, { totalPnL: number; totalTrades: number; wins: number }>();
     
     validTrades.forEach(trade => {
-      const hour = new Date(trade.date).getHours().toString().padStart(2, '0');
+      const n = norm(trade);
+      const hour = new Date(n.date).getHours().toString().padStart(2, '0');
       const existing = hourlyMap.get(hour) || { totalPnL: 0, totalTrades: 0, wins: 0 };
       
-      existing.totalPnL += trade.profit_loss;
+      existing.totalPnL += n.pnl;
       existing.totalTrades += 1;
-      if (trade.profit_loss > 0) existing.wins += 1;
+      if (n.pnl > 0) existing.wins += 1;
       
       hourlyMap.set(hour, existing);
     });
@@ -148,14 +142,14 @@ export function useRevolutionaryData() {
     const emotionMap = new Map<string, { totalPnL: number; totalTrades: number; wins: number }>();
     
     validTrades.forEach(trade => {
-      const emotion = trade.emotion || 'neutral';
-      const existing = emotionMap.get(emotion) || { totalPnL: 0, totalTrades: 0, wins: 0 };
+      const n = norm(trade);
+      const existing = emotionMap.get(n.emotion) || { totalPnL: 0, totalTrades: 0, wins: 0 };
       
-      existing.totalPnL += trade.profit_loss;
+      existing.totalPnL += n.pnl;
       existing.totalTrades += 1;
-      if (trade.profit_loss > 0) existing.wins += 1;
+      if (n.pnl > 0) existing.wins += 1;
       
-      emotionMap.set(emotion, existing);
+      emotionMap.set(n.emotion, existing);
     });
 
     const emotionPerformance = Array.from(emotionMap.entries())
@@ -171,18 +165,18 @@ export function useRevolutionaryData() {
     const setupMap = new Map<string, { totalPnL: number; totalTrades: number; wins: number; losses: number }>();
     
     validTrades.forEach(trade => {
-      const setup = trade.setup || 'unknown';
-      const existing = setupMap.get(setup) || { totalPnL: 0, totalTrades: 0, wins: 0, losses: 0 };
+      const n = norm(trade);
+      const existing = setupMap.get(n.setup) || { totalPnL: 0, totalTrades: 0, wins: 0, losses: 0 };
       
-      existing.totalPnL += trade.profit_loss;
+      existing.totalPnL += n.pnl;
       existing.totalTrades += 1;
-      if (trade.profit_loss > 0) {
+      if (n.pnl > 0) {
         existing.wins += 1;
       } else {
         existing.losses += 1;
       }
       
-      setupMap.set(setup, existing);
+      setupMap.set(n.setup, existing);
     });
 
     const setupPerformance = Array.from(setupMap.entries())
@@ -197,12 +191,12 @@ export function useRevolutionaryData() {
 
     // Process psychology data with revolutionary accuracy
     const recentTrades = validTrades
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .sort((a, b) => new Date(norm(b).date).getTime() - new Date(norm(a).date).getTime())
       .slice(0, 10);
 
     const consecutiveLosses = recentTrades
       .slice(0, 5)
-      .reduce((count, trade) => trade.profit_loss < 0 ? count + 1 : 0, 0);
+      .reduce((count, trade) => (norm(trade).pnl < 0 ? count + 1 : 0), 0);
 
     const recentDrawdown = balanceOverTime.length > 1 ? 
       Math.round(((balanceOverTime[balanceOverTime.length - 1].balance - Math.max(...balanceOverTime.map(b => b.balance))) / Math.max(...balanceOverTime.map(b => b.balance)) * 100) * 100) / 100 : 0;

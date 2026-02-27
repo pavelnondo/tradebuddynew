@@ -9,7 +9,10 @@
     "test": "jest",
     "lint": "eslint .",
     "migrate": "psql $DATABASE_URL -f database-schema-apple.sql",
-    "seed": "node scripts/seed.js"
+    "migrate:checklists": "node run-checklist-migration.js",
+    "seed": "node scripts/seed.js",
+    "setup-db": "./setup-local.sh",
+    "setup-local": "./setup-local.sh"
   },
   "keywords": [
     "trading",

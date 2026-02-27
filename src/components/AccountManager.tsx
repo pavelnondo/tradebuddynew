@@ -29,82 +29,113 @@ import {
   Activity,
   AlertTriangle,
   CheckCircle,
-  RotateCcw
+  RotateCcw,
+  DollarSign,
+  BarChart3
 } from 'lucide-react';
-import { useAccountManagement } from '@/hooks/useAccountManagement';
-import { TradingAccount } from '@/types/account';
+import { useJournalManagement } from '@/hooks/useAccountManagement';
+import { TradingJournal } from '@/types/account';
 
-export function AccountManager() {
+export function JournalManager() {
   const { 
-    accounts, 
-    activeAccount, 
-    accountStats, 
+    journals, 
+    activeJournal, 
+    journalStats, 
     isLoading, 
     error,
-    createAccount, 
-    switchAccount, 
-    markAccountAsBlown,
-    markAccountAsPassed
-  } = useAccountManagement();
+    createJournal, 
+    switchJournal, 
+    markJournalAsBlown,
+    markJournalAsPassed
+  } = useJournalManagement();
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [newAccountName, setNewAccountName] = useState('');
-  const [newAccountBalance, setNewAccountBalance] = useState(10000);
-  const [isCreating, setIsCreating] = useState(false);
+  const [newJournal, setNewJournal] = useState({
+    name: '',
+    accountType: 'paper' as 'paper' | 'live' | 'demo',
+    initialBalance: '',
+    currency: 'USD'
+  });
 
-  const handleCreateAccount = async () => {
-    if (!newAccountName.trim()) return;
-    
+  const handleCreateJournal = async () => {
+    if (!newJournal.name.trim() || !newJournal.initialBalance) {
+      return;
+    }
+
     try {
-      setIsCreating(true);
-      await createAccount(newAccountName.trim(), newAccountBalance);
-      setNewAccountName('');
-      setNewAccountBalance(10000);
+      await createJournal({
+        name: newJournal.name.trim(),
+        accountType: newJournal.accountType,
+        initialBalance: parseFloat(newJournal.initialBalance),
+        currency: newJournal.currency
+      });
+      
+      setNewJournal({
+        name: '',
+        accountType: 'paper',
+        initialBalance: '',
+        currency: 'USD'
+      });
       setIsCreateDialogOpen(false);
     } catch (error) {
-      console.error('Error creating account:', error);
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
-  const handleSwitchAccount = async (accountId: string) => {
-    try {
-      await switchAccount(accountId);
-    } catch (error) {
-      console.error('Error switching account:', error);
-    }
-  };
-
-  const handleMarkAsBlown = async (accountId: string) => {
-    if (window.confirm('Are you sure you want to mark this account as blown? This will deactivate it and you can start fresh.')) {
-      try {
-        await markAccountAsBlown(accountId);
-      } catch (error) {
-        console.error('Error marking account as blown:', error);
+      // Error handled by createJournal hook
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.error('Error creating journal:', error);
       }
     }
   };
 
-  const handleMarkAsPassed = async (accountId: string) => {
-    if (window.confirm('Are you sure you want to mark this account as passed? This will deactivate it and preserve all trading data.')) {
+  const handleSwitchJournal = (journalId: string) => {
+    const journal = journals.find(j => j.id === journalId);
+    if (journal) {
+      switchJournal(journal);
+    }
+  };
+
+  const handleMarkAsBlown = async (journalId: string) => {
       try {
-        await markAccountAsPassed(accountId);
+        await markJournalAsBlown(journalId);
       } catch (error) {
-        console.error('Error marking account as passed:', error);
-      }
+        // Error handled by markJournalAsBlown hook
+        if (process.env.NODE_ENV === 'development') {
+          // eslint-disable-next-line no-console
+          console.error('Error marking journal as blown:', error);
+        }
+    }
+  };
+
+  const handleMarkAsPassed = async (journalId: string) => {
+      try {
+        await markJournalAsPassed(journalId);
+      } catch (error) {
+        // Error handled by markJournalAsPassed hook
+        if (process.env.NODE_ENV === 'development') {
+          // eslint-disable-next-line no-console
+          console.error('Error marking journal as passed:', error);
+        }
     }
   };
 
   if (isLoading) {
     return (
-      <Card className="card-modern">
+      <Card className="bg-card border-border shadow-sm">
         <CardContent className="p-6">
-          <div className="flex items-center justify-center h-32">
-            <div className="text-center">
-              <div className="w-8 h-8 mx-auto mb-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 animate-pulse"></div>
-              <div className="text-sm text-slate-600 dark:text-slate-400">Loading accounts...</div>
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="bg-card border-border shadow-sm">
+        <CardContent className="p-6">
+          <div className="flex items-center space-x-2 text-red-500">
+            <AlertTriangle className="h-4 w-4" />
+            <span>Error loading journals: {error}</span>
           </div>
         </CardContent>
       </Card>
@@ -112,163 +143,148 @@ export function AccountManager() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Account Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="card-modern">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Total Accounts</p>
-                <p className="text-2xl font-bold text-slate-800 dark:text-slate-200">
-                  {accountStats.totalAccounts}
-                </p>
-              </div>
-              <Wallet className="w-8 h-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-modern">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Active Accounts</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {accountStats.activeAccounts}
-                </p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-modern">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Blown Accounts</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {accountStats.blownAccounts}
-                </p>
-              </div>
-              <AlertTriangle className="w-8 h-8 text-red-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-modern">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Passed Accounts</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {accountStats.passedAccounts}
-                </p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-modern">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Total Trades</p>
-                <p className="text-2xl font-bold text-slate-800 dark:text-slate-200">
-                  {accountStats.totalTradesAcrossAccounts}
-                </p>
-              </div>
-              <Activity className="w-8 h-8 text-purple-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Active Account */}
-      {activeAccount && (
-        <Card className="card-modern border-2 border-green-500">
+    <Card className="bg-card border-border shadow-sm">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center">
-                  <CheckCircle className="w-5 h-5 mr-2 text-green-500" />
-                  Active Account: {activeAccount.name}
+            <CardTitle className="flex items-center space-x-2">
+              <Wallet className="h-5 w-5" />
+              <span>Trading Journals</span>
                 </CardTitle>
                 <CardDescription>
-                  Current trading account
+              Manage your trading accounts and journals
                 </CardDescription>
               </div>
-              <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                Active
-              </Badge>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                <Plus className="h-4 w-4 mr-2" />
+                New Journal
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Create New Trading Journal</DialogTitle>
+                <DialogDescription>
+                  Set up a new trading journal to track your performance.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Journal Name</Label>
+                  <Input
+                    id="name"
+                    placeholder="e.g., Main Trading Account"
+                    value={newJournal.name}
+                    onChange={(e) => setNewJournal({ ...newJournal, name: e.target.value })}
+                  />
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="text-center p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                <div className="text-lg font-bold text-slate-800 dark:text-slate-200">
-                  ${activeAccount.currentBalance.toLocaleString()}
+                <div className="space-y-2">
+                  <Label htmlFor="accountType">Account Type</Label>
+                  <Select
+                    value={newJournal.accountType}
+                    onValueChange={(value: 'paper' | 'live' | 'demo') => 
+                      setNewJournal({ ...newJournal, accountType: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="paper">Paper Trading</SelectItem>
+                      <SelectItem value="demo">Demo Account</SelectItem>
+                      <SelectItem value="live">Live Trading</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="text-xs text-slate-600 dark:text-slate-400">Current Balance</div>
-              </div>
-              <div className="text-center p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                <div className={`text-lg font-bold ${activeAccount.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {activeAccount.totalPnL >= 0 ? '+' : ''}${activeAccount.totalPnL.toLocaleString()}
+                <div className="space-y-2">
+                  <Label htmlFor="initialBalance">Initial Balance</Label>
+                  <Input
+                    id="initialBalance"
+                    type="number"
+                    placeholder="10000"
+                    value={newJournal.initialBalance}
+                    onChange={(e) => setNewJournal({ ...newJournal, initialBalance: e.target.value })}
+                  />
                 </div>
-                <div className="text-xs text-slate-600 dark:text-slate-400">Total P&L</div>
-              </div>
-              <div className="text-center p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                <div className="text-lg font-bold text-slate-800 dark:text-slate-200">
-                  {activeAccount.totalTrades}
+                <div className="space-y-2">
+                  <Label htmlFor="currency">Currency</Label>
+                  <Select
+                    value={newJournal.currency}
+                    onValueChange={(value) => setNewJournal({ ...newJournal, currency: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="EUR">EUR</SelectItem>
+                      <SelectItem value="GBP">GBP</SelectItem>
+                      <SelectItem value="JPY">JPY</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="text-xs text-slate-600 dark:text-slate-400">Total Trades</div>
               </div>
-              <div className="text-center p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                <div className="text-lg font-bold text-slate-800 dark:text-slate-200">
-                  {activeAccount.winRate.toFixed(1)}%
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateJournal}>
+                  Create Journal
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {journals.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <Wallet className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="text-lg font-medium mb-2">No trading journals yet</p>
+            <p className="text-sm mb-4">Create your first journal to start tracking your trades</p>
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create First Journal
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Active Journal Display */}
+            {activeJournal && (
+              <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-3 h-3 bg-primary rounded-full"></div>
+                    <div>
+                      <h3 className="font-semibold text-primary">{activeJournal.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {activeJournal.accountType} • ${activeJournal.currentBalance?.toLocaleString() || '0.00'}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                    Active
+                  </Badge>
                 </div>
-                <div className="text-xs text-slate-600 dark:text-slate-400">Win Rate</div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            )}
 
-      {/* Account Management */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Switch Account */}
-        <Card className="card-modern">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <RotateCcw className="w-5 h-5 mr-2" />
-              Switch Account
-            </CardTitle>
-            <CardDescription>
-              Switch between your trading accounts
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <Label htmlFor="account-select">Select Account</Label>
-              <Select 
-                value={activeAccount?.id || ''} 
-                onValueChange={handleSwitchAccount}
-              >
+            {/* Journal Selection */}
+            <div className="space-y-2">
+              <Label>Switch Journal</Label>
+              <Select value={activeJournal?.id || ''} onValueChange={handleSwitchJournal}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose an account" />
+                  <SelectValue placeholder="Select a journal" />
                 </SelectTrigger>
                 <SelectContent>
-                  {accounts.filter(acc => !acc.isBlown && !acc.isPassed).map((account) => (
-                    <SelectItem key={account.id} value={account.id}>
-                      <div className="flex items-center justify-between w-full">
-                        <span>{account.name}</span>
-                        <Badge 
-                          variant={account.isActive ? "default" : "secondary"}
-                          className="ml-2"
-                        >
-                          {account.isActive ? 'Active' : 'Inactive'}
+                  {journals.map((journal) => (
+                    <SelectItem key={journal.id} value={journal.id}>
+                      <div className="flex items-center space-x-2">
+                        <Wallet className="h-4 w-4" />
+                        <span>{journal.name}</span>
+                        <Badge variant="outline" className="ml-2">
+                          {journal.accountType}
                         </Badge>
                       </div>
                     </SelectItem>
@@ -276,173 +292,66 @@ export function AccountManager() {
                 </SelectContent>
               </Select>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Create New Account */}
-        <Card className="card-modern">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Plus className="w-5 h-5 mr-2" />
-              Create New Account
-            </CardTitle>
-            <CardDescription>
-              Start a new trading account
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="w-full">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create New Account
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create New Trading Account</DialogTitle>
-                  <DialogDescription>
-                    Start a new trading account to track your performance separately.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="account-name">Account Name</Label>
-                    <Input
-                      id="account-name"
-                      value={newAccountName}
-                      onChange={(e) => setNewAccountName(e.target.value)}
-                      placeholder="e.g., Main Account, Demo Account"
-                    />
+            {/* Journal Stats */}
+            {activeJournal && journalStats && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Current Balance</span>
                   </div>
-                  <div>
-                    <Label htmlFor="initial-balance">Initial Balance</Label>
-                    <Input
-                      id="initial-balance"
-                      type="number"
-                      value={newAccountBalance}
-                      onChange={(e) => setNewAccountBalance(Number(e.target.value))}
-                      placeholder="10000"
-                    />
-                  </div>
+                  <p className="text-lg font-bold">
+                    ${activeJournal.currentBalance?.toLocaleString() || '0.00'}
+                  </p>
                 </div>
-                <DialogFooter>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setIsCreateDialogOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={handleCreateAccount}
-                    disabled={isCreating || !newAccountName.trim()}
-                  >
-                    {isCreating ? 'Creating...' : 'Create Account'}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* All Accounts List */}
-      <Card className="card-modern">
-        <CardHeader>
-          <CardTitle>All Accounts</CardTitle>
-          <CardDescription>
-            Manage all your trading accounts
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {accounts.map((account) => (
-              <div 
-                key={account.id} 
-                className={`p-4 rounded-lg border ${
-                  account.isActive 
-                    ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
-                    : account.isBlown
-                    ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                    : account.isPassed
-                    ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                    : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div>
-                      <h3 className="font-semibold text-slate-800 dark:text-slate-200">
-                        {account.name}
-                      </h3>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
-                        Created: {new Date(account.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex space-x-2">
-                      {account.isActive && (
-                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                          Active
-                        </Badge>
-                      )}
-                      {account.isBlown && (
-                        <Badge variant="destructive">
-                          Blown
-                        </Badge>
-                      )}
-                      {account.isPassed && (
-                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                          Passed
-                        </Badge>
-                      )}
-                    </div>
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Total Trades</span>
                   </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right">
-                      <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                        ${account.currentBalance.toLocaleString()}
-                      </div>
-                      <div className="text-xs text-slate-600 dark:text-slate-400">
-                        {account.totalTrades} trades
+                  <p className="text-lg font-bold">
+                    {journalStats.totalTrades || 0}
+                  </p>
+                </div>
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <Target className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Win Rate</span>
+                  </div>
+                  <p className="text-lg font-bold">
+                    {journalStats.winRate ? `${journalStats.winRate.toFixed(1)}%` : '0%'}
+                  </p>
                       </div>
                     </div>
-                    <div className="flex space-x-2">
-                      {!account.isBlown && !account.isPassed && !account.isActive && (
+            )}
+
+            {/* Journal Actions */}
+            {activeJournal && (
+              <div className="flex flex-wrap gap-2">
                         <Button 
-                          size="sm" 
                           variant="outline"
-                          onClick={() => handleSwitchAccount(account.id)}
-                        >
-                          Activate
-                        </Button>
-                      )}
-                      {!account.isBlown && !account.isPassed && (
-                        <Button 
                           size="sm" 
-                          variant="destructive"
-                          onClick={() => handleMarkAsBlown(account.id)}
+                  onClick={() => handleMarkAsBlown(activeJournal.id)}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
+                  <AlertTriangle className="h-4 w-4 mr-1" />
                           Mark as Blown
                         </Button>
-                      )}
-                      {!account.isBlown && !account.isPassed && (
                         <Button 
+                  variant="outline"
                           size="sm" 
-                          variant="default"
-                          className="bg-green-600 hover:bg-green-700"
-                          onClick={() => handleMarkAsPassed(account.id)}
+                  onClick={() => handleMarkAsPassed(activeJournal.id)}
+                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
                         >
+                  <CheckCircle className="h-4 w-4 mr-1" />
                           Mark as Passed
                         </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
               </div>
-            ))}
+            )}
           </div>
+        )}
         </CardContent>
       </Card>
-    </div>
   );
 }

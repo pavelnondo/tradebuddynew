@@ -1,495 +1,734 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Plus, 
-  Calendar as CalendarIcon,
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  Clock
-} from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { useApiTrades } from '@/hooks/useApiTrades';
-import { cn } from "@/lib/utils";
+/**
+ * Calendar Page - Trading Activity Heatmap
+ * Fixed: P&L heatmap with intensity, day clicks, navigation, weekly view
+ * Supports No Trade Days with chart observation notes
+ */
 
-// Calendar day component
-const CalendarDay = ({ 
-  date, 
-  isCurrentMonth, 
-  isToday, 
-  trades, 
-  onClick 
-}: {
+import React, { useState, useEffect, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { useTheme } from '../contexts/ThemeContext';
+import { useApiTrades } from '../hooks/useApiTrades';
+import { useAccountManagement } from '../hooks/useAccountManagement';
+import { useNoTradeDays, NoTradeDay } from '../hooks/useNoTradeDays';
+import { formatCurrency, formatDate, formatPercent } from '../utils/formatting';
+import { Trade } from '@/types/trade';
+import { NeonCard } from '@/components/ui/NeonCard';
+import { NeonButton } from '@/components/ui/NeonButton';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { TradeCard } from '@/components/shared/TradeCard';
+import { Textarea } from '@/components/ui/textarea';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2, FileText, Trash2, Upload, X, Pencil } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+interface DayData {
   date: Date;
-  isCurrentMonth: boolean;
+  trades: Trade[];
+  totalPnL: number;
+  tradeCount: number;
   isToday: boolean;
-  trades: any[];
-  onClick: (date: Date) => void;
-}) => {
-  // Ensure trades is always an array to prevent filter/reduce errors
-  const safeTrades = Array.isArray(trades) ? trades : [];
-  const dayTrades = safeTrades.filter(trade => {
-    const tradeDate = new Date(trade.date);
-    return tradeDate.toDateString() === date.toDateString();
-  });
+  isCurrentMonth: boolean;
+  noTradeDay: NoTradeDay | null;
+}
 
-  const totalPnL = dayTrades.reduce((sum, trade) => sum + (trade.profitLoss || 0), 0);
-  const isProfit = totalPnL >= 0;
+import { convertToStandardTrades } from '@/utils/tradeUtils';
+import { getScreenshotFullUrl } from '@/utils/screenshotUrl';
+import { API_BASE_URL } from '@/config';
+import { PageContainer } from '@/components/layout/PageContainer';
 
-  return (
-    <button
-      onClick={() => onClick(date)}
-      className={cn(
-        "relative p-3 h-24 text-left transition-smooth hover:bg-muted/50 rounded-xl group",
-        !isCurrentMonth && "text-muted-foreground/50",
-        isToday && "bg-primary/10 border-2 border-primary"
-      )}
-    >
-      <div className="flex items-center justify-between mb-1">
-        <span className={cn(
-          "text-sm font-medium",
-          isToday && "text-primary font-semibold"
-        )}>
-          {date.getDate()}
-        </span>
-        {dayTrades.length > 0 && (
-          <Badge 
-            variant="secondary" 
-            className={cn(
-              "text-xs px-1.5 py-0.5",
-              isProfit ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-              "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-            )}
-          >
-            {dayTrades.length}
-          </Badge>
-        )}
-      </div>
-      
-      {dayTrades.length > 0 && (
-        <div className="space-y-1">
-          <div className="flex items-center space-x-1">
-            {isProfit ? (
-              <TrendingUp className="w-3 h-3 text-green-600" />
-            ) : (
-              <TrendingDown className="w-3 h-3 text-red-600" />
-            )}
-            <span className={cn(
-              "text-xs font-medium",
-              isProfit ? "text-green-600" : "text-red-600"
-            )}>
-              {isProfit ? "+" : ""}${Math.abs(totalPnL).toFixed(0)}
-            </span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <Clock className="w-3 h-3 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">
-              {dayTrades.length} trade{dayTrades.length !== 1 ? 's' : ''}
-            </span>
-          </div>
-        </div>
-      )}
-    </button>
-  );
-};
-
-// Trade details modal component
-const TradeDetailsModal = ({ 
-  date, 
-  trades, 
-  isOpen, 
-  onClose 
-}: {
-  date: Date;
-  trades: any[];
-  isOpen: boolean;
-  onClose: () => void;
-}) => {
-  if (!isOpen) return null;
-
-  // Ensure trades is always an array to prevent filter/reduce errors
-  const safeTrades = Array.isArray(trades) ? trades : [];
-  const dayTrades = safeTrades.filter(trade => {
-    const tradeDate = new Date(trade.date);
-    return tradeDate.toDateString() === date.toDateString();
-  });
-
-  const totalPnL = dayTrades.reduce((sum, trade) => sum + (trade.profitLoss || 0), 0);
-  const isProfit = totalPnL >= 0;
-
-  const navigate = useNavigate();
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="card-modern w-full max-w-2xl max-h-[80vh] overflow-hidden">
-        <CardHeader className="border-b border-border/50">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center">
-                <CalendarIcon className="w-5 h-5 mr-2" />
-                {date.toLocaleDateString('en-US', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
-              </CardTitle>
-              <CardDescription>
-                {dayTrades.length} trade{dayTrades.length !== 1 ? 's' : ''} • 
-                <span className={cn(
-                  "ml-1 font-medium",
-                  isProfit ? "text-green-600" : "text-red-600"
-                )}>
-                  {isProfit ? "+" : ""}${totalPnL.toFixed(2)} P&L
-                </span>
-              </CardDescription>
-            </div>
-            <div className="flex items-center space-x-2">
-              {dayTrades.length > 0 && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => {
-                    onClose();
-                    navigate('/trades', { 
-                      state: { 
-                        filterDate: date.toLocaleDateString('sv-SE') 
-                      } 
-                    });
-                  }}
-                >
-                  View All Trades
-                </Button>
-              )}
-              <Button variant="ghost" size="sm" onClick={onClose}>
-                ×
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="max-h-96 overflow-y-auto">
-            {dayTrades.length === 0 ? (
-              <div className="p-8 text-center">
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CalendarIcon className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">No Trades</h3>
-                <p className="text-muted-foreground">No trades recorded for this date</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-border/50">
-                {dayTrades.map((trade, index) => (
-                  <div 
-                    key={trade.id} 
-                    className="p-4 hover:bg-muted/30 transition-smooth cursor-pointer"
-                    onClick={() => {
-                      onClose();
-                      navigate(`/trades/${trade.id}`);
-                    }}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-3">
-                        <div className={cn(
-                          "w-3 h-3 rounded-full",
-                          trade.profitLoss >= 0 ? "bg-green-500" : "bg-red-500"
-                        )} />
-                        <div>
-                          <h4 className="font-semibold">{trade.asset}</h4>
-                          <p className="text-sm text-muted-foreground">{trade.tradeType}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className={cn(
-                          "font-semibold",
-                          trade.profitLoss >= 0 ? "text-green-600" : "text-red-600"
-                        )}>
-                          {trade.profitLoss >= 0 ? "+" : ""}${trade.profitLoss?.toFixed(2) || '0.00'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(trade.date).toLocaleTimeString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Entry:</span>
-                        <span className="ml-2 font-medium">${trade.entryPrice?.toFixed(2) || '0.00'}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Exit:</span>
-                        <span className="ml-2 font-medium">${trade.exitPrice?.toFixed(2) || '0.00'}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Size:</span>
-                        <span className="ml-2 font-medium">{trade.positionSize?.toLocaleString() || '0'}</span>
-                      </div>
-                      {trade.emotion && (
-                        <div>
-                          <span className="text-muted-foreground">Emotion:</span>
-                          <Badge variant="secondary" className="ml-2 text-xs">
-                            {trade.emotion}
-                          </Badge>
-                        </div>
-                      )}
-                    </div>
-                    <div className="mt-2 text-xs text-muted-foreground">
-                      Click to view full details →
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
+function toDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
 export default function Calendar() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { themeConfig, currentTheme } = useTheme();
+  const { toast } = useToast();
+  const { trades: apiTrades, isLoading, error, fetchTrades } = useApiTrades();
+  const { activeJournal } = useAccountManagement();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const { trades, isLoading, error } = useApiTrades();
-  const navigate = useNavigate();
+  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
+  const [noTradeNotes, setNoTradeNotes] = useState('');
+  const [noTradeScreenshot, setNoTradeScreenshot] = useState<string | null>(null);
+  const [noTradeSaving, setNoTradeSaving] = useState(false);
+  const [noTradeEditing, setNoTradeEditing] = useState(false);
 
-  // Calendar navigation
-  const goToPreviousMonth = () => {
-    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  // Compute date range for calendar grid (must be before useNoTradeDays / fetch)
+  const dateRange = useMemo(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    if (viewMode === 'week') {
+      const d = new Date(currentDate);
+      d.setDate(d.getDate() - d.getDay());
+      const start = new Date(d);
+      const end = new Date(d);
+      end.setDate(end.getDate() + 6);
+      return { start, end };
+    }
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const start = new Date(firstDay);
+    start.setDate(start.getDate() - firstDay.getDay());
+    const end = new Date(lastDay);
+    end.setDate(end.getDate() + (6 - lastDay.getDay()));
+    return { start, end };
+  }, [currentDate, viewMode]);
+
+  const { noTradeDays, fetchNoTradeDays, updateNoTradeDay, deleteNoTradeDay, error: noTradeError } = useNoTradeDays();
+
+  useEffect(() => {
+    if (activeJournal) {
+      fetchTrades();
+    }
+  }, [activeJournal, fetchTrades]);
+
+  useEffect(() => {
+    if (activeJournal && location.pathname === '/calendar') {
+      fetchNoTradeDays({
+        journalId: activeJournal.id,
+        startDate: toDateStr(dateRange.start),
+        endDate: toDateStr(dateRange.end),
+      });
+    }
+  }, [activeJournal?.id, dateRange.start.getTime(), dateRange.end.getTime(), fetchNoTradeDays, location.pathname, location.key]);
+
+  // Refetch no-trade days when tab becomes visible (e.g. returning from Add No Trade Day)
+  useEffect(() => {
+    const onFocus = () => {
+      if (activeJournal) {
+        fetchNoTradeDays({
+          journalId: activeJournal.id,
+          startDate: toDateStr(dateRange.start),
+          endDate: toDateStr(dateRange.end),
+        });
+      }
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [activeJournal?.id, dateRange.start.getTime(), dateRange.end.getTime(), fetchNoTradeDays]);
+
+  const allTrades = useMemo(() => convertToStandardTrades(apiTrades || []), [apiTrades]);
+  
+  const filteredTrades = useMemo(() => {
+    if (!activeJournal) return allTrades;
+    return allTrades.filter(t => t.accountId === activeJournal.id);
+  }, [allTrades, activeJournal]);
+
+  // Calculate P&L range for heatmap intensity
+  const pnlRange = useMemo(() => {
+    const pnls = filteredTrades.map(t => t.pnl);
+    const maxPnL = Math.max(...pnls, 0);
+    const minPnL = Math.min(...pnls, 0);
+    const maxAbs = Math.max(Math.abs(maxPnL), Math.abs(minPnL));
+    return { max: maxPnL, min: minPnL, maxAbs };
+  }, [filteredTrades]);
+
+  const getCalendarData = (): DayData[] => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const today = new Date();
+    
+    let startDate: Date;
+    let endDate: Date;
+
+    if (viewMode === 'week') {
+      const d = new Date(currentDate);
+      const dayOfWeek = d.getDay();
+      startDate = new Date(d);
+      startDate.setDate(d.getDate() - dayOfWeek);
+      endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + 6);
+    } else {
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+      startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+      endDate = new Date(lastDay);
+      endDate.setDate(endDate.getDate() + (6 - lastDay.getDay()));
+    }
+    
+    const days: DayData[] = [];
+    
+    for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+      const dayTrades = filteredTrades.filter(trade => {
+        const tradeDate = new Date(trade.entryTime);
+        return (
+          tradeDate.getFullYear() === date.getFullYear() &&
+          tradeDate.getMonth() === date.getMonth() &&
+          tradeDate.getDate() === date.getDate()
+        );
+      });
+      const dateStr = toDateStr(date);
+      const foundNoTrade = noTradeDays.find(n => {
+        const nDate = (n.date || '').slice(0, 10);
+        const jMatch = !activeJournal || String(n.journalId || '') === String(activeJournal.id || '');
+        return nDate === dateStr && jMatch;
+      }) || null;
+      // Never show no-trade day on days that have trades (no-trade day = day without trades)
+      const noTradeDay = dayTrades.length > 0 ? null : foundNoTrade;
+      
+      days.push({
+        date: new Date(date),
+        trades: dayTrades,
+        totalPnL: dayTrades.reduce((sum, t) => sum + t.pnl, 0),
+        tradeCount: dayTrades.length,
+        isToday: date.toDateString() === today.toDateString(),
+        isCurrentMonth: date.getMonth() === month,
+        noTradeDay,
+      });
+    }
+    
+    return days;
   };
 
-  const goToNextMonth = () => {
-    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  const calendarData = getCalendarData();
+  const totalPnLForPeriod = useMemo(
+    () => calendarData.reduce((sum, d) => sum + d.totalPnL, 0),
+    [calendarData]
+  );
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'];
+
+  const navigatePeriod = (direction: 'prev' | 'next') => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      if (viewMode === 'week') {
+        newDate.setDate(prev.getDate() + (direction === 'next' ? 7 : -7));
+      } else {
+      newDate.setMonth(prev.getMonth() + (direction === 'next' ? 1 : -1));
+      }
+      return newDate;
+    });
   };
 
   const goToToday = () => {
     setCurrentDate(new Date());
   };
 
-  // Generate calendar days
-  const calendarDays = useMemo(() => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - firstDay.getDay());
-    
-    const days = [];
-    const today = new Date();
-    
-    for (let i = 0; i < 42; i++) {
-      const date = new Date(startDate);
-      date.setDate(startDate.getDate() + i);
-      
-      days.push({
-        date,
-        isCurrentMonth: date.getMonth() === month,
-        isToday: date.toDateString() === today.toDateString(),
+  const handleDayClick = (dayData: DayData) => {
+    setSelectedDate(dayData.date);
+  };
+
+  // Calculate heatmap color and intensity
+  const getDayColor = (dayData: DayData): { bg: string; intensity: number } => {
+    if (dayData.tradeCount === 0) {
+      if (dayData.noTradeDay) {
+        return { bg: 'rgba(59, 130, 246, 0.5)', intensity: 0.5 }; // Blue for no-trade days with notes
+      }
+      return { bg: themeConfig.card, intensity: 0 }; // Theme card color for empty days
+    }
+
+    const pnl = dayData.totalPnL;
+    const intensity = pnlRange.maxAbs > 0 
+      ? Math.min(Math.abs(pnl) / pnlRange.maxAbs, 1) 
+      : 0;
+
+    if (pnl > 0) {
+      // Green gradient based on profit size
+      return { 
+        bg: `rgba(34, 197, 94, ${0.4 + intensity * 0.5})`, 
+        intensity 
+      };
+    } else if (pnl < 0) {
+      // Red gradient based on loss size
+      return { 
+        bg: `rgba(239, 68, 68, ${0.4 + intensity * 0.5})`, 
+        intensity 
+      };
+    } else {
+      return { bg: 'rgba(156, 163, 175, 0.4)', intensity: 0.3 }; // Grey for break-even
+    }
+  };
+
+  const selectedDayData = useMemo(() => {
+    if (!selectedDate) return null;
+    return calendarData.find(d => 
+      d.date.getDate() === selectedDate.getDate() &&
+      d.date.getMonth() === selectedDate.getMonth() &&
+      d.date.getFullYear() === selectedDate.getFullYear()
+    );
+  }, [selectedDate, calendarData]);
+
+  useEffect(() => {
+    if (selectedDayData?.noTradeDay) {
+      setNoTradeNotes(selectedDayData.noTradeDay.notes || '');
+      setNoTradeScreenshot(selectedDayData.noTradeDay.screenshotUrl || null);
+      setNoTradeEditing(false);
+    } else if (selectedDate) {
+      setNoTradeNotes('');
+      setNoTradeScreenshot(null);
+      setNoTradeEditing(false);
+    }
+  }, [selectedDate, selectedDayData?.noTradeDay?.id, selectedDayData?.noTradeDay?.notes, selectedDayData?.noTradeDay?.screenshotUrl]);
+
+  const handleSaveNoTradeDay = async (): Promise<boolean> => {
+    const existing = selectedDayData?.noTradeDay;
+    if (!existing || !activeJournal) return false;
+    setNoTradeSaving(true);
+    try {
+      const ok = await updateNoTradeDay(existing.id, { notes: noTradeNotes, screenshotUrl: noTradeScreenshot });
+      if (ok) {
+        toast({ title: 'Notes updated', description: 'Chart observations saved.' });
+        await fetchNoTradeDays({
+          journalId: activeJournal.id,
+          startDate: toDateStr(dateRange.start),
+          endDate: toDateStr(dateRange.end),
+        });
+        setNoTradeEditing(false);
+        return true;
+      } else {
+        toast({ title: 'Failed to save', description: noTradeError || 'Could not update notes.', variant: 'destructive' });
+        return false;
+      }
+    } finally {
+      setNoTradeSaving(false);
+    }
+  };
+
+  const handleNoTradeScreenshotChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    setNoTradeSaving(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        body: formData,
+      });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      setNoTradeScreenshot(data.url || data.path || null);
+    } catch {
+      toast({ title: 'Upload failed', variant: 'destructive' });
+    } finally {
+      setNoTradeSaving(false);
+    }
+  };
+
+  const handleDeleteNoTradeDay = async () => {
+    const existing = selectedDayData?.noTradeDay;
+    if (!existing || !activeJournal) return;
+    setNoTradeSaving(true);
+    const ok = await deleteNoTradeDay(existing.id);
+    if (ok) {
+      setNoTradeNotes('');
+      setNoTradeScreenshot(null);
+      toast({ title: 'No Trade Day removed', description: 'Notes deleted.' });
+      await fetchNoTradeDays({
+        journalId: activeJournal.id,
+        startDate: toDateStr(dateRange.start),
+        endDate: toDateStr(dateRange.end),
       });
     }
-    
-    return days;
-  }, [currentDate]);
-
-  // Calendar stats
-  const calendarStats = useMemo(() => {
-    // Ensure trades is always an array to prevent filter/reduce errors
-    const safeTrades = Array.isArray(trades) ? trades : [];
-    const currentMonthTrades = safeTrades.filter(trade => {
-      const tradeDate = new Date(trade.date);
-      return tradeDate.getMonth() === currentDate.getMonth() && 
-             tradeDate.getFullYear() === currentDate.getFullYear();
-    });
-
-    const totalTrades = currentMonthTrades.length;
-    const totalPnL = currentMonthTrades.reduce((sum, trade) => sum + (trade.profitLoss || 0), 0);
-    const winningTrades = currentMonthTrades.filter(trade => trade.profitLoss > 0).length;
-    const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
-
-    return { totalTrades, totalPnL, winRate };
-  }, [trades, currentDate]);
-
-  const handleDayClick = (date: Date) => {
-    setSelectedDate(date);
-    setIsModalOpen(true);
+    setNoTradeSaving(false);
   };
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Trading Calendar</h1>
-            <p className="text-muted-foreground">Plan and review your trading schedule</p>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-7 gap-4">
-          {[...Array(42)].map((_, i) => (
-            <div key={i} className="h-24 bg-muted/50 rounded-xl shimmer"></div>
-          ))}
-        </div>
+      <div className="flex items-center justify-center min-h-[400px]" style={{ color: themeConfig.mutedForeground }}>
+        <Loader2 className="w-8 h-8 animate-spin mr-3" />
+        <span>Loading calendar...</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <Card className="card-modern max-w-md">
-          <CardContent className="p-8 text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <TrendingDown className="w-8 h-8 text-red-600" />
-            </div>
-            <h2 className="text-xl font-bold mb-2">Error Loading Calendar</h2>
-            <p className="text-muted-foreground mb-4">{error}</p>
-            <Button onClick={() => window.location.reload()} className="btn-apple">
-              Try Again
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4" style={{ color: themeConfig.destructive }}>
+        <CalendarIcon className="w-12 h-12" />
+        <p>Error loading calendar: {error}</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      <PageContainer>
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div
+        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-8 border-b"
+        style={{ borderColor: themeConfig.border }}
+      >
         <div>
-          <h1 className="text-3xl font-bold mb-2">Trading Calendar</h1>
-          <p className="text-muted-foreground">
-            Plan and review your trading schedule
+          <h1 className="text-3xl font-semibold tracking-tight mb-2" style={{ color: themeConfig.foreground }}>
+            <span style={{ color: themeConfig.accent }}>Trading</span> Calendar
+          </h1>
+          <p className="text-sm" style={{ color: themeConfig.mutedForeground }}>
+            Visualize your trading activity and performance over time
           </p>
         </div>
-        <div className="flex items-center space-x-3">
-          <Button 
-            variant="outline" 
-            onClick={goToToday}
-            className="btn-apple-secondary"
-          >
-            Today
-          </Button>
-          <Button 
-            onClick={() => navigate('/add-trade')}
-            className="btn-apple"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Trade
-          </Button>
+          <div className="flex gap-2">
+          <NeonButton
+            variant={viewMode === 'month' ? 'primary' : 'secondary'}
+              size="sm"
+              onClick={() => setViewMode('month')}
+            >
+              Month
+          </NeonButton>
+          <NeonButton
+            variant={viewMode === 'week' ? 'primary' : 'secondary'}
+              size="sm"
+              onClick={() => setViewMode('week')}
+            >
+              Week
+          </NeonButton>
         </div>
-      </div>
-
-      {/* Calendar Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="card-modern">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Month Trades</p>
-                <p className="text-2xl font-bold">{calendarStats.totalTrades}</p>
-              </div>
-              <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-900/30">
-                <CalendarIcon className="w-5 h-5 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-modern">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Month P&L</p>
-                <p className={cn(
-                  "text-2xl font-bold",
-                  calendarStats.totalPnL >= 0 ? "text-green-600" : "text-red-600"
-                )}>
-                  {calendarStats.totalPnL >= 0 ? "+" : ""}${calendarStats.totalPnL.toFixed(2)}
-                </p>
-              </div>
-              <div className="p-2 rounded-xl bg-purple-100 dark:bg-purple-900/30">
-                <DollarSign className="w-5 h-5 text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-modern">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Month Win Rate</p>
-                <p className="text-2xl font-bold">{calendarStats.winRate.toFixed(1)}%</p>
-              </div>
-              <div className="p-2 rounded-xl bg-green-100 dark:bg-green-900/30">
-                <TrendingUp className="w-5 h-5 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Calendar Navigation */}
-      <Card className="card-modern">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm" onClick={goToPreviousMonth}>
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <h2 className="text-xl font-semibold">
-                {currentDate.toLocaleDateString('en-US', { 
-                  month: 'long', 
-                  year: 'numeric' 
-                })}
-              </h2>
-              <Button variant="ghost" size="sm" onClick={goToNextMonth}>
-                <ChevronRight className="w-4 h-4" />
-              </Button>
+      <NeonCard className="p-6" hover={false}>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <NeonButton
+              variant="secondary"
+              size="sm"
+              onClick={() => navigatePeriod('prev')}
+              aria-label={viewMode === 'week' ? 'Previous week' : 'Previous month'}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </NeonButton>
+            
+            <div className="flex flex-col">
+            <h2 className="text-2xl font-bold" style={{ color: themeConfig.foreground }}>
+                {viewMode === 'week' 
+                  ? (() => {
+                      const weekStart = new Date(currentDate);
+                      weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+                      return `Week of ${monthNames[weekStart.getMonth()]} ${weekStart.getDate()}, ${weekStart.getFullYear()}`;
+                    })()
+                  : `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`
+                }
+            </h2>
+              <span
+                className={`text-lg font-semibold ${totalPnLForPeriod > 0 ? 'text-green-500' : totalPnLForPeriod < 0 ? 'text-red-500' : ''}`}
+                style={totalPnLForPeriod === 0 ? { color: themeConfig.mutedForeground } : {}}
+              >
+                {viewMode === 'week' ? 'Week' : 'Month'} total: {formatCurrency(totalPnLForPeriod)}
+              </span>
             </div>
+            
+            <NeonButton
+              variant="secondary"
+              size="sm"
+              onClick={() => navigatePeriod('next')}
+              aria-label={viewMode === 'week' ? 'Next week' : 'Next month'}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </NeonButton>
           </div>
-        </CardHeader>
-        <CardContent>
-          {/* Day headers */}
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="p-2 text-center">
-                <span className="text-sm font-medium text-muted-foreground">{day}</span>
-              </div>
-            ))}
-          </div>
+          <NeonButton variant="secondary" size="sm" onClick={goToToday}>
+            Today
+          </NeonButton>
+        </div>
 
-          {/* Calendar grid */}
-          <div className="grid grid-cols-7 gap-1">
-            {calendarDays.map((day, index) => (
-              <CalendarDay
+        {/* Calendar Grid */}
+        <div className="grid grid-cols-7 gap-2">
+          {/* Day Headers */}
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+            <div key={day} className="text-center p-2 text-sm font-medium" style={{ color: themeConfig.mutedForeground }}>
+              {day}
+            </div>
+          ))}
+          
+          {/* Calendar Days */}
+          {calendarData.map((dayData, index) => {
+            const { bg, intensity } = getDayColor(dayData);
+            
+            return (
+              <motion.div
                 key={index}
-                date={day.date}
-                isCurrentMonth={day.isCurrentMonth}
-                isToday={day.isToday}
-                trades={trades}
-                onClick={handleDayClick}
-              />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+                className={`relative p-2 rounded-xl cursor-pointer transition-all duration-200 min-h-[80px] ${
+                  !dayData.isCurrentMonth ? 'opacity-30' : ''
+                } ${dayData.isToday ? 'ring-2' : ''}`}
+                style={{
+                  backgroundColor: bg,
+                  border: `1px solid ${themeConfig.border}`,
+                  ...(dayData.isToday ? { boxShadow: `0 0 0 2px ${themeConfig.accent}` } : {}),
+                }}
+                onClick={() => handleDayClick(dayData)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex items-center justify-between">
+                  <span
+                    className="text-sm font-bold"
+                    style={{
+                      color: dayData.tradeCount > 0
+                        ? currentTheme === 'light'
+                          ? 'rgba(0,0,0,0.9)'
+                          : 'white'
+                        : (dayData.noTradeDay ? 'white' : themeConfig.mutedForeground),
+                      textShadow: (dayData.tradeCount > 0 || dayData.noTradeDay)
+                        ? (currentTheme === 'light' ? '0 1px 2px rgba(255,255,255,0.5)' : '0 1px 2px rgba(0,0,0,0.4)')
+                        : 'none',
+                    }}
+                  >
+                  {dayData.date.getDate()}
+                  </span>
+                </div>
+                {dayData.tradeCount > 0 && (
+                  <div className="space-y-0.5 mt-0.5">
+                    <div
+                      className="text-xs font-bold"
+                      style={{
+                        color: currentTheme === 'light' ? 'rgba(0,0,0,0.9)' : 'white',
+                        textShadow: currentTheme === 'light' ? '0 1px 2px rgba(255,255,255,0.5)' : '0 1px 2px rgba(0,0,0,0.4)',
+                      }}
+                    >
+                      {dayData.totalPnL >= 0 ? '+' : ''}{formatCurrency(dayData.totalPnL)}
+                    </div>
+                    <div
+                      className="text-[10px] font-medium"
+                      style={{
+                        color: currentTheme === 'light' ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.9)',
+                        textShadow: currentTheme === 'light' ? '0 1px 2px rgba(255,255,255,0.5)' : '0 1px 2px rgba(0,0,0,0.4)',
+                      }}
+                    >
+                      {dayData.tradeCount} trade{dayData.tradeCount !== 1 ? 's' : ''}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+      </NeonCard>
 
-      {/* Trade Details Modal */}
-      <TradeDetailsModal
-        date={selectedDate || new Date()}
-        trades={trades}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
-    </div>
+      {/* Legend */}
+      <NeonCard className="p-6" hover={false}>
+        <h3 className="text-lg font-semibold mb-4" style={{ color: themeConfig.foreground }}>Legend</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 rounded-lg" style={{ backgroundColor: 'rgba(34, 197, 94, 0.7)' }} />
+            <span className="text-sm" style={{ color: themeConfig.foreground }}>Profitable Day</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 rounded-lg" style={{ backgroundColor: 'rgba(239, 68, 68, 0.7)' }} />
+            <span className="text-sm" style={{ color: themeConfig.foreground }}>Loss Day</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 rounded-lg" style={{ backgroundColor: themeConfig.card, border: `1px solid ${themeConfig.border}` }} />
+            <span className="text-sm" style={{ color: themeConfig.foreground }}>No Trades</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 rounded-lg" style={{ backgroundColor: 'rgba(59, 130, 246, 0.5)', border: `1px solid ${themeConfig.border}` }} />
+            <span className="text-sm" style={{ color: themeConfig.foreground }}>No Trade Day (notes)</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 rounded-lg border-2 border-primary" />
+            <span className="text-sm" style={{ color: themeConfig.foreground }}>Today</span>
+          </div>
+        </div>
+        <p className="text-xs mt-2" style={{ color: themeConfig.mutedForeground }}>
+          Color intensity indicates P&L magnitude
+        </p>
+      </NeonCard>
+
+      {/* Day Details Sheet */}
+      <Sheet open={!!selectedDate} onOpenChange={(open) => !open && setSelectedDate(null)}>
+        <SheetContent
+          className="w-full sm:max-w-2xl overflow-y-auto"
+          style={{ backgroundColor: themeConfig.popover }}
+        >
+          <SheetHeader>
+            <SheetTitle>
+              {selectedDate && formatDate(selectedDate)}
+            </SheetTitle>
+            <SheetDescription>
+              {selectedDayData?.tradeCount 
+                ? `${selectedDayData.tradeCount} trade${selectedDayData.tradeCount !== 1 ? 's' : ''} on this day`
+                : selectedDayData?.noTradeDay 
+                  ? 'No trades — chart notes recorded'
+                  : 'No trades on this date'}
+            </SheetDescription>
+          </SheetHeader>
+          
+          {selectedDayData && (
+            <div className="mt-6 space-y-4">
+              {/* Summary */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-4 rounded-lg bg-muted">
+                  <div className="text-2xl font-bold">{selectedDayData.tradeCount}</div>
+                  <div className="text-sm text-muted-foreground">Trades</div>
+                </div>
+                <div className={`text-center p-4 rounded-lg ${
+                  selectedDayData.totalPnL > 0 ? 'bg-green-500/10' :
+                  selectedDayData.totalPnL < 0 ? 'bg-red-500/10' :
+                  'bg-muted'
+                }`}>
+                  <div className={`text-2xl font-bold ${
+                    selectedDayData.totalPnL > 0 ? 'text-green-500' :
+                    selectedDayData.totalPnL < 0 ? 'text-red-500' :
+                    ''
+                  }`}>
+                    {formatCurrency(selectedDayData.totalPnL)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Total P&L</div>
+                </div>
+                <div className="text-center p-4 rounded-lg bg-muted">
+                  <div className="text-2xl font-bold">
+                    {selectedDayData.tradeCount > 0 
+                      ? formatPercent((selectedDayData.trades.filter(t => t.pnl > 0).length / selectedDayData.tradeCount) * 100)
+                      : '0%'}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Win Rate</div>
+                </div>
+              </div>
+
+              {/* Trades List - each trade separated */}
+              {selectedDayData.trades.length > 0 && (
+                <div className="space-y-4">
+                <h4 className="font-semibold">Trade Details</h4>
+                  {selectedDayData.trades.map((trade, idx) => (
+                    <div key={trade.id} className="space-y-2">
+                      <div
+                        className="text-xs font-medium px-2 py-0.5 rounded w-fit"
+                        style={{ color: themeConfig.mutedForeground, backgroundColor: themeConfig.card }}
+                      >
+                        Trade {idx + 1} of {selectedDayData.trades.length}
+                  </div>
+                    <TradeCard
+                      trade={trade}
+                      showDetails={true}
+                        onEdit={(t) => navigate(`/edit-trade/${t.id}`)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* No Trade Day - Card style like trade days, with Edit/Delete buttons */}
+              {selectedDayData.tradeCount === 0 && selectedDayData.noTradeDay && (
+                <motion.div
+                  className="rounded-2xl p-4 transition-all duration-300"
+                  style={{
+                    backgroundColor: themeConfig.bg,
+                    border: `1px solid ${themeConfig.border}`,
+                  }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  {!noTradeEditing ? (
+                    <>
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <FileText className="w-4 h-4" style={{ color: themeConfig.accent }} />
+                            <span className="text-base font-semibold" style={{ color: themeConfig.foreground }}>
+                              No trades taken
+                            </span>
+                          </div>
+                          <p className="text-sm whitespace-pre-wrap" style={{ color: themeConfig.foreground }}>
+                            {selectedDayData.noTradeDay.notes?.trim() || (
+                              <span style={{ color: themeConfig.mutedForeground }}>Chart observations recorded</span>
+                            )}
+                          </p>
+                        </div>
+                        <div className="flex gap-1.5">
+                          <NeonButton
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setNoTradeEditing(true)}
+                            className="!px-2 !py-1.5 !text-xs"
+                          >
+                            <Pencil className="w-3 h-3 mr-1" />
+                            Edit
+                          </NeonButton>
+                          <NeonButton
+                            variant="secondary"
+                            size="sm"
+                            onClick={handleDeleteNoTradeDay}
+                            disabled={noTradeSaving}
+                            className="!px-2 !py-1.5 !text-xs"
+                          >
+                            {noTradeSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Trash2 className="w-3 h-3 mr-1" />Delete</>}
+                          </NeonButton>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold flex items-center gap-2" style={{ color: themeConfig.foreground }}>
+                          <FileText className="w-4 h-4" style={{ color: themeConfig.accent }} />
+                          Edit chart observations
+                        </h4>
+                        <NeonButton variant="secondary" size="sm" onClick={() => setNoTradeEditing(false)}>
+                          Cancel
+                        </NeonButton>
+                      </div>
+                      <Textarea
+                        placeholder="e.g. Consolidation, no clear setup, choppy market..."
+                        value={noTradeNotes}
+                        onChange={(e) => setNoTradeNotes(e.target.value)}
+                        className="min-h-[100px]"
+                        style={{ backgroundColor: themeConfig.card, borderColor: themeConfig.border }}
+                      />
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium" style={{ color: themeConfig.foreground }}>Screenshot</label>
+                        {noTradeScreenshot ? (
+                          <div className="relative inline-block">
+                            <img
+                              src={getScreenshotFullUrl(noTradeScreenshot)}
+                              alt="Chart"
+                              className="max-h-40 rounded-lg border object-cover"
+                              style={{ borderColor: themeConfig.border }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setNoTradeScreenshot(null)}
+                              className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center"
+                              style={{ backgroundColor: themeConfig.destructive, color: '#fff' }}
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border border-dashed w-fit" style={{ borderColor: themeConfig.border }}>
+                            <Upload className="w-4 h-4" />
+                            <span className="text-sm">Add screenshot</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleNoTradeScreenshotChange}
+                            />
+                          </label>
+                )}
+              </div>
+                      <div className="flex gap-2">
+                        <NeonButton
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleSaveNoTradeDay()}
+                          disabled={noTradeSaving}
+                        >
+                          {noTradeSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
+                        </NeonButton>
+                        <NeonButton variant="secondary" size="sm" onClick={() => setNoTradeEditing(false)}>
+                          Cancel
+                        </NeonButton>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+      </PageContainer>
+    </motion.div>
   );
-} 
+}

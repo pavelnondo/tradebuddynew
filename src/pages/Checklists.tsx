@@ -1,458 +1,725 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogFooter, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Checklist, ChecklistItem } from "@/types";
-import { useChecklists } from "@/hooks/useChecklists";
-import { PlusCircle, Trash2, Edit, CheckSquare, FileCheck, Loader2 } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import React, { useState, useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useTheme } from '../contexts/ThemeContext';
+import { useChecklists } from '../hooks/useChecklists';
+import { useSetupTypes, type SetupType } from '../hooks/useSetupTypes';
+import { NeonCard } from '../components/ui/NeonCard';
+import { NeonButton } from '../components/ui/NeonButton';
+import { NeonInput } from '../components/ui/NeonInput';
+import { NeonToggle } from '../components/ui/NeonToggle';
+import { NeonModal } from '../components/ui/NeonModal';
+import { checklistSchema, type ChecklistFormData } from '@/schemas/checklistSchema';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { 
+  CheckSquare, 
+  Plus,
+  Edit,
+  Trash2,
+  Save,
+  X,
+  Target,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+  BarChart3,
+} from 'lucide-react';
+
+interface ChecklistItem {
+  id: string;
+  text: string;
+  completed: boolean;
+  order: number;
+}
+
+interface Checklist {
+  id: string;
+  name: string;
+  description?: string;
+  type: 'pre' | 'during' | 'post' | 'rule';
+  items: ChecklistItem[];
+  completionRate: number;
+}
+
+interface ChecklistCardProps {
+  checklist: Checklist;
+  onEdit: (checklist: Checklist) => void;
+  onDelete: (id: string) => void;
+  onToggleItem: (checklistId: string, itemId: string) => void;
+}
+
+const ChecklistCard: React.FC<ChecklistCardProps> = ({ 
+  checklist, 
+  onEdit, 
+  onDelete, 
+  onToggleItem 
+}) => {
+  const { themeConfig } = useTheme();
+  
+  const typeIcons = {
+    pre: <Target className="w-5 h-5" />,
+    during: <Clock className="w-5 h-5" />,
+    post: <CheckCircle className="w-5 h-5" />,
+    rule: <AlertCircle className="w-5 h-5" />
+  };
+
+  const typeColors = {
+    pre: themeConfig.primary,
+    during: themeConfig.warning,
+    post: themeConfig.success,
+    rule: themeConfig.accent || '#8b5cf6'
+  };
+
+  return (
+    <NeonCard className="p-6">
+      <motion.div
+        className="flex items-center justify-between mb-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="flex items-center gap-3">
+          <div 
+            className="p-2 rounded-lg"
+            style={{ backgroundColor: typeColors[checklist.type] + '20' }}
+          >
+            {typeIcons[checklist.type]}
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-foreground">{checklist.name}</h3>
+            <p className="text-sm text-muted-foreground capitalize">{checklist.type === 'rule' ? 'Trading rule' : `${checklist.type} trading`}</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <NeonButton
+            variant="ghost"
+            size="sm"
+            onClick={() => onEdit(checklist)}
+          >
+            <Edit className="w-4 h-4" />
+          </NeonButton>
+          <NeonButton
+            variant="ghost"
+            size="sm"
+            onClick={() => onDelete(checklist.id)}
+          >
+            <Trash2 className="w-4 h-4" />
+          </NeonButton>
+        </div>
+      </motion.div>
+
+      {checklist.description && (
+        <p className="text-sm text-muted-foreground mb-4">{checklist.description}</p>
+      )}
+
+      <div className="space-y-3">
+        {checklist.items.map((item, index) => (
+          <motion.div
+            key={item.id}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.2, delay: index * 0.05 }}
+            className="flex items-center gap-3 p-3 rounded-lg hover:bg-card transition-colors"
+          >
+            <NeonToggle
+              checked={item.completed}
+              onChange={() => onToggleItem(checklist.id, item.id)}
+              size="sm"
+            />
+            <span className={`flex-1 text-sm ${item.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+              {item.text}
+            </span>
+          </motion.div>
+        ))}
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-border">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">Progress</span>
+          <span className="text-sm font-medium neon-text">{(checklist.completionRate || 0).toFixed(0)}%</span>
+        </div>
+        <div className="mt-2 w-full bg-border rounded-full h-2">
+          <motion.div
+            className="h-2 rounded-full"
+            style={{ backgroundColor: typeColors[checklist.type] }}
+            initial={{ width: 0 }}
+            animate={{ width: `${checklist.completionRate || 0}%` }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          />
+        </div>
+      </div>
+    </NeonCard>
+  );
+};
+
+interface ChecklistModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  checklist?: Checklist;
+  defaultType?: 'rule' | 'pre' | 'during' | 'post';
+  onSave: (checklist: Omit<Checklist, 'id' | 'completionRate'>) => void | Promise<void>;
+}
+
+const ChecklistModal: React.FC<ChecklistModalProps> = ({ isOpen, onClose, checklist, defaultType = 'pre', onSave }) => {
+  const { themeConfig } = useTheme();
+  const [newItemText, setNewItemText] = useState('');
+
+  const {
+    register,
+    control,
+    handleSubmit,
+    formState: { errors },
+    reset,
+    setValue,
+    watch,
+  } = useForm<ChecklistFormData>({
+    resolver: zodResolver(checklistSchema),
+    defaultValues: {
+      name: '',
+      description: '',
+      type: 'pre',
+      items: [],
+    },
+  });
+
+  const watchedType = watch('type');
+  const watchedItems = watch('items');
+
+  useEffect(() => {
+    if (checklist) {
+      reset({
+        name: checklist.name,
+        description: checklist.description || '',
+        type: checklist.type,
+        items: checklist.items.map(item => ({ text: item.text, completed: item.completed })),
+      });
+    } else {
+      reset({
+        name: '',
+        description: '',
+        type: defaultType,
+        items: [],
+      });
+    }
+    setNewItemText('');
+  }, [checklist, isOpen, reset, defaultType]);
+
+  const addItem = () => {
+    if (newItemText.trim()) {
+      const currentItems = watchedItems || [];
+      setValue('items', [...currentItems, { text: newItemText.trim(), completed: false }], { shouldValidate: true });
+      setNewItemText('');
+    }
+  };
+
+  const removeItem = (index: number) => {
+    const currentItems = watchedItems || [];
+    setValue('items', currentItems.filter((_, i) => i !== index), { shouldValidate: true });
+  };
+
+  const [saving, setSaving] = useState(false);
+  const onSubmit = async (data: ChecklistFormData) => {
+    setSaving(true);
+    try {
+      await onSave({
+        name: data.name,
+        description: data.description || '',
+        type: data.type,
+        items: (data.items || []).map((item, index) => ({
+          ...item,
+          id: `item-${index}`,
+          order: index
+        }))
+      });
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <NeonModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={checklist ? 'Edit Checklist' : 'Create New Checklist'}
+      size="lg"
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <div>
+          <Controller
+            name="name"
+            control={control}
+            render={({ field }) => (
+              <NeonInput
+                label="Checklist Name *"
+                {...field}
+                placeholder="Enter checklist name"
+              />
+            )}
+          />
+          {errors.name && (
+            <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {errors.name.message}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <NeonInput
+            label="Description"
+            {...register('description')}
+            placeholder="Enter description (optional)"
+          />
+          {errors.description && (
+            <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {errors.description.message}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">Type *</label>
+          <div className="flex flex-wrap gap-2">
+            {(['rule', 'pre', 'during', 'post'] as const).map((t) => (
+              <NeonButton
+                key={t}
+                type="button"
+                variant={watchedType === t ? 'primary' : 'ghost'}
+                size="sm"
+                onClick={() => setValue('type', t)}
+              >
+                {t === 'rule' ? 'Rule' : `${t.charAt(0).toUpperCase() + t.slice(1)} Trading`}
+              </NeonButton>
+            ))}
+          </div>
+          {errors.type && (
+            <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {errors.type.message}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <NeonInput
+              value={newItemText}
+              onChange={(e) => setNewItemText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  addItem();
+                }
+              }}
+              placeholder="Add checklist item"
+              className="flex-1"
+            />
+            <NeonButton type="button" onClick={addItem} size="sm">
+              <Plus className="w-4 h-4" />
+            </NeonButton>
+          </div>
+
+          <div className="space-y-2">
+            {(watchedItems || []).map((item, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex items-center gap-2 p-3 rounded-lg border border-border"
+              >
+                <span className="flex-1 text-sm text-foreground">{item.text}</span>
+                <NeonButton
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeItem(index)}
+                >
+                  <X className="w-4 h-4" />
+                </NeonButton>
+              </motion.div>
+            ))}
+          </div>
+          {errors.items && (
+            <p className="text-sm text-destructive flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {errors.items.message}
+            </p>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-3">
+          <NeonButton type="button" variant="ghost" onClick={onClose} disabled={saving}>
+            Cancel
+          </NeonButton>
+          <NeonButton type="submit" disabled={saving}>
+            {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+            {saving ? 'Saving...' : 'Save'}
+          </NeonButton>
+        </div>
+      </form>
+    </NeonModal>
+  );
+};
+
+interface SetupTypeModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  setupType?: SetupType | null;
+  onSave: (data: { name: string; description?: string }) => void | Promise<void>;
+}
+
+const SetupTypeModal: React.FC<SetupTypeModalProps> = ({ isOpen, onClose, setupType, onSave }) => {
+  const { themeConfig } = useTheme();
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  React.useEffect(() => {
+    if (setupType) {
+      setName(setupType.name);
+      setDescription(setupType.description || '');
+    } else {
+      setName('');
+      setDescription('');
+    }
+  }, [setupType, isOpen]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setSaving(true);
+    try {
+      await onSave({ name: name.trim(), description: description.trim() || undefined });
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <NeonModal isOpen={isOpen} onClose={onClose} title={setupType ? 'Edit Setup Type' : 'New Setup Type'} size="md">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="text-sm font-medium text-foreground block mb-2">Name *</label>
+          <NeonInput value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Breakout, Pullback" />
+        </div>
+        <div>
+          <label className="text-sm font-medium text-foreground block mb-2">Description (optional)</label>
+          <NeonInput value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Brief description" />
+        </div>
+        <div className="flex justify-end gap-3">
+          <NeonButton type="button" variant="ghost" onClick={onClose} disabled={saving}>Cancel</NeonButton>
+          <NeonButton type="submit" disabled={saving || !name.trim()}>
+            {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+            {saving ? 'Saving...' : 'Save'}
+          </NeonButton>
+        </div>
+      </form>
+    </NeonModal>
+  );
+};
 
 export default function Checklists() {
+  const { themeConfig } = useTheme();
+  const { fetchChecklists, isLoading, error, createChecklist, updateChecklist, deleteChecklist } = useChecklists();
+  const { fetchSetupTypes, createSetupType, updateSetupType, deleteSetupType } = useSetupTypes();
   const [checklists, setChecklists] = useState<Checklist[]>([]);
-  const [isNewChecklistOpen, setIsNewChecklistOpen] = useState(false);
-  const [isEditChecklistOpen, setIsEditChecklistOpen] = useState(false);
-  const [selectedChecklist, setSelectedChecklist] = useState<Checklist | null>(null);
-  
-  const [newChecklistName, setNewChecklistName] = useState("");
-  const [newChecklistDescription, setNewChecklistDescription] = useState("");
-  const [newChecklistItems, setNewChecklistItems] = useState<ChecklistItem[]>([
-    { id: safeUUID(), text: "" }
-  ]);
-  
-  const navigate = useNavigate();
-  const { 
-    fetchChecklists, 
-    createChecklist, 
-    updateChecklist, 
-    deleteChecklist, 
-    isLoading 
-  } = useChecklists();
-  
-  // Load checklists on component mount
+  const [setupTypes, setSetupTypes] = useState<SetupType[]>([]);
+  const [editingChecklist, setEditingChecklist] = useState<Checklist | null>(null);
+  const [editingSetupType, setEditingSetupType] = useState<SetupType | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addModalDefaultType, setAddModalDefaultType] = useState<'rule' | 'pre' | 'during' | 'post'>('pre');
+  const [showAddSetupModal, setShowAddSetupModal] = useState(false);
+
   useEffect(() => {
     const loadChecklists = async () => {
       const data = await fetchChecklists();
       setChecklists(data);
     };
-    
     loadChecklists();
   }, [fetchChecklists]);
-  
-  // Add new checklist item
-  const addChecklistItem = () => {
-    setNewChecklistItems([
-      ...newChecklistItems,
-      { id: safeUUID(), text: "" }
-    ]);
-  };
-  
-  // Remove checklist item
-  const removeChecklistItem = (id: string) => {
-    if (newChecklistItems.length <= 1) {
-      toast({
-        title: "Cannot Remove Item",
-        description: "A checklist must have at least one item.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setNewChecklistItems(newChecklistItems.filter(item => item.id !== id));
-  };
-  
-  // Update checklist item text
-  const updateChecklistItemText = (id: string, text: string) => {
-    setNewChecklistItems(
-      newChecklistItems.map(item => 
-        item.id === id ? { ...item, text } : item
-      )
-    );
-  };
-  
-  // Create new checklist
-  const handleCreateChecklist = async () => {
-    // Validate input
-    if (!newChecklistName.trim()) {
-      toast({
-        title: "Name Required",
-        description: "Please provide a name for your checklist.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Filter out empty items and validate
-    const validItems = newChecklistItems.filter(item => item.text.trim());
-    if (validItems.length === 0) {
-      toast({
-        title: "Items Required",
-        description: "Please add at least one checklist item.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    const newChecklist = {
-      name: newChecklistName,
-      description: newChecklistDescription,
-      items: validItems
+
+  useEffect(() => {
+    const loadSetupTypes = async () => {
+      const data = await fetchSetupTypes();
+      setSetupTypes(data);
     };
-    
-    const createdChecklist = await createChecklist(newChecklist);
-    if (createdChecklist) {
-      setChecklists([createdChecklist, ...checklists]);
-      resetChecklistForm();
-      setIsNewChecklistOpen(false);
-    }
-  };
+    loadSetupTypes();
+  }, [fetchSetupTypes]);
   
-  // Update existing checklist
-  const handleUpdateChecklist = async () => {
-    if (!selectedChecklist) return;
-    
-    // Validate input
-    if (!newChecklistName.trim()) {
-      toast({
-        title: "Name Required",
-        description: "Please provide a name for your checklist.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Filter out empty items and validate
-    const validItems = newChecklistItems.filter(item => item.text.trim());
-    if (validItems.length === 0) {
-      toast({
-        title: "Items Required",
-        description: "Please add at least one checklist item.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    const updatedChecklist = await updateChecklist(selectedChecklist.id, {
-      name: newChecklistName,
-      description: newChecklistDescription,
-      items: validItems
-    });
-    
-    if (updatedChecklist) {
-      setChecklists(
-        checklists.map(cl => 
-          cl.id === updatedChecklist.id ? updatedChecklist : cl
-        )
-      );
-      resetChecklistForm();
-      setIsEditChecklistOpen(false);
-    }
-  };
-  
-  // Delete checklist
-  const handleDeleteChecklist = async (id: string) => {
-    const success = await deleteChecklist(id);
-    if (success) {
-      setChecklists(checklists.filter(cl => cl.id !== id));
-    }
-  };
-  
-  // Reset checklist form
-  const resetChecklistForm = () => {
-    setNewChecklistName("");
-    setNewChecklistDescription("");
-    setNewChecklistItems([{ id: safeUUID(), text: "" }]);
-    setSelectedChecklist(null);
-  };
-  
-  // Open edit dialog
-  const openEditDialog = (checklist: Checklist) => {
-    setSelectedChecklist(checklist);
-    setNewChecklistName(checklist.name);
-    setNewChecklistDescription(checklist.description || "");
-    setNewChecklistItems([...checklist.items]);
-    setIsEditChecklistOpen(true);
+  const handleToggleItem = (checklistId: string, itemId: string) => {
+    setChecklists(prev => prev.map(checklist => {
+      if (checklist.id === checklistId) {
+        const updatedItems = checklist.items.map(item => 
+          item.id === itemId ? { ...item, completed: !item.completed } : item
+        );
+        const completedCount = updatedItems.filter(item => item.completed).length;
+        const completionRate = (completedCount / updatedItems.length) * 100;
+        
+        return { ...checklist, items: updatedItems, completionRate };
+      }
+      return checklist;
+    }));
   };
 
-  // Navigate to add trade with selected checklist
-  const navigateToAddTrade = (checklistId: string) => {
-    navigate('/add-trade', { state: { checklistId } });
+  const handleSaveChecklist = async (checklistData: Omit<Checklist, 'id' | 'completionRate'>) => {
+    if (editingChecklist) {
+      const result = await updateChecklist(editingChecklist.id, checklistData);
+      if (result) {
+        setChecklists(prev => prev.map(c => c.id === editingChecklist.id ? { ...c, ...checklistData, completionRate: c.completionRate } : c));
+      }
+    } else {
+      const result = await createChecklist(checklistData);
+      if (result) {
+        const completionRate = checklistData.items.length > 0
+          ? (checklistData.items.filter(i => i.completed).length / checklistData.items.length) * 100
+          : 0;
+        setChecklists(prev => [...prev, { ...result, type: checklistData.type, completionRate }]);
+      }
+    }
+    setEditingChecklist(null);
   };
-  
-  // Handle dialog close
-  const handleNewDialogOpenChange = (open: boolean) => {
-    setIsNewChecklistOpen(open);
-    if (!open) resetChecklistForm();
+
+  const handleDeleteChecklist = async (id: string) => {
+    const result = await deleteChecklist(id);
+    if (result) setChecklists(prev => prev.filter(c => c.id !== id));
   };
-  
-  // Handle edit dialog close
-  const handleEditDialogOpenChange = (open: boolean) => {
-    setIsEditChecklistOpen(open);
-    if (!open) resetChecklistForm();
+
+  const handleSaveSetupType = async (data: { name: string; description?: string }) => {
+    if (editingSetupType) {
+      const ok = await updateSetupType(editingSetupType.id, data);
+      if (ok) setSetupTypes(prev => prev.map(s => s.id === editingSetupType.id ? { ...s, ...data } : s));
+      setEditingSetupType(null);
+    } else {
+      const created = await createSetupType(data);
+      if (created) setSetupTypes(prev => [...prev, created]);
+      setShowAddSetupModal(false);
+    }
   };
-  
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Trading Checklists</h1>
-        <Button onClick={() => setIsNewChecklistOpen(true)}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          New Checklist
-        </Button>
+
+  const handleDeleteSetupType = async (id: string) => {
+    const result = await deleteSetupType(id);
+    if (result) setSetupTypes(prev => prev.filter(s => s.id !== id));
+  };
+
+  const rules = checklists.filter(c => c.type === 'rule');
+  const preDuringPostChecklists = checklists.filter(c => c.type === 'pre' || c.type === 'during' || c.type === 'post');
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="neon-spinner w-8 h-8 mr-3"></div>
+        <span className="text-lg">Loading Checklists...</span>
       </div>
-      
-      <p className="text-muted-foreground">
-        Create and manage trading checklists to maintain consistency in your trading decisions.
-        Use these checklists when adding new trades to track your discipline and strategy adherence.
-      </p>
-      
-      {/* Checklists Grid */}
-      {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-          <p className="text-muted-foreground">Loading checklists...</p>
+    );
+  }
+
+  if (error) {
+  return (
+      <div className="flex items-center justify-center h-64 text-destructive">
+        Error loading checklists: {error}
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <PageContainer>
+      {/* Header */}
+      <motion.div 
+        variants={itemVariants} 
+        className="pb-8 border-b"
+        style={{ borderColor: themeConfig.border }}
+      >
+        <h1 
+          className="text-3xl font-semibold tracking-tight mb-2"
+          style={{ color: themeConfig.foreground }}
+        >
+          Rules, Setups & Checklists
+        </h1>
+        <p 
+          className="text-sm"
+          style={{ color: themeConfig.mutedForeground }}
+        >
+          Define your trading rules, setup types, and pre/during/post-trade checklists
+        </p>
+      </motion.div>
+
+      {/* Rules Section */}
+      <motion.div variants={itemVariants} className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold flex items-center gap-2" style={{ color: themeConfig.foreground }}>
+            <AlertCircle className="w-5 h-5" style={{ color: themeConfig.accent }} />
+            Rules
+          </h2>
+          <NeonButton 
+            size="sm" 
+            onClick={() => { setAddModalDefaultType('rule'); setShowAddModal(true); }}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Rule
+          </NeonButton>
         </div>
-      ) : checklists.length === 0 ? (
-        <Card className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
-          <CardContent>
-            <p className="text-muted-foreground mb-4">You don't have any trading checklists yet.</p>
-            <Button onClick={() => setIsNewChecklistOpen(true)}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create Your First Checklist
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {checklists.map((checklist) => (
-            <Card key={checklist.id} className="bg-white dark:bg-gray-800 rounded-lg shadow">
-              <CardHeader>
-                <CardTitle>{checklist.name}</CardTitle>
-                {checklist.description && (
-                  <CardDescription>{checklist.description}</CardDescription>
-                )}
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {(Array.isArray(checklist.items) ? checklist.items : []).map((item, index) => (
-                    <div key={item.id} className="flex items-start">
-                      <div className="h-5 w-5 mr-2 flex items-center justify-center">
-                        {index + 1}.
-                      </div>
-                      <div className="text-sm">{item.text}</div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-              <CardFooter className="flex flex-wrap gap-2 justify-between">
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openEditDialog(checklist)}
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDeleteChecklist(checklist.id)}
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Delete
-                  </Button>
-                </div>
-                <Button 
-                  variant="default" 
-                  size="sm"
-                  onClick={() => navigateToAddTrade(checklist.id)}
-                >
-                  <CheckSquare className="h-4 w-4 mr-1" />
-                  Use for Trade
-                </Button>
-              </CardFooter>
-            </Card>
+          {rules.map((checklist) => (
+            <ChecklistCard
+              key={checklist.id}
+              checklist={checklist}
+              onEdit={setEditingChecklist}
+              onDelete={handleDeleteChecklist}
+              onToggleItem={handleToggleItem}
+            />
           ))}
         </div>
-      )}
-      
-      {/* New Checklist Dialog */}
-      <Dialog open={isNewChecklistOpen} onOpenChange={handleNewDialogOpenChange}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Create New Trading Checklist</DialogTitle>
-            <DialogDescription>
-              Create a checklist to ensure you follow your trading strategy consistently.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Checklist Name</Label>
-              <Input
-                id="name"
-                placeholder="Pre-Trade Analysis Checklist"
-                value={newChecklistName}
-                onChange={(e) => setNewChecklistName(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="description">Description (Optional)</Label>
-              <Textarea
-                id="description"
-                placeholder="Checklist for analyzing potential trades before entering a position"
-                value={newChecklistDescription}
-                onChange={(e) => setNewChecklistDescription(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <Label>Checklist Items</Label>
-                <Button type="button" variant="outline" size="sm" onClick={addChecklistItem}>
-                  <PlusCircle className="h-4 w-4 mr-2" /> Add Item
-                </Button>
-              </div>
-              
-              <div className="space-y-2">
-                {newChecklistItems.map((item, index) => (
-                  <div key={item.id} className="flex items-center gap-2">
-                    <div className="flex-shrink-0">
-                      {index + 1}.
-                    </div>
-                    <Input
-                      placeholder="Check support/resistance levels"
-                      value={item.text}
-                      onChange={(e) => updateChecklistItemText(item.id, e.target.value)}
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeChecklistItem(item.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          
-          <DialogFooter className="gap-2 flex-wrap">
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                resetChecklistForm();
-                setIsNewChecklistOpen(false);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleCreateChecklist}>
-              <FileCheck className="h-4 w-4 mr-2" />
-              Create Checklist
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Edit Checklist Dialog */}
-      <Dialog open={isEditChecklistOpen} onOpenChange={handleEditDialogOpenChange}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Edit Trading Checklist</DialogTitle>
-            <DialogDescription>
-              Update your trading checklist items or details.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">Checklist Name</Label>
-              <Input
-                id="edit-name"
-                placeholder="Pre-Trade Analysis Checklist"
-                value={newChecklistName}
-                onChange={(e) => setNewChecklistName(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="edit-description">Description (Optional)</Label>
-              <Textarea
-                id="edit-description"
-                placeholder="Checklist for analyzing potential trades before entering a position"
-                value={newChecklistDescription}
-                onChange={(e) => setNewChecklistDescription(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <Label>Checklist Items</Label>
-                <Button type="button" variant="outline" size="sm" onClick={addChecklistItem}>
-                  <PlusCircle className="h-4 w-4 mr-2" /> Add Item
-                </Button>
-              </div>
-              
-              <div className="space-y-2">
-                {newChecklistItems.map((item, index) => (
-                  <div key={item.id} className="flex items-center gap-2">
-                    <div className="flex-shrink-0">
-                      {index + 1}.
-                    </div>
-                    <Input
-                      placeholder="Check support/resistance levels"
-                      value={item.text}
-                      onChange={(e) => updateChecklistItemText(item.id, e.target.value)}
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeChecklistItem(item.id)}
-                      className="flex-shrink-0"
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          
-          <DialogFooter className="gap-2 flex-wrap">
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                resetChecklistForm();
-                setIsEditChecklistOpen(false);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleUpdateChecklist}>
-              <FileCheck className="h-4 w-4 mr-2" />
-              Update Checklist
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
+        {rules.length === 0 && (
+          <NeonCard className="p-8 text-center">
+            <p className="text-muted-foreground mb-4">Define trading rules to tick off when adding trades.</p>
+            <NeonButton onClick={() => { setAddModalDefaultType('rule'); setShowAddModal(true); }}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Rule
+            </NeonButton>
+          </NeonCard>
+        )}
+      </motion.div>
 
-// Helper for UUID
-function safeUUID() {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
-  return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+      {/* Setups Section */}
+      <motion.div variants={itemVariants} className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold flex items-center gap-2" style={{ color: themeConfig.foreground }}>
+            <BarChart3 className="w-5 h-5" style={{ color: themeConfig.accent }} />
+            Setups
+          </h2>
+          <NeonButton size="sm" onClick={() => setShowAddSetupModal(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            New Setup
+          </NeonButton>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {setupTypes.map((st) => (
+            <NeonCard key={st.id} className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg" style={{ backgroundColor: `${themeConfig.accent}20` }}>
+                    <BarChart3 className="w-5 h-5" style={{ color: themeConfig.accent }} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground">{st.name}</h3>
+                    {st.description && <p className="text-sm text-muted-foreground mt-1">{st.description}</p>}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <NeonButton variant="ghost" size="sm" onClick={() => setEditingSetupType(st)}>
+                    <Edit className="w-4 h-4" />
+                  </NeonButton>
+                  <NeonButton variant="ghost" size="sm" onClick={() => handleDeleteSetupType(st.id)}>
+                    <Trash2 className="w-4 h-4" />
+                  </NeonButton>
+                </div>
+              </div>
+            </NeonCard>
+          ))}
+        </div>
+        {setupTypes.length === 0 && (
+          <NeonCard className="p-8 text-center">
+            <p className="text-muted-foreground mb-4">Define setup types to select when adding trades.</p>
+            <NeonButton onClick={() => setShowAddSetupModal(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Setup
+            </NeonButton>
+          </NeonCard>
+        )}
+      </motion.div>
+
+      {/* Checklists Section */}
+      <motion.div variants={itemVariants} className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold flex items-center gap-2" style={{ color: themeConfig.foreground }}>
+            <CheckSquare className="w-5 h-5" style={{ color: themeConfig.accent }} />
+            Checklists
+          </h2>
+          <NeonButton size="sm" onClick={() => { setAddModalDefaultType('pre'); setShowAddModal(true); }}>
+            <Plus className="w-4 h-4 mr-2" />
+            New Checklist
+          </NeonButton>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <AnimatePresence>
+            {preDuringPostChecklists.map((checklist) => (
+              <motion.div key={checklist.id} variants={itemVariants} layout>
+                <ChecklistCard
+                  checklist={checklist}
+                  onEdit={setEditingChecklist}
+                  onDelete={handleDeleteChecklist}
+                  onToggleItem={handleToggleItem}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+        {preDuringPostChecklists.length === 0 && (
+          <NeonCard className="p-8 text-center">
+            <p className="text-muted-foreground mb-4">Create pre-trade, during-trade, and post-trade checklists.</p>
+            <NeonButton onClick={() => { setAddModalDefaultType('pre'); setShowAddModal(true); }}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Checklist
+            </NeonButton>
+          </NeonCard>
+        )}
+      </motion.div>
+
+      {/* Setup Type Modals */}
+      <SetupTypeModal
+        isOpen={showAddSetupModal}
+        onClose={() => setShowAddSetupModal(false)}
+        onSave={handleSaveSetupType}
+      />
+      <SetupTypeModal
+        isOpen={!!editingSetupType}
+        onClose={() => setEditingSetupType(null)}
+        setupType={editingSetupType}
+        onSave={handleSaveSetupType}
+      />
+
+      {/* Modals */}
+      <ChecklistModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        defaultType={addModalDefaultType}
+        onSave={handleSaveChecklist}
+      />
+      
+      <ChecklistModal
+        isOpen={!!editingChecklist}
+        onClose={() => setEditingChecklist(null)}
+        checklist={editingChecklist || undefined}
+        onSave={handleSaveChecklist}
+      />
+      </PageContainer>
+    </motion.div>
+  );
 }

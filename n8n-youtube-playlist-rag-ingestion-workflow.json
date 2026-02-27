@@ -1,0 +1,133 @@
+{
+  "name": "TradeBuddy – YouTube RAG Ingestion (run once per playlist)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-manual",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "playlistUrl",
+              "value": "https://www.youtube.com/playlist?list=YOUR_PLAYLIST_ID"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-playlist",
+      "name": "Playlist URL",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 300],
+      "notes": "One-time run: set your playlist URL here, then execute. No schedule needed."
+    },
+    {
+      "parameters": {
+        "operation": "runActor",
+        "actorId": "bebity/youtube-transcript-scraper",
+        "input": {
+          "startUrls": ["={{ $json.playlistUrl }}"]
+        }
+      },
+      "id": "apify-transcripts",
+      "name": "Apify YouTube Transcripts",
+      "type": "@apify/n8n-nodes-apify",
+      "typeVersion": 1,
+      "position": [680, 300],
+      "continueOnFail": true,
+      "credentials": {
+        "apifyApi": { "id": "APIFY_CREDENTIAL", "name": "Apify API" }
+      },
+      "notes": "Install Apify node. Use an actor that returns transcripts (e.g. playlist→videos→transcripts). Replace actorId with your chosen actor."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize Apify/output to array of { content, metadata } for embedding.\n// If input is already array of items with transcript text, use that.\nconst items = $input.all();\nconst out = [];\nfor (const item of items) {\n  const j = item.json;\n  const text = j.transcript || j.text || j.content || j.fullTranscript || '';\n  if (!text || text.length < 50) continue;\n  // Chunk long transcripts (e.g. 600 chars with 100 overlap) so they fit context\n  const chunkSize = 600;\n  const overlap = 100;\n  for (let i = 0; i < text.length; i += chunkSize - overlap) {\n    const chunk = text.slice(i, i + chunkSize).trim();\n    if (chunk.length < 30) continue;\n    out.push({\n      json: {\n        content: chunk,\n        metadata: {\n          videoId: j.videoId || j.id || '',\n          title: j.title || j.videoTitle || '',\n          source: 'youtube'\n        }\n      }\n    });\n  }\n}\nif (out.length === 0) out.push({ json: { content: 'No transcripts', metadata: {} } });\nreturn out;\n"
+      },
+      "id": "chunk-docs",
+      "name": "Chunk Transcripts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/embeddings",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"text-embedding-3-small\",\n  \"input\": {{ JSON.stringify($json.content) }}\n}",
+        "options": {}
+      },
+      "id": "openai-embed",
+      "name": "OpenAI Embeddings",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 300],
+      "continueOnFail": true,
+      "credentials": {
+        "httpHeaderAuth": { "id": "OPENAI_HEADER", "name": "OpenAI API" }
+      },
+      "notes": "Header: Authorization = Bearer YOUR_OPENAI_KEY. Embedding dimension 1536 for text-embedding-3-small."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge embedding from OpenAI with original content and metadata\nconst embedRes = $input.first().json;\nconst prev = $('Chunk Transcripts').item.json;\nconst vec = embedRes.data && embedRes.data[0] ? embedRes.data[0].embedding : [];\nreturn [{\n  json: {\n    content: prev.content,\n    metadata: prev.metadata || {},\n    embedding: vec\n  }\n}];\n"
+      },
+      "id": "merge-embed",
+      "name": "Merge Content + Embedding",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=YOUR_SUPABASE_URL/rest/v1/documents",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "=YOUR_SUPABASE_ANON_OR_SERVICE_KEY" },
+            { "name": "Authorization", "value": "=Bearer YOUR_SUPABASE_ANON_OR_SERVICE_KEY" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: $json.content, metadata: $json.metadata, embedding: $json.embedding }) }}",
+        "options": {}
+      },
+      "id": "supabase-insert",
+      "name": "Supabase Insert Document",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 300],
+      "continueOnFail": true,
+      "notes": "Replace URL and headers with your Supabase project URL and service_role key. Table: documents (content, metadata, embedding vector(1536))."
+    }
+  ],
+  "connections": {
+    "Manual Trigger": { "main": [[{ "node": "Playlist URL", "type": "main", "index": 0 }]] },
+    "Playlist URL": { "main": [[{ "node": "Apify YouTube Transcripts", "type": "main", "index": 0 }]] },
+    "Apify YouTube Transcripts": { "main": [[{ "node": "Chunk Transcripts", "type": "main", "index": 0 }]] },
+    "Chunk Transcripts": { "main": [[{ "node": "OpenAI Embeddings", "type": "main", "index": 0 }]] },
+    "OpenAI Embeddings": { "main": [[{ "node": "Merge Content + Embedding", "type": "main", "index": 0 }]] },
+    "Merge Content + Embedding": { "main": [[{ "node": "Supabase Insert Document", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "saveManualExecutions": true },
+  "pinData": {},
+  "staticData": null,
+  "tags": [{ "name": "tradebuddy" }, { "name": "rag" }, { "name": "youtube" }]
+}

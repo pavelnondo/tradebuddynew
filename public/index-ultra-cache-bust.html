@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trade Buddy - Professional Trading Journal</title>
+    <meta name="description" content="Professional trading journal and analysis platform for serious traders" />
+    <meta name="author" content="Trade Buddy" />
+    <meta property="og:image" content="/tradebuddy-logo.svg" />
+    
+    <!-- Favicon and Icons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=<?php echo time(); ?>" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=<?php echo time(); ?>" />
+    <link rel="apple-touch-icon" href="/tradebuddy-logo.svg?v=<?php echo time(); ?>" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json?v=<?php echo time(); ?>" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="TradeBuddy" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#3b82f6" />
+    
+    <!-- Ultra-Aggressive Cache Busting Script -->
+    <script>
+      // Force clear all caches immediately
+      (function() {
+        console.log('🔥 ULTRA CACHE BUST: Starting aggressive cache clearing');
+        
+        // Clear all caches
+        if ('caches' in window) {
+          caches.keys().then(function(cacheNames) {
+            return Promise.all(
+              cacheNames.map(function(cacheName) {
+                console.log('🔥 DELETING CACHE:', cacheName);
+                return caches.delete(cacheName);
+              })
+            );
+          }).then(function() {
+            console.log('🔥 ALL CACHES DELETED');
+          });
+        }
+        
+        // Clear localStorage and sessionStorage
+        try {
+          localStorage.clear();
+          sessionStorage.clear();
+          console.log('🔥 STORAGE CLEARED');
+        } catch (e) {
+          console.log('🔥 STORAGE CLEAR ERROR:', e);
+        }
+        
+        // Force reload if this is a cached version
+        const currentTime = Date.now();
+        const lastReload = localStorage.getItem('lastReload');
+        if (lastReload && (currentTime - parseInt(lastReload)) < 5000) {
+          console.log('🔥 FORCE RELOAD: Too soon, skipping');
+          return;
+        }
+        localStorage.setItem('lastReload', currentTime.toString());
+        
+        // Add cache busting to all script and link tags
+        const timestamp = '?v=' + currentTime + '&nocache=1&bust=' + Math.random();
+        
+        // Update script and link sources
+        setTimeout(function() {
+          const scripts = document.querySelectorAll('script[src], link[href]');
+          scripts.forEach(function(element) {
+            const src = element.src || element.href;
+            if (src && !src.includes('?v=')) {
+              element.src = src + timestamp;
+              element.href = src + timestamp;
+            }
+          });
+        }, 100);
+      })();
+    </script>
+    
+    <!-- Service Worker Registration with Ultra-Aggressive Mode -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          // Unregister all existing service workers first
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for(let registration of registrations) {
+              console.log('🔥 UNREGISTERING SW:', registration.scope);
+              registration.unregister();
+            }
+          }).then(() => {
+            // Register the ultra-aggressive service worker
+            navigator.serviceWorker.register('/sw-aggressive.js?v=' + Date.now())
+              .then((registration) => {
+                console.log('🔥 ULTRA-AGGRESSIVE SW REGISTERED:', registration);
+                
+                // Force update
+                registration.update();
+                
+                // Send force reload message
+                if (registration.active) {
+                  registration.active.postMessage({type: 'FORCE_RELOAD'});
+                }
+              })
+              .catch((registrationError) => {
+                console.log('🔥 SW REGISTRATION FAILED:', registrationError);
+              });
+          });
+        });
+      }
+    </script>
+
+    <script type="module" crossorigin src="/assets/index-1757709663334-58Sycgly.js?v=<?php echo time(); ?>&nocache=1&bust=<?php echo rand(); ?>"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-1757709663334-58Sycgly.css?v=<?php echo time(); ?>&nocache=1&bust=<?php echo rand(); ?>">
+  </head>
+
+  <body>
+    <div id="root"></div>
+    
+    <!-- Ultra-Aggressive Cache Busting Footer Script -->
+    <script>
+      // Additional cache busting on page load
+      window.addEventListener('load', function() {
+        console.log('🔥 PAGE LOADED: Final cache busting');
+        
+        // Force reload if we detect old content
+        const bodyText = document.body.innerText;
+        if (bodyText.includes('Switch Account') || bodyText.includes('Create New Account')) {
+          console.log('🔥 DETECTED OLD CONTENT: Forcing reload');
+          window.location.href = '/?v=' + Date.now() + '&force=1';
+        }
+        
+        // Clear any remaining caches
+        if ('caches' in window) {
+          caches.keys().then(function(cacheNames) {
+            cacheNames.forEach(function(cacheName) {
+              caches.delete(cacheName);
+            });
+          });
+        }
+      });
+      
+      // Listen for service worker messages
+      navigator.serviceWorker.addEventListener('message', function(event) {
+        if (event.data && event.data.type === 'FORCE_RELOAD') {
+          console.log('🔥 SW MESSAGE: Force reload received');
+          window.location.reload(true);
+        }
+      });
+    </script>
+    
+    <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
+    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
+  </body>
+</html>
+
+

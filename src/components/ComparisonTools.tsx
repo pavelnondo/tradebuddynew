@@ -258,8 +258,8 @@ export function ComparisonTools({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-96">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="h-96 min-h-[200px]" style={{ minWidth: 0 }}>
+                <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                   {comparisonType === 'performance' ? (
                     <BarChart data={getPerformanceChartData()} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" className="opacity-30" />

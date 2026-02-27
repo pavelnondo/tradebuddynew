@@ -23,3 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
+# Environment / secrets (do not commit)
+.env
+backend/.env
+backend/uploads/
+backend/node.pkg
+n8n-mcp/
+

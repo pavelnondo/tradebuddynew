@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Force Clear Cache</title>
+</head>
+<body>
+    <h1>Force Clear All Caches</h1>
+    <button onclick="clearAllCaches()">Clear All Caches</button>
+    <div id="status"></div>
+
+    <script>
+        async function clearAllCaches() {
+            const status = document.getElementById('status');
+            status.innerHTML = 'Clearing caches...';
+            
+            try {
+                // Clear service worker cache
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(
+                        cacheNames.map(cacheName => caches.delete(cacheName))
+                    );
+                    status.innerHTML += '<br>✅ Service worker caches cleared';
+                }
+                
+                // Clear localStorage
+                localStorage.clear();
+                status.innerHTML += '<br>✅ LocalStorage cleared';
+                
+                // Clear sessionStorage
+                sessionStorage.clear();
+                status.innerHTML += '<br>✅ SessionStorage cleared';
+                
+                // Clear IndexedDB
+                if ('indexedDB' in window) {
+                    const databases = await indexedDB.databases();
+                    await Promise.all(
+                        databases.map(db => {
+                            return new Promise((resolve, reject) => {
+                                const deleteReq = indexedDB.deleteDatabase(db.name);
+                                deleteReq.onsuccess = () => resolve();
+                                deleteReq.onerror = () => reject(deleteReq.error);
+                            });
+                        })
+                    );
+                    status.innerHTML += '<br>✅ IndexedDB cleared';
+                }
+                
+                status.innerHTML += '<br><br>🎉 All caches cleared! Please refresh the main app.';
+                
+            } catch (error) {
+                status.innerHTML += '<br>❌ Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

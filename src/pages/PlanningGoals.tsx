@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { 
   Target, 
   TrendingUp, 
@@ -16,9 +18,10 @@ import {
   Activity,
   BookOpen,
   Users,
-  Settings
+  Settings,
+  AlertCircle
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { NeonCard } from "@/components/ui/NeonCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,12 +42,27 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useApiTrades } from '@/hooks/useApiTrades';
+import { useGoals, Goal } from '@/hooks/useGoals';
+import { useAccountManagement } from '@/hooks/useAccountManagement';
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from "@/lib/utils";
+import { goalSchema, habitSchema, type GoalFormData, type HabitFormData } from '@/schemas/goalSchema';
+import { PageContainer } from '@/components/layout/PageContainer';
 
 interface TradingGoal {
   id: string;
@@ -94,50 +112,93 @@ interface ProgressEntry {
 
 export default function PlanningGoals() {
   const { trades } = useApiTrades();
+  const { goals: apiGoals, loading: goalsLoading, createGoal, updateGoal, deleteGoal } = useGoals();
+  const { activeJournal } = useAccountManagement();
   const { toast } = useToast();
+  const { themeConfig } = useTheme();
   
-  const [goals, setGoals] = useState<TradingGoal[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [progressEntries, setProgressEntries] = useState<ProgressEntry[]>([]);
   const [showGoalDialog, setShowGoalDialog] = useState(false);
   const [showHabitDialog, setShowHabitDialog] = useState(false);
-  const [editingGoal, setEditingGoal] = useState<TradingGoal | null>(null);
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
+  const [deleteGoalDialogOpen, setDeleteGoalDialogOpen] = useState(false);
+  const [goalToDelete, setGoalToDelete] = useState<Goal | null>(null);
 
-  const [newGoal, setNewGoal] = useState({
-    title: '',
-    description: '',
-    type: 'profit' as const,
-    target: '',
-    unit: '',
-    deadline: '',
-    priority: 'medium' as const,
+  const handleDeleteGoalConfirm = async () => {
+    if (!goalToDelete) return;
+    const id = goalToDelete.id;
+    setGoalToDelete(null);
+    setDeleteGoalDialogOpen(false);
+    try {
+      await deleteGoal(id);
+      toast({
+        title: "Goal deleted",
+        description: "The goal has been successfully deleted.",
+      });
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to delete goal.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Form validation for goals
+  const {
+    register: registerGoal,
+    handleSubmit: handleSubmitGoal,
+    formState: { errors: goalErrors },
+    reset: resetGoal,
+    setValue: setGoalValue,
+    watch: watchGoal,
+  } = useForm<GoalFormData>({
+    resolver: zodResolver(goalSchema),
+    defaultValues: {
+      title: '',
+      description: '',
+      goalType: 'profit',
+      targetValue: 0,
+      unit: 'USD',
+      period: 'monthly',
+      startDate: '',
+      endDate: '',
+    },
   });
 
-  const [newHabit, setNewHabit] = useState({
-    title: '',
-    description: '',
-    frequency: 'daily' as const,
-    target: '1',
+  // Form validation for habits
+  const {
+    register: registerHabit,
+    handleSubmit: handleSubmitHabit,
+    formState: { errors: habitErrors },
+    reset: resetHabit,
+    setValue: setHabitValue,
+    watch: watchHabit,
+  } = useForm<HabitFormData>({
+    resolver: zodResolver(habitSchema),
+    defaultValues: {
+      title: '',
+      description: '',
+      frequency: 'daily',
+      target: 1,
+    },
   });
 
-  // Load data from localStorage
+  const watchedGoal = watchGoal();
+  const watchedHabit = watchHabit();
+
+  // Load habits from localStorage (keeping this for now)
   useEffect(() => {
-    const savedGoals = localStorage.getItem('tradingGoals');
     const savedHabits = localStorage.getItem('tradingHabits');
     const savedProgress = localStorage.getItem('progressEntries');
 
-    if (savedGoals) setGoals(JSON.parse(savedGoals));
     if (savedHabits) setHabits(JSON.parse(savedHabits));
     if (savedProgress) setProgressEntries(JSON.parse(savedProgress));
   }, []);
 
-  // Save data to localStorage
-  const saveGoals = (updatedGoals: TradingGoal[]) => {
-    setGoals(updatedGoals);
-    localStorage.setItem('tradingGoals', JSON.stringify(updatedGoals));
-  };
-
+  // Save habits to localStorage (keeping this for now)
   const saveHabits = (updatedHabits: Habit[]) => {
     setHabits(updatedHabits);
     localStorage.setItem('tradingHabits', JSON.stringify(updatedHabits));
@@ -148,146 +209,65 @@ export default function PlanningGoals() {
     localStorage.setItem('progressEntries', JSON.stringify(updatedProgress));
   };
 
-  // Calculate current progress based on trades
-  const calculateCurrentProgress = (goal: TradingGoal): number => {
-    if (!Array.isArray(trades)) return 0;
+  // Note: Goal progress is now calculated and stored in the database
+  // The API goals already contain current values that are updated based on actual trade data
 
-    const now = new Date();
-    const goalStart = new Date(goal.createdAt);
-    const goalDeadline = new Date(goal.deadline);
-    
-    // Filter trades within goal timeframe
-    const relevantTrades = trades.filter(trade => {
-      const tradeDate = new Date(trade.date);
-      return tradeDate >= goalStart && tradeDate <= goalDeadline;
-    });
+  const handleCreateGoal = async (data: GoalFormData) => {
+    try {
+      const goalData = {
+        title: data.title,
+        description: data.description || '',
+        goalType: data.goalType,
+        targetValue: data.targetValue,
+        unit: data.unit || getDefaultUnit(data.goalType),
+        period: data.period,
+        journalId: activeJournal?.id,
+        startDate: data.startDate || new Date().toISOString().split('T')[0],
+        endDate: data.endDate,
+      };
 
-    switch (goal.type) {
-      case 'profit':
-        return relevantTrades.reduce((sum, trade) => sum + (trade.profitLoss || 0), 0);
-      case 'trades':
-        return relevantTrades.length;
-      case 'winrate':
-        if (relevantTrades.length === 0) return 0;
-        const winningTrades = relevantTrades.filter(trade => (trade.profitLoss || 0) > 0).length;
-        return (winningTrades / relevantTrades.length) * 100;
-      case 'consistency':
-        // Calculate consecutive profitable days
-        const dailyPnL = new Map();
-        relevantTrades.forEach(trade => {
-          const date = new Date(trade.date).toDateString();
-          dailyPnL.set(date, (dailyPnL.get(date) || 0) + (trade.profitLoss || 0));
+      if (editingGoal) {
+        await updateGoal(editingGoal.id, goalData);
+        toast({
+          title: "Goal updated",
+          description: `Goal "${goalData.title}" has been updated.`,
         });
-        
-        let maxConsecutive = 0;
-        let currentConsecutive = 0;
-        const sortedDates = Array.from(dailyPnL.keys()).sort();
-        
-        sortedDates.forEach(date => {
-          if (dailyPnL.get(date) > 0) {
-            currentConsecutive++;
-            maxConsecutive = Math.max(maxConsecutive, currentConsecutive);
-          } else {
-            currentConsecutive = 0;
-          }
+      } else {
+        await createGoal(goalData);
+        toast({
+          title: "Goal created",
+          description: `Goal "${goalData.title}" has been created.`,
         });
-        
-        return maxConsecutive;
-      case 'learning':
-        // Count unique setups or strategies used
-        const uniqueSetups = new Set(relevantTrades.map(trade => trade.setup).filter(Boolean));
-        return uniqueSetups.size;
-      default:
-        return 0;
+      }
+      
+      resetGoal();
+      setEditingGoal(null);
+      setShowGoalDialog(false);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || (editingGoal ? "Failed to update goal. Please try again." : "Failed to create goal. Please try again."),
+        variant: "destructive",
+      });
     }
   };
 
-  // Update goal progress
-  useEffect(() => {
-    const updatedGoals = goals.map(goal => ({
-      ...goal,
-      current: calculateCurrentProgress(goal),
-      status: goal.current >= goal.target ? 'completed' : goal.status,
-    }));
-    
-    if (JSON.stringify(updatedGoals) !== JSON.stringify(goals)) {
-      saveGoals(updatedGoals);
-    }
-  }, [trades, goals]);
-
-  const handleCreateGoal = () => {
-    if (!newGoal.title || !newGoal.target || !newGoal.deadline) {
-      toast({
-        title: "Missing required fields",
-        description: "Please fill in title, target, and deadline.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const goal: TradingGoal = {
-      id: Date.now().toString(),
-      title: newGoal.title,
-      description: newGoal.description,
-      type: newGoal.type,
-      target: parseFloat(newGoal.target),
-      current: 0,
-      unit: newGoal.unit || getDefaultUnit(newGoal.type),
-      deadline: newGoal.deadline,
-      priority: newGoal.priority,
-      status: 'active',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      milestones: [],
-    };
-
-    saveGoals([...goals, goal]);
-    setNewGoal({
-      title: '',
-      description: '',
-      type: 'profit',
-      target: '',
-      unit: '',
-      deadline: '',
-      priority: 'medium',
-    });
-    setShowGoalDialog(false);
-
-    toast({
-      title: "Goal created",
-      description: `Goal "${goal.title}" has been created.`,
-    });
-  };
-
-  const handleCreateHabit = () => {
-    if (!newHabit.title) {
-      toast({
-        title: "Missing required fields",
-        description: "Please fill in habit title.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const handleCreateHabit = (data: HabitFormData) => {
     const habit: Habit = {
       id: Date.now().toString(),
-      title: newHabit.title,
-      description: newHabit.description,
-      frequency: newHabit.frequency,
-      target: parseInt(newHabit.target),
+      title: data.title,
+      description: data.description || '',
+      frequency: data.frequency,
+      target: data.target,
       streak: 0,
       bestStreak: 0,
       status: 'active',
       createdAt: new Date().toISOString(),
+      completedDates: [],
     };
 
     saveHabits([...habits, habit]);
-    setNewHabit({
-      title: '',
-      description: '',
-      frequency: 'daily',
-      target: '1',
-    });
+    resetHabit();
     setShowHabitDialog(false);
 
     toast({
@@ -320,11 +300,11 @@ export default function PlanningGoals() {
 
   const getDefaultUnit = (type: string): string => {
     switch (type) {
-      case 'profit': return '$';
-      case 'trades': return 'trades';
-      case 'winrate': return '%';
-      case 'consistency': return 'days';
-      case 'learning': return 'strategies';
+      case 'profit': return 'USD';
+      case 'win_rate': return '%';
+      case 'trades_count': return 'count';
+      case 'risk_management': return 'USD';
+      case 'learning': return 'count';
       default: return '';
     }
   };
@@ -332,9 +312,9 @@ export default function PlanningGoals() {
   const getGoalIcon = (type: string) => {
     switch (type) {
       case 'profit': return <DollarSign className="w-5 h-5" />;
-      case 'trades': return <Activity className="w-5 h-5" />;
-      case 'winrate': return <Target className="w-5 h-5" />;
-      case 'consistency': return <TrendingUp className="w-5 h-5" />;
+      case 'trades_count': return <Activity className="w-5 h-5" />;
+      case 'win_rate': return <Target className="w-5 h-5" />;
+      case 'risk_management': return <TrendingUp className="w-5 h-5" />;
       case 'learning': return <BookOpen className="w-5 h-5" />;
       default: return <Target className="w-5 h-5" />;
     }
@@ -358,21 +338,34 @@ export default function PlanningGoals() {
     }
   };
 
-  const activeGoals = goals.filter(goal => goal.status === 'active');
-  const completedGoals = goals.filter(goal => goal.status === 'completed');
+  // Filter goals by active journal
+  const filteredGoals = activeJournal 
+    ? apiGoals.filter(goal => goal.journalId === activeJournal.id)
+    : apiGoals;
+
+  const activeGoals = filteredGoals.filter(goal => goal.status === 'active');
+  const completedGoals = filteredGoals.filter(goal => goal.status === 'completed');
   const activeHabits = habits.filter(habit => habit.status === 'active');
 
-  const overallProgress = goals.length > 0 
-    ? (completedGoals.length / goals.length) * 100 
+  const overallProgress = filteredGoals.length > 0 
+    ? (completedGoals.length / filteredGoals.length) * 100 
     : 0;
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <PageContainer>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between pb-8 border-b" style={{ borderColor: themeConfig.border }}>
         <div>
-          <h1 className="text-3xl font-bold">Planning & Goals</h1>
-          <p className="text-muted-foreground">
+          <h1 
+            className="text-3xl font-semibold tracking-tight mb-2"
+            style={{ color: themeConfig.foreground }}
+          >
+            Planning & <span style={{ color: themeConfig.accent }}>Goals</span>
+          </h1>
+          <p 
+            className="text-sm"
+            style={{ color: themeConfig.mutedForeground }}
+          >
             Set trading goals, track progress, and build successful habits
           </p>
         </div>
@@ -385,54 +378,118 @@ export default function PlanningGoals() {
       </div>
 
       {/* Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="card-modern">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Active Goals</p>
-                <p className="text-2xl font-bold">{activeGoals.length}</p>
-              </div>
-              <Target className="w-8 h-8 text-muted-foreground" />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <NeonCard className="p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <p 
+                className="text-sm font-medium mb-1"
+                style={{ color: themeConfig.mutedForeground }}
+              >
+                Active Goals
+              </p>
+              <p 
+                className="text-3xl font-semibold tracking-tight"
+                style={{ color: themeConfig.foreground }}
+              >
+                {activeGoals.length}
+              </p>
             </div>
-          </CardContent>
-        </Card>
+            <div 
+              className="p-2.5 rounded-xl"
+              style={{ 
+                backgroundColor: `${themeConfig.accent}12`,
+                border: `1px solid ${themeConfig.accent}25`
+              }}
+            >
+              <Target className="w-5 h-5" style={{ color: themeConfig.accent }} />
+            </div>
+          </div>
+        </NeonCard>
 
-        <Card className="card-modern">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Completed Goals</p>
-                <p className="text-2xl font-bold text-green-600">{completedGoals.length}</p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-green-600" />
+        <NeonCard className="p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <p 
+                className="text-sm font-medium mb-1"
+                style={{ color: themeConfig.mutedForeground }}
+              >
+                Completed Goals
+              </p>
+              <p 
+                className="text-3xl font-semibold tracking-tight"
+                style={{ color: themeConfig.success }}
+              >
+                {completedGoals.length}
+              </p>
             </div>
-          </CardContent>
-        </Card>
+            <div 
+              className="p-2.5 rounded-xl"
+              style={{ 
+                backgroundColor: `${themeConfig.success}12`,
+                border: `1px solid ${themeConfig.success}25`
+              }}
+            >
+              <CheckCircle className="w-5 h-5" style={{ color: themeConfig.success }} />
+            </div>
+          </div>
+        </NeonCard>
 
-        <Card className="card-modern">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Active Habits</p>
-                <p className="text-2xl font-bold">{activeHabits.length}</p>
-              </div>
-              <Zap className="w-8 h-8 text-muted-foreground" />
+        <NeonCard className="p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <p 
+                className="text-sm font-medium mb-1"
+                style={{ color: themeConfig.mutedForeground }}
+              >
+                Active Habits
+              </p>
+              <p 
+                className="text-3xl font-semibold tracking-tight"
+                style={{ color: themeConfig.foreground }}
+              >
+                {activeHabits.length}
+              </p>
             </div>
-          </CardContent>
-        </Card>
+            <div 
+              className="p-2.5 rounded-xl"
+              style={{ 
+                backgroundColor: `${themeConfig.accent}12`,
+                border: `1px solid ${themeConfig.accent}25`
+              }}
+            >
+              <Zap className="w-5 h-5" style={{ color: themeConfig.accent }} />
+            </div>
+          </div>
+        </NeonCard>
 
-        <Card className="card-modern">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Overall Progress</p>
-                <p className="text-2xl font-bold">{overallProgress.toFixed(0)}%</p>
-              </div>
-              <BarChart3 className="w-8 h-8 text-muted-foreground" />
+        <NeonCard className="p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <p 
+                className="text-sm font-medium mb-1"
+                style={{ color: themeConfig.mutedForeground }}
+              >
+                Overall Progress
+              </p>
+              <p 
+                className="text-3xl font-semibold tracking-tight"
+                style={{ color: themeConfig.foreground }}
+              >
+                {overallProgress.toFixed(0)}%
+              </p>
             </div>
-          </CardContent>
-        </Card>
+            <div 
+              className="p-2.5 rounded-xl"
+              style={{ 
+                backgroundColor: `${themeConfig.accent}12`,
+                border: `1px solid ${themeConfig.accent}25`
+              }}
+            >
+              <BarChart3 className="w-5 h-5" style={{ color: themeConfig.accent }} />
+            </div>
+          </div>
+        </NeonCard>
       </div>
 
       {/* Main Content Tabs */}
@@ -447,8 +504,8 @@ export default function PlanningGoals() {
           {/* Goals Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold">Trading Goals</h2>
-              <p className="text-muted-foreground">Set and track your trading objectives</p>
+              <h2 className="text-2xl font-bold" style={{ color: themeConfig.foreground }}>Trading Goals</h2>
+              <p style={{ color: themeConfig.mutedForeground }}>Set and track your trading objectives</p>
             </div>
             <Dialog open={showGoalDialog} onOpenChange={setShowGoalDialog}>
               <DialogTrigger asChild>
@@ -459,135 +516,224 @@ export default function PlanningGoals() {
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle>Create New Trading Goal</DialogTitle>
+                  <DialogTitle>{editingGoal ? 'Edit Trading Goal' : 'Create New Trading Goal'}</DialogTitle>
                   <DialogDescription>
-                    Set a specific, measurable goal for your trading journey
+                    {editingGoal ? 'Update your trading goal' : 'Set a specific, measurable goal for your trading journey'}
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="goal-title">Goal Title *</Label>
+                <form onSubmit={handleSubmitGoal(handleCreateGoal)} className="space-y-4">
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="goal-title" className="text-sm font-medium" style={{ color: themeConfig.foreground }}>Goal Title *</Label>
                       <Input
                         id="goal-title"
                         placeholder="e.g., Reach $10K Profit"
-                        value={newGoal.title}
-                        onChange={(e) => setNewGoal(prev => ({ ...prev, title: e.target.value }))}
+                        {...registerGoal('title')}
+                        className="mt-1.5 rounded-xl"
+                        style={{ backgroundColor: themeConfig.card, borderColor: themeConfig.border, color: themeConfig.foreground }}
                       />
+                      {goalErrors.title && (
+                        <p className="text-sm text-destructive flex items-center gap-1 mt-1">
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          {goalErrors.title.message}
+                        </p>
+                      )}
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="goal-type">Goal Type *</Label>
-                      <Select value={newGoal.type} onValueChange={(value: any) => setNewGoal(prev => ({ ...prev, type: value }))}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="profit">Profit Target</SelectItem>
-                          <SelectItem value="trades">Trade Count</SelectItem>
-                          <SelectItem value="winrate">Win Rate</SelectItem>
-                          <SelectItem value="consistency">Consistency</SelectItem>
-                          <SelectItem value="learning">Learning</SelectItem>
-                        </SelectContent>
-                      </Select>
+
+                    <div>
+                      <Label htmlFor="goal-type" className="text-sm font-medium" style={{ color: themeConfig.foreground }}>Goal Type *</Label>
+                      <select
+                        id="goal-type"
+                        value={watchedGoal.goalType}
+                        onChange={(e) => {
+                          const v = e.target.value as GoalFormData['goalType'];
+                          setGoalValue('goalType', v);
+                          if (!watchedGoal.unit || watchedGoal.unit === 'USD') {
+                            setGoalValue('unit', getDefaultUnit(v));
+                          }
+                        }}
+                        className="mt-1.5 w-full rounded-xl border px-4 py-2.5 text-sm"
+                        style={{ backgroundColor: themeConfig.card, borderColor: themeConfig.border, color: themeConfig.foreground }}
+                      >
+                        <option value="profit">Profit Target</option>
+                        <option value="trades_count">Trade Count</option>
+                        <option value="win_rate">Win Rate</option>
+                        <option value="risk_management">Risk Management</option>
+                        <option value="learning">Learning</option>
+                      </select>
+                      {goalErrors.goalType && (
+                        <p className="text-sm text-destructive flex items-center gap-1 mt-1">
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          {goalErrors.goalType.message}
+                        </p>
+                      )}
                     </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="goal-description">Description</Label>
-                    <Textarea
-                      id="goal-description"
-                      placeholder="Describe your goal and why it's important"
-                      value={newGoal.description}
-                      onChange={(e) => setNewGoal(prev => ({ ...prev, description: e.target.value }))}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="goal-target">Target *</Label>
-                      <Input
-                        id="goal-target"
-                        type="number"
-                        placeholder="1000"
-                        value={newGoal.target}
-                        onChange={(e) => setNewGoal(prev => ({ ...prev, target: e.target.value }))}
+                    <div>
+                      <Label htmlFor="goal-description" className="text-sm font-medium" style={{ color: themeConfig.foreground }}>Description</Label>
+                      <Textarea
+                        id="goal-description"
+                        placeholder="Describe your goal and why it's important"
+                        {...registerGoal('description')}
+                        className="mt-1.5 rounded-xl"
+                        style={{ backgroundColor: themeConfig.card, borderColor: themeConfig.border, color: themeConfig.foreground }}
                       />
+                      {goalErrors.description && (
+                        <p className="text-sm text-destructive flex items-center gap-1 mt-1">
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          {goalErrors.description.message}
+                        </p>
+                      )}
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="goal-unit">Unit</Label>
-                      <Input
-                        id="goal-unit"
-                        placeholder={getDefaultUnit(newGoal.type)}
-                        value={newGoal.unit}
-                        onChange={(e) => setNewGoal(prev => ({ ...prev, unit: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="goal-priority">Priority</Label>
-                      <Select value={newGoal.priority} onValueChange={(value: any) => setNewGoal(prev => ({ ...prev, priority: value }))}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="low">Low</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="high">High</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="goal-deadline">Deadline *</Label>
-                    <Input
-                      id="goal-deadline"
-                      type="date"
-                      value={newGoal.deadline}
-                      onChange={(e) => setNewGoal(prev => ({ ...prev, deadline: e.target.value }))}
-                    />
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="goal-target" className="text-sm font-medium" style={{ color: themeConfig.foreground }}>Target *</Label>
+                        <Input
+                          id="goal-target"
+                          type="number"
+                          step="0.01"
+                          placeholder="1000"
+                          {...registerGoal('targetValue', { valueAsNumber: true })}
+                          className="mt-1.5 rounded-xl"
+                          style={{ backgroundColor: themeConfig.card, borderColor: themeConfig.border, color: themeConfig.foreground }}
+                        />
+                        {goalErrors.targetValue && (
+                          <p className="text-sm text-destructive flex items-center gap-1 mt-1">
+                            <AlertCircle className="w-3.5 h-3.5" />
+                            {goalErrors.targetValue.message}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="goal-unit" className="text-sm font-medium" style={{ color: themeConfig.foreground }}>Unit</Label>
+                        <Input
+                          id="goal-unit"
+                          placeholder={getDefaultUnit(watchedGoal.goalType)}
+                          {...registerGoal('unit')}
+                          className="mt-1.5 rounded-xl"
+                          style={{ backgroundColor: themeConfig.card, borderColor: themeConfig.border, color: themeConfig.foreground }}
+                        />
+                        {goalErrors.unit && (
+                          <p className="text-sm text-destructive flex items-center gap-1 mt-1">
+                            <AlertCircle className="w-3.5 h-3.5" />
+                            {goalErrors.unit.message}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="goal-period" className="text-sm font-medium" style={{ color: themeConfig.foreground }}>Period</Label>
+                        <select
+                          id="goal-period"
+                          value={watchedGoal.period}
+                          onChange={(e) => setGoalValue('period', e.target.value as GoalFormData['period'])}
+                          className="mt-1.5 w-full rounded-xl border px-4 py-2.5 text-sm"
+                          style={{ backgroundColor: themeConfig.card, borderColor: themeConfig.border, color: themeConfig.foreground }}
+                        >
+                          <option value="daily">Daily</option>
+                          <option value="weekly">Weekly</option>
+                          <option value="monthly">Monthly</option>
+                          <option value="yearly">Yearly</option>
+                        </select>
+                        {goalErrors.period && (
+                          <p className="text-sm text-destructive flex items-center gap-1 mt-1">
+                            <AlertCircle className="w-3.5 h-3.5" />
+                            {goalErrors.period.message}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="goal-start" className="text-sm font-medium" style={{ color: themeConfig.foreground }}>Start Date</Label>
+                        <Input
+                          id="goal-start"
+                          type="date"
+                          {...registerGoal('startDate')}
+                          className="mt-1.5 rounded-xl"
+                          style={{ backgroundColor: themeConfig.card, borderColor: themeConfig.border, color: themeConfig.foreground }}
+                        />
+                        {goalErrors.startDate && (
+                          <p className="text-sm text-destructive flex items-center gap-1 mt-1">
+                            <AlertCircle className="w-3.5 h-3.5" />
+                            {goalErrors.startDate.message}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="goal-end" className="text-sm font-medium" style={{ color: themeConfig.foreground }}>End Date *</Label>
+                        <Input
+                          id="goal-end"
+                          type="date"
+                          {...registerGoal('endDate')}
+                          className="mt-1.5 rounded-xl"
+                          style={{ backgroundColor: themeConfig.card, borderColor: themeConfig.border, color: themeConfig.foreground }}
+                        />
+                        {goalErrors.endDate && (
+                          <p className="text-sm text-destructive flex items-center gap-1 mt-1">
+                            <AlertCircle className="w-3.5 h-3.5" />
+                            {goalErrors.endDate.message}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowGoalDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreateGoal}>
-                    Create Goal
-                  </Button>
-                </DialogFooter>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => {
+                      setShowGoalDialog(false);
+                      setEditingGoal(null);
+                      resetGoal();
+                    }}>
+                      Cancel
+                    </Button>
+                    <Button type="submit">
+                      {editingGoal ? 'Update Goal' : 'Create Goal'}
+                    </Button>
+                  </DialogFooter>
+                </form>
               </DialogContent>
             </Dialog>
           </div>
 
           {/* Goals Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {goals.map(goal => {
-              const progress = goal.target > 0 ? (goal.current / goal.target) * 100 : 0;
-              const isOverdue = new Date(goal.deadline) < new Date() && goal.status !== 'completed';
+            {filteredGoals.map(goal => {
+              const progress = goal.targetValue > 0 ? (goal.currentValue / goal.targetValue) * 100 : 0;
+              const isOverdue = goal.endDate && new Date(goal.endDate) < new Date() && goal.status !== 'completed';
               
               return (
-                <Card key={goal.id} className={cn(
-                  "card-modern",
-                  isOverdue && "border-red-200 bg-red-50 dark:bg-red-950/20"
-                )}>
-                  <CardHeader className="pb-3">
+                <NeonCard 
+                  key={goal.id} 
+                  className={cn(
+                    "p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-300",
+                    isOverdue && "border-red-200 bg-red-50 dark:bg-red-950/20"
+                  )}
+                  style={!isOverdue ? { 
+                    backgroundColor: themeConfig.card, 
+                    borderWidth: '1px', 
+                    borderStyle: 'solid', 
+                    borderColor: themeConfig.border 
+                  } : undefined}
+                >
+                  <div className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center space-x-2">
-                        {getGoalIcon(goal.type)}
-                        <CardTitle className="text-lg">{goal.title}</CardTitle>
+                        {getGoalIcon(goal.goalType)}
+                        <h3 className="text-lg font-semibold">{goal.title}</h3>
                       </div>
                       <div className="flex space-x-1">
-                        <Badge className={getPriorityColor(goal.priority)}>
-                          {goal.priority}
-                        </Badge>
                         <Badge className={getStatusColor(goal.status)}>
                           {goal.status}
                         </Badge>
+                        <Badge variant="outline">
+                          {goal.period}
+                        </Badge>
                       </div>
                     </div>
-                    <CardDescription>{goal.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground">{goal.description}</p>
+                  </div>
+                  <div className="space-y-4">
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>Progress</span>
@@ -595,32 +741,92 @@ export default function PlanningGoals() {
                       </div>
                       <Progress value={Math.min(progress, 100)} className="h-2" />
                       <div className="flex justify-between text-sm text-muted-foreground">
-                        <span>{goal.current.toFixed(1)} {goal.unit}</span>
-                        <span>{goal.target} {goal.unit}</span>
+                        <span>{goal.currentValue.toFixed(1)} {goal.unit}</span>
+                        <span>{goal.targetValue} {goal.unit}</span>
                       </div>
                     </div>
                     
+                    {goal.endDate && (
                     <div className="text-sm text-muted-foreground">
                       <div className="flex items-center space-x-2">
                         <Calendar className="w-3 h-3" />
-                        <span>Due: {new Date(goal.deadline).toLocaleDateString()}</span>
+                          <span>Due: {new Date(goal.endDate).toLocaleDateString()}</span>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {isOverdue && (
                       <div className="text-sm text-red-600 font-medium">
                         ⚠️ Overdue
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+
+                    <div className="flex items-center gap-2 pt-2 border-t">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditingGoal(goal);
+                          resetGoal({
+                            title: goal.title,
+                            description: goal.description || '',
+                            goalType: goal.goalType as any,
+                            targetValue: goal.targetValue,
+                            unit: goal.unit,
+                            period: goal.period as any,
+                            startDate: goal.startDate || '',
+                            endDate: goal.endDate || '',
+                          });
+                          setShowGoalDialog(true);
+                        }}
+                      >
+                        <Edit className="w-4 h-4 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setGoalToDelete(goal);
+                          setDeleteGoalDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Delete
+                      </Button>
+                      {goal.status === 'active' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              await updateGoal(goal.id, { status: 'completed' });
+                              toast({
+                                title: "Goal completed",
+                                description: "Congratulations on completing your goal!",
+                              });
+                            } catch (error) {
+                              toast({
+                                title: "Error",
+                                description: "Failed to update goal.",
+                                variant: "destructive",
+                              });
+                            }
+                          }}
+                        >
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          Complete
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </NeonCard>
               );
             })}
           </div>
 
-          {goals.length === 0 && (
-            <Card className="card-modern">
-              <CardContent className="p-8 text-center">
+          {apiGoals.length === 0 && !goalsLoading && (
+            <NeonCard className="p-8 text-center">
                 <Target className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                 <h3 className="text-lg font-semibold mb-2">No Goals Set</h3>
                 <p className="text-muted-foreground mb-4">
@@ -630,8 +836,7 @@ export default function PlanningGoals() {
                   <Plus className="w-4 h-4 mr-2" />
                   Create Your First Goal
                 </Button>
-              </CardContent>
-            </Card>
+            </NeonCard>
           )}
         </TabsContent>
 
@@ -649,36 +854,49 @@ export default function PlanningGoals() {
                   <span>New Habit</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+                <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Create New Habit</DialogTitle>
                   <DialogDescription>
                     Track daily, weekly, or monthly trading habits
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
+                <form onSubmit={handleSubmitHabit(handleCreateHabit)} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="habit-title">Habit Title *</Label>
                     <Input
                       id="habit-title"
                       placeholder="e.g., Review trades daily"
-                      value={newHabit.title}
-                      onChange={(e) => setNewHabit(prev => ({ ...prev, title: e.target.value }))}
+                      {...registerHabit('title')}
                     />
+                    {habitErrors.title && (
+                      <p className="text-sm text-destructive flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {habitErrors.title.message}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="habit-description">Description</Label>
                     <Textarea
                       id="habit-description"
                       placeholder="Describe the habit and its benefits"
-                      value={newHabit.description}
-                      onChange={(e) => setNewHabit(prev => ({ ...prev, description: e.target.value }))}
+                      {...registerHabit('description')}
                     />
+                    {habitErrors.description && (
+                      <p className="text-sm text-destructive flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {habitErrors.description.message}
+                      </p>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="habit-frequency">Frequency</Label>
-                      <Select value={newHabit.frequency} onValueChange={(value: any) => setNewHabit(prev => ({ ...prev, frequency: value }))}>
+                      <Select 
+                        value={watchedHabit.frequency} 
+                        onValueChange={(value: any) => setHabitValue('frequency', value)}
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -688,26 +906,40 @@ export default function PlanningGoals() {
                           <SelectItem value="monthly">Monthly</SelectItem>
                         </SelectContent>
                       </Select>
+                      {habitErrors.frequency && (
+                        <p className="text-sm text-destructive flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          {habitErrors.frequency.message}
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="habit-target">Target (per period)</Label>
                       <Input
                         id="habit-target"
                         type="number"
-                        value={newHabit.target}
-                        onChange={(e) => setNewHabit(prev => ({ ...prev, target: e.target.value }))}
+                        {...registerHabit('target', { valueAsNumber: true })}
                       />
+                      {habitErrors.target && (
+                        <p className="text-sm text-destructive flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          {habitErrors.target.message}
+                        </p>
+                      )}
                     </div>
                   </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowHabitDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreateHabit}>
-                    Create Habit
-                  </Button>
-                </DialogFooter>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => {
+                      setShowHabitDialog(false);
+                      resetHabit();
+                    }}>
+                      Cancel
+                    </Button>
+                    <Button type="submit">
+                      Create Habit
+                    </Button>
+                  </DialogFooter>
+                </form>
               </DialogContent>
             </Dialog>
           </div>
@@ -715,20 +947,20 @@ export default function PlanningGoals() {
           {/* Habits Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {habits.map(habit => (
-              <Card key={habit.id} className="card-modern">
-                <CardHeader className="pb-3">
+              <NeonCard key={habit.id} className="p-6">
+                <div className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-2">
                       <Zap className="w-5 h-5" />
-                      <CardTitle className="text-lg">{habit.title}</CardTitle>
+                      <h3 className="text-lg font-semibold">{habit.title}</h3>
                     </div>
                     <Badge variant="outline">
                       {habit.frequency}
                     </Badge>
                   </div>
-                  <CardDescription>{habit.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">{habit.description}</p>
+                </div>
+                <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4 text-center">
                     <div>
                       <div className="text-2xl font-bold text-blue-600">{habit.streak}</div>
@@ -753,14 +985,13 @@ export default function PlanningGoals() {
                       Last completed: {new Date(habit.lastCompleted).toLocaleDateString()}
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </NeonCard>
             ))}
           </div>
 
           {habits.length === 0 && (
-            <Card className="card-modern">
-              <CardContent className="p-8 text-center">
+            <NeonCard className="p-8 text-center">
                 <Zap className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                 <h3 className="text-lg font-semibold mb-2">No Habits Tracked</h3>
                 <p className="text-muted-foreground mb-4">
@@ -770,8 +1001,7 @@ export default function PlanningGoals() {
                   <Plus className="w-4 h-4 mr-2" />
                   Create Your First Habit
                 </Button>
-              </CardContent>
-            </Card>
+            </NeonCard>
           )}
         </TabsContent>
 
@@ -785,15 +1015,15 @@ export default function PlanningGoals() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Goal Progress Chart */}
-            <Card className="card-modern">
-              <CardHeader>
-                <CardTitle>Goal Progress Overview</CardTitle>
-                <CardDescription>Current progress on all active goals</CardDescription>
-              </CardHeader>
-              <CardContent>
+            <NeonCard className="p-6">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold">Goal Progress Overview</h3>
+                <p className="text-sm text-muted-foreground">Current progress on all active goals</p>
+              </div>
+              <div>
                 <div className="space-y-4">
                   {activeGoals.map(goal => {
-                    const progress = goal.target > 0 ? (goal.current / goal.target) * 100 : 0;
+                    const progress = goal.targetValue > 0 ? (goal.currentValue / goal.targetValue) * 100 : 0;
                     return (
                       <div key={goal.id} className="space-y-2">
                         <div className="flex justify-between text-sm">
@@ -805,19 +1035,19 @@ export default function PlanningGoals() {
                     );
                   })}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </NeonCard>
 
             {/* Habit Streaks */}
-            <Card className="card-modern">
-              <CardHeader>
-                <CardTitle>Habit Streaks</CardTitle>
-                <CardDescription>Current streaks for all habits</CardDescription>
-              </CardHeader>
-              <CardContent>
+            <NeonCard className="p-6">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold">Habit Streaks</h3>
+                <p className="text-sm text-muted-foreground">Current streaks for all habits</p>
+              </div>
+              <div>
                 <div className="space-y-4">
                   {activeHabits.map(habit => (
-                    <div key={habit.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div key={habit.id} className="flex items-center justify-between p-3 rounded-lg" style={{ borderWidth: '1px', borderStyle: 'solid', borderColor: themeConfig.border }}>
                       <div>
                         <div className="font-medium">{habit.title}</div>
                         <div className="text-sm text-muted-foreground">{habit.frequency}</div>
@@ -829,11 +1059,29 @@ export default function PlanningGoals() {
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </NeonCard>
           </div>
         </TabsContent>
       </Tabs>
-    </div>
+
+      {/* Delete Goal Confirmation */}
+      <AlertDialog open={deleteGoalDialogOpen} onOpenChange={setDeleteGoalDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete goal?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this goal? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button variant="destructive" onClick={handleDeleteGoalConfirm}>
+              Delete
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </PageContainer>
   );
 }

@@ -35,10 +35,8 @@ export async function loadAdPredictionModel() {
       metrics: ['accuracy']
     });
     
-    console.log('Ad prediction model loaded successfully');
     return model;
   } catch (error) {
-    console.error('Error loading ad prediction model:', error);
     throw error;
   } finally {
     isModelLoading = false;
@@ -67,8 +65,7 @@ export async function predictAdClick(features: number[]): Promise<number> {
     prediction.dispose();
     
     return result;
-  } catch (error) {
-    console.error('Error predicting ad click:', error);
+  } catch {
     return 0.5; // Default to 50% probability on error
   }
 }

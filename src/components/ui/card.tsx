@@ -1,20 +1,41 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { ShineBorder } from "./shine-border"
 
-const Card = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
-      className
-    )}
-    {...props}
-  />
-))
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  /** Add subtle animated shine border on hover (Magic UI style) */
+  shineBorder?: boolean
+}
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, shineBorder = false, children, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn(
+        "rounded-2xl border bg-card text-card-foreground shadow-sm transition-all duration-200",
+        "hover:shadow-md hover:border-border/80",
+        shineBorder && "relative overflow-hidden group/card",
+        className
+      )}
+      {...props}
+    >
+      {shineBorder ? (
+        <>
+          <ShineBorder
+            borderWidth={1}
+            duration={18}
+            shineColor="var(--accent)"
+            className="opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 rounded-[inherit]"
+          />
+          <div className="relative z-10 flex flex-col flex-1 min-h-0">{children}</div>
+        </>
+      ) : (
+        children
+      )}
+    </div>
+  )
+)
 Card.displayName = "Card"
 
 const CardHeader = React.forwardRef<

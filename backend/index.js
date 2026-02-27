@@ -502,8 +502,126 @@ app.delete('/checklists/:checklistId/items/:itemId', async (req, res) => {
   }
 });
 
+// ==============================================
+// NO TRADE DAYS API - /api prefix for frontend
+// ==============================================
+async function ensureNoTradeDaysTable() {
+  try {
+    await pool.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS no_trade_days (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        journal_id UUID REFERENCES journals(id) ON DELETE CASCADE,
+        date DATE NOT NULL,
+        notes TEXT,
+        screenshot_url TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )
+    `);
+    await pool.query('ALTER TABLE no_trade_days ADD COLUMN IF NOT EXISTS screenshot_url TEXT').catch(() => {});
+  } catch (e) { /* ignore */ }
+}
+
+// No-trade-days routes (with /api prefix for frontend)
+app.get('/api/no-trade-days', authenticateToken, async (req, res) => {
+  try {
+    const { journal_id, start_date, end_date } = req.query;
+    let query = 'SELECT * FROM no_trade_days WHERE user_id = $1';
+    const params = [req.user.userId];
+    let i = 2;
+    if (journal_id) { query += ` AND journal_id = $${i}`; params.push(journal_id); i++; }
+    if (start_date) { query += ` AND date >= $${i}`; params.push(start_date); i++; }
+    if (end_date) { query += ` AND date <= $${i}`; params.push(end_date); }
+    query += ' ORDER BY date DESC';
+    const result = await pool.query(query, params);
+    const items = result.rows.map(r => ({
+      id: r.id, userId: r.user_id, journalId: r.journal_id, date: r.date,
+      notes: r.notes || '', screenshotUrl: r.screenshot_url || null,
+      createdAt: r.created_at, updatedAt: r.updated_at
+    }));
+    res.json(items);
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
+app.post('/api/no-trade-days', authenticateToken, async (req, res) => {
+  try {
+    await ensureNoTradeDaysTable();
+    const { date, notes, journalId, screenshotUrl } = req.body;
+    if (!date) return res.status(400).json({ error: 'Date is required' });
+    let journalIdFinal = journalId;
+    if (!journalIdFinal) {
+      const j = await pool.query('SELECT id FROM journals WHERE user_id = $1 ORDER BY created_at LIMIT 1', [req.user.userId]);
+      journalIdFinal = j.rows[0]?.id || null;
+    }
+    const existing = await pool.query(
+      'SELECT id FROM no_trade_days WHERE user_id = $1 AND journal_id IS NOT DISTINCT FROM $2 AND date = $3',
+      [req.user.userId, journalIdFinal, date]
+    );
+    let r;
+    if (existing.rows.length > 0) {
+      const u = await pool.query(
+        'UPDATE no_trade_days SET notes = $1, screenshot_url = COALESCE($2, screenshot_url), updated_at = NOW() WHERE id = $3 RETURNING *',
+        [notes || '', screenshotUrl || null, existing.rows[0].id]
+      );
+      r = u.rows[0];
+    } else {
+      const ins = await pool.query(
+        'INSERT INTO no_trade_days (user_id, journal_id, date, notes, screenshot_url) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [req.user.userId, journalIdFinal, date, notes || '', screenshotUrl || null]
+      );
+      r = ins.rows[0];
+    }
+    res.status(201).json({
+      id: r.id, userId: r.user_id, journalId: r.journal_id, date: r.date,
+      notes: r.notes || '', screenshotUrl: r.screenshot_url || null,
+      createdAt: r.created_at, updatedAt: r.updated_at
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
+app.put('/api/no-trade-days/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date, notes, screenshotUrl } = req.body;
+    const updates = [];
+    const params = [];
+    let i = 1;
+    if (date !== undefined) { updates.push(`date = $${i}`); params.push(date); i++; }
+    if (notes !== undefined) { updates.push(`notes = $${i}`); params.push(notes); i++; }
+    if (screenshotUrl !== undefined) { updates.push(`screenshot_url = $${i}`); params.push(screenshotUrl); i++; }
+    if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
+    params.push(id, req.user.userId);
+    const result = await pool.query(
+      `UPDATE no_trade_days SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${i} AND user_id = $${i + 1} RETURNING *`,
+      params
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'No trade day entry not found' });
+    const r = result.rows[0];
+    res.json({ id: r.id, userId: r.user_id, journalId: r.journal_id, date: r.date, notes: r.notes || '', screenshotUrl: r.screenshot_url || null, createdAt: r.created_at, updatedAt: r.updated_at });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
+app.delete('/api/no-trade-days/:id', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query('DELETE FROM no_trade_days WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.user.userId]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'No trade day entry not found' });
+    res.json({ message: 'Deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', async () => {
+  await ensureNoTradeDaysTable();
   console.log(`Backend API running on port ${PORT}`);
   console.log(`Accessible at: http://localhost:${PORT}`);
   console.log(`Network access: http://[your-ip]:${PORT}`);

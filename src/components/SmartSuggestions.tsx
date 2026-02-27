@@ -188,8 +188,7 @@ export function SmartSuggestions({
         description: `${newSuggestions.length} new suggestions based on your trading patterns`,
       });
       
-    } catch (error) {
-      console.error('Error generating suggestions:', error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to generate smart suggestions",

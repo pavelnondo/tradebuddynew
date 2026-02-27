@@ -1,15 +1,19 @@
+// Re-export Trade types from the standardized trade.ts file
+export type { TradeType, Emotion } from './trade';
+export type { Trade } from './trade';
+export { TradeCalculator } from './trade';
 
-export type TradeType = "Buy" | "Sell" | "Long" | "Short";
-
+// Legacy type aliases for backward compatibility
 export type EmotionType = "Confident" | "Nervous" | "Greedy" | "Fearful" | "Calm" | "Excited" | "Frustrated" | "Satisfied";
 
-export interface Trade {
+// Legacy Trade interface - DEPRECATED: Use Trade from './trade' instead
+// Kept for backward compatibility with older code
+export interface LegacyTrade {
   id: string;
   accountId?: string;
   date: string;
   asset: string;
-  tradeType: TradeType;
-  // Backend sometimes sends lowercase buy/sell in `type`; keep for filters
+  tradeType: "Buy" | "Sell" | "Long" | "Short";
   type?: string;
   entryPrice: number;
   exitPrice: number;

@@ -73,11 +73,11 @@
 @layer components {
   /* Apple-inspired glass morphism */
   .glass {
-    @apply bg-white/80 backdrop-blur-xl border border-white/20;
+    @apply bg-white border border-white/20;
   }
   
   .glass-dark {
-    @apply bg-black/80 backdrop-blur-xl border border-white/10;
+    @apply bg-black border border-white/10;
   }
 
   /* Smooth transitions */

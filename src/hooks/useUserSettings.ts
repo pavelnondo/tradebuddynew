@@ -1,12 +1,23 @@
 import { useState, useEffect, useCallback } from 'react';
+import { API_BASE_URL } from '@/config';
 
-interface UserSettings {
+export interface UserSettingsPreferences {
+  numberPrecision?: number;
+  pnlColorScheme?: 'green-red' | 'red-green';
+  notifications?: {
+    dailySummary?: boolean;
+    weeklyReport?: boolean;
+    goalReminders?: boolean;
+    habitReminders?: boolean;
+  };
+}
+
+export interface UserSettings {
   initial_balance: number;
   currency: string;
   date_format: string;
+  preferences?: UserSettingsPreferences;
 }
-
-const API_BASE_URL = '/api';
 
 function getAuthHeaders() {
   const token = localStorage.getItem('token');
@@ -38,7 +49,6 @@ export function useUserSettings() {
       setSettings(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch settings');
-      console.error('Error fetching user settings:', err);
     } finally {
       setLoading(false);
     }
@@ -63,7 +73,6 @@ export function useUserSettings() {
       return data;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update settings');
-      console.error('Error updating user settings:', err);
       throw err;
     }
   }, []);

@@ -3,9 +3,9 @@ const axios = require('axios');
 const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
 
-// Configuration
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '[REDACTED]';
-const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || '[REDACTED]';
+// Configuration — use .env only (no hardcoded tokens)
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'http://localhost:5678/webhook/telegram-ict';
 
 // Database connection
 const pool = new Pool({
@@ -30,7 +30,7 @@ async function initializeDatabase() {
       CREATE TABLE IF NOT EXISTS telegram_users (
         id SERIAL PRIMARY KEY,
         chat_id BIGINT UNIQUE NOT NULL,
-        user_id INTEGER REFERENCES users(id),
+        user_id UUID REFERENCES users(id),
         telegram_username VARCHAR(255),
         first_name VARCHAR(255),
         last_name VARCHAR(255),
@@ -75,7 +75,7 @@ async function isUserAuthenticated(chatId) {
 async function getUserInfo(userId) {
   try {
     const result = await pool.query(
-      'SELECT id, username, email, first_name, last_name FROM users WHERE id = $1',
+      'SELECT id, email, first_name, last_name FROM users WHERE id = $1',
       [userId]
     );
     return result.rows[0] || null;
@@ -97,14 +97,14 @@ async function handleLogin(chatId, message) {
     await sendTelegramMessage(chatId, 
       '🔐 **Welcome to Trade Buddy!**\n\n' +
       'I\'m your personal AI trading assistant. To access your trading data and provide personalized insights, I need to link your account.\n\n' +
-      '📧 **Enter your website email or username:**'
+      '📧 **Enter your website email:**'
     );
     return;
   }
 
   if (session.pendingAction === 'waiting_for_username') {
-    // Store username and ask for password
-    session.tempUsername = message.text;
+    // Store email and ask for password
+    session.tempEmail = message.text.trim();
     session.pendingAction = 'waiting_for_password';
     userSessions.set(chatId, session);
     
@@ -113,41 +113,38 @@ async function handleLogin(chatId, message) {
   }
 
   if (session.pendingAction === 'waiting_for_password') {
-    // Validate credentials
-    const username = session.tempUsername;
+    // Validate credentials (app uses email-only; users table has id, email, password_hash, first_name, last_name)
+    const email = session.tempEmail;
     const password = message.text;
-    
+
     try {
-      // Find user by email or username
       const userResult = await pool.query(
-        'SELECT id, username, email, password_hash FROM users WHERE email = $1 OR username = $1',
-        [username]
+        'SELECT id, email, first_name, password_hash FROM users WHERE email = $1 AND is_active = true',
+        [email]
       );
 
       if (userResult.rows.length === 0) {
-        await sendTelegramMessage(chatId, '❌ **User not found.** Please check your email/username and try again.\n\n📧 **Enter your email/username:**');
+        await sendTelegramMessage(chatId, '❌ **User not found.** Use the same email you use on the TradeBuddy website.\n\n📧 **Enter your website email:**');
         session.pendingAction = 'waiting_for_username';
-        session.tempUsername = null;
+        session.tempEmail = null;
         userSessions.set(chatId, session);
         return;
       }
 
       const user = userResult.rows[0];
-      
-      // Verify password
+
       const isValidPassword = await bcrypt.compare(password, user.password_hash);
-      
+
       if (!isValidPassword) {
         await sendTelegramMessage(chatId, '❌ **Invalid password.** Please try again.\n\n🔑 **Enter your password:**');
         return;
       }
 
-      // Login successful - save to database
       await pool.query(`
         INSERT INTO telegram_users (chat_id, user_id, telegram_username, first_name, last_name)
         VALUES ($1, $2, $3, $4, $5)
-        ON CONFLICT (chat_id) 
-        DO UPDATE SET 
+        ON CONFLICT (chat_id)
+        DO UPDATE SET
           user_id = $2,
           telegram_username = $3,
           first_name = $4,
@@ -162,16 +159,16 @@ async function handleLogin(chatId, message) {
         message.from.last_name || null
       ]);
 
-      // Update session
       userSessions.set(chatId, {
         userId: user.id,
-        username: user.username,
+        username: user.email,
         isAuthenticated: true,
         pendingAction: null
       });
 
-      await sendTelegramMessage(chatId, 
-        '✅ **Welcome back, ' + user.username + '!**\n\n' +
+      const displayName = user.first_name || user.email.split('@')[0];
+      await sendTelegramMessage(chatId,
+        '✅ **Welcome back, ' + displayName + '!**\n\n' +
         '🎯 I\'m your AI trading assistant. I can help you with:\n\n' +
         '📊 **Your Trading Data:**\n' +
         '• "Show me my last 5 trades"\n' +
@@ -193,7 +190,7 @@ async function handleLogin(chatId, message) {
       console.error('Login error:', error);
       await sendTelegramMessage(chatId, '❌ **Login failed.** Please try again later.');
       session.pendingAction = 'waiting_for_username';
-      session.tempUsername = null;
+      session.tempEmail = null;
       userSessions.set(chatId, session);
     }
   }
@@ -224,8 +221,6 @@ async function handleLogoutCommand(chatId) {
 // Forward message to N8N
 async function forwardToN8N(messageData) {
   try {
-    console.log('Forwarding to N8N:', JSON.stringify(messageData, null, 2));
-    
     const response = await axios.post(N8N_WEBHOOK_URL, {
       telegram_message: messageData,
       timestamp: new Date().toISOString(),
@@ -234,13 +229,10 @@ async function forwardToN8N(messageData) {
       headers: {
         'Content-Type': 'application/json'
       },
-      timeout: 30000,
-      httpsAgent: new (require('https').Agent)({
-        rejectUnauthorized: false
-      })
+      timeout: 60000,
+      ...(N8N_WEBHOOK_URL.startsWith('https://') ? { httpsAgent: new (require('https').Agent)({ rejectUnauthorized: false }) } : {})
     });
 
-    console.log('N8N response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error forwarding to N8N:', error.message);
@@ -265,7 +257,6 @@ async function sendTelegramMessage(chatId, text) {
       }
     );
     
-    console.log('Telegram response sent:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error sending Telegram message:', error.message);
@@ -279,7 +270,7 @@ async function processMessage(message) {
     const chatId = message.chat.id;
     const text = message.text || '';
 
-    console.log(`Received message from ${message.from.username || message.from.first_name} (${chatId}): ${text}`);
+    console.log(`[TG] ${chatId} ${message.from.username || message.from.first_name}: ${text.slice(0, 50)}${text.length > 50 ? '...' : ''}`);
 
     // Handle logout command (only command we keep)
     if (text.toLowerCase() === '/logout') {
@@ -291,24 +282,19 @@ async function processMessage(message) {
     const isAuthenticated = await isUserAuthenticated(chatId);
     const session = userSessions.get(chatId);
 
-    console.log(`User ${chatId} authenticated: ${isAuthenticated}, session:`, session);
-
     // If not authenticated, start login process
     if (!isAuthenticated) {
-      console.log(`User ${chatId} not authenticated, starting login process`);
       await handleLogin(chatId, message);
       return;
     }
 
     // Check if user is in login process
     if (session && session.pendingAction) {
-      console.log(`User ${chatId} in login process, continuing login`);
       await handleLogin(chatId, message);
       return;
     }
 
     // User is authenticated, forward to N8N for AI processing
-    console.log(`User ${chatId} authenticated, forwarding to N8N`);
     const n8nResponse = await forwardToN8N({
       message_id: message.message_id,
       chat_id: chatId,
@@ -372,12 +358,15 @@ async function getUpdates() {
     );
 
     if (response.data.ok && response.data.result.length > 0) {
-      console.log(`Received ${response.data.result.length} updates`);
-      
       for (const update of response.data.result) {
         if (update.message) {
-          await processMessage(update.message);
+          try {
+            await processMessage(update.message);
+          } catch (err) {
+            console.error('Error processing update', update.update_id, err.message);
+          }
         }
+        // Always advance so we never process the same update twice (prevents doubled messages)
         lastUpdateId = update.update_id;
       }
     }
@@ -392,13 +381,24 @@ async function getUpdates() {
 
 // Main polling loop
 async function startPolling() {
+  if (!TELEGRAM_BOT_TOKEN) {
+    console.error('TELEGRAM_BOT_TOKEN is not set in .env. Add it and restart.');
+    process.exit(1);
+  }
   console.log('Starting Telegram polling bot with authentication...');
   console.log(`Bot token: ${TELEGRAM_BOT_TOKEN.substring(0, 10)}...`);
   console.log(`N8N webhook: ${N8N_WEBHOOK_URL}`);
   
   // Initialize database tables
   await initializeDatabase();
-  
+
+  // Ensure no webhook is set (polling and webhook cannot run together; webhook would cause duplicate or failed updates)
+  try {
+    await axios.get(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/deleteWebhook`);
+  } catch (e) {
+    console.warn('Could not delete webhook:', e.message);
+  }
+
   // Get initial update_id to avoid processing old messages
   try {
     const response = await axios.get(

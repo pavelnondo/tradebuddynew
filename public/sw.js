@@ -1,5 +1,5 @@
 // Service Worker for TradeBuddy PWA
-const CACHE_NAME = 'tradebuddy-v1.0.3';
+const CACHE_NAME = 'tradebuddy-v1.0.1761074052442';
 const urlsToCache = [
   '/',
   '/manifest.json'
@@ -32,6 +32,12 @@ self.addEventListener('install', (event) => {
 self.addEventListener('fetch', (event) => {
   // Only handle GET requests
   if (event.request.method !== 'GET') {
+    return;
+  }
+  // Do NOT intercept API or uploads - let them go directly to the network.
+  // Same-origin /api and /uploads must bypass cache to avoid stale/503 errors.
+  const url = new URL(event.request.url);
+  if (url.pathname.startsWith('/api') || url.pathname.startsWith('/uploads')) {
     return;
   }
   

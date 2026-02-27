@@ -23,21 +23,35 @@ export function useChecklists() {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/checklists`, {
+      const res = await fetch(`${API_BASE_URL}/checklists`, {
         headers: getAuthHeaders(),
       });
       if (!res.ok) throw new Error('Failed to fetch checklists');
       const data = await res.json();
       
       // Process checklists to ensure items are properly formatted
-      const checklistsWithItems = data.map((checklist: any) => ({
-        ...checklist,
-        items: Array.isArray(checklist.items) ? checklist.items : []
-      }));
+      interface ApiChecklist {
+        id: string;
+        name: string;
+        description?: string;
+        items?: ChecklistItem[];
+        [key: string]: unknown;
+      }
       
-      console.log('📋 Fetched checklists:', checklistsWithItems);
-      return checklistsWithItems;
-    } catch (err: any) {
+      const checklistsWithItems = (data as ApiChecklist[]).map((checklist) => {
+        const items = Array.isArray(checklist.items) ? checklist.items : [];
+        const completedCount = items.filter((i: { completed?: boolean }) => i.completed).length;
+        const completionRate = items.length > 0 ? (completedCount / items.length) * 100 : 0;
+        return {
+          ...checklist,
+          items,
+          type: checklist.type || 'pre',
+          completionRate,
+        };
+      });
+      
+      return checklistsWithItems as Checklist[];
+    } catch (err) {
       setError(err.message || 'Failed to fetch checklists');
       return [];
     } finally {
@@ -50,7 +64,7 @@ export function useChecklists() {
     setError(null);
     try {
       // Fetch specific checklist by id (items are included in the main response now)
-      const checklistRes = await fetch(`${API_BASE_URL}/api/checklists/${id}`, {
+      const checklistRes = await fetch(`${API_BASE_URL}/checklists/${id}`, {
         headers: getAuthHeaders(),
       });
       if (!checklistRes.ok) throw new Error('Failed to fetch checklist');
@@ -62,9 +76,8 @@ export function useChecklists() {
         items: Array.isArray(checklist.items) ? checklist.items : []
       };
       
-      console.log('📋 Fetched single checklist:', processedChecklist);
-      return processedChecklist;
-    } catch (err: any) {
+      return processedChecklist as Checklist;
+    } catch (err) {
       setError(err.message || 'Failed to fetch checklist');
       return null;
     } finally {
@@ -73,31 +86,27 @@ export function useChecklists() {
   }, []);
 
   // Create a new checklist
-  const createChecklist = async (checklist: { name: string; description?: string; items: ChecklistItem[] }) => {
+  const createChecklist = async (checklist: { name: string; description?: string; type?: string; items: ChecklistItem[] }) => {
     setIsLoading(true);
     setError(null);
     try {
-      console.log('🔄 Frontend creating checklist:', checklist);
-      
       // Create the checklist with items in a single call
-      const res = await fetch(`${API_BASE_URL}/api/checklists`, {
+      const res = await fetch(`${API_BASE_URL}/checklists`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
           name: checklist.name,
           description: checklist.description,
+          type: checklist.type || 'pre',
           items: Array.isArray(checklist.items) ? checklist.items : []
         }),
       });
       
       if (!res.ok) {
-        const errorText = await res.text();
-        console.error('Create checklist failed:', errorText);
         throw new Error('Failed to create checklist');
       }
       
       const createdChecklist = await res.json();
-      console.log('✅ Checklist created successfully:', createdChecklist);
       
       // Return the checklist with properly formatted items
       const fullChecklist = {
@@ -109,8 +118,7 @@ export function useChecklists() {
       
       toast({ title: 'Checklist Created', description: 'Your checklist was created successfully.' });
       return fullChecklist;
-    } catch (err: any) {
-      console.error('Frontend create error:', err);
+    } catch (err) {
       setError(err.message || 'Failed to create checklist');
       toast({ title: 'Error', description: err.message || 'Failed to create checklist', variant: 'destructive' });
       return null;
@@ -120,31 +128,27 @@ export function useChecklists() {
   };
 
   // Update an existing checklist
-  const updateChecklist = async (id: string, updates: { name: string; description?: string; items: ChecklistItem[] }) => {
+  const updateChecklist = async (id: string, updates: { name: string; description?: string; type?: string; items: ChecklistItem[] }) => {
     setIsLoading(true);
     setError(null);
     try {
-      console.log('🔄 Frontend updating checklist:', { id, updates });
-      
       // Update checklist with name, description, and items in a single call
-      const res = await fetch(`${API_BASE_URL}/api/checklists/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/checklists/${id}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({
           name: updates.name,
           description: updates.description,
+          type: updates.type || 'pre',
           items: Array.isArray(updates.items) ? updates.items : []
         }),
       });
       
       if (!res.ok) {
-        const errorText = await res.text();
-        console.error('Update checklist failed:', errorText);
         throw new Error('Failed to update checklist');
       }
       
       const updatedChecklist = await res.json();
-      console.log('✅ Checklist updated successfully:', updatedChecklist);
       
       // Return the checklist with properly formatted items
       const fullChecklist = {
@@ -156,8 +160,7 @@ export function useChecklists() {
       
       toast({ title: 'Checklist Updated', description: 'Your checklist was updated successfully.' });
       return fullChecklist;
-    } catch (err: any) {
-      console.error('Frontend update error:', err);
+    } catch (err) {
       setError(err.message || 'Failed to update checklist');
       toast({ title: 'Error', description: err.message || 'Failed to update checklist', variant: 'destructive' });
       return false;
@@ -171,14 +174,14 @@ export function useChecklists() {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/checklists/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/checklists/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });
       if (!res.ok) throw new Error('Failed to delete checklist');
       toast({ title: 'Checklist Deleted', description: 'Your checklist was deleted.' });
       return true;
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || 'Failed to delete checklist');
       toast({ title: 'Error', description: err.message || 'Failed to delete checklist', variant: 'destructive' });
       return false;

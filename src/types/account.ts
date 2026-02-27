@@ -1,4 +1,4 @@
-export interface TradingAccount {
+export interface TradingJournal {
   id: string;
   name: string;
   initialBalance: number;
@@ -14,12 +14,16 @@ export interface TradingAccount {
   winRate: number;
 }
 
-export interface AccountStats {
-  totalAccounts: number;
-  activeAccounts: number;
-  blownAccounts: number;
-  passedAccounts: number;
-  totalTradesAcrossAccounts: number;
-  totalPnLAcrossAccounts: number;
+export interface JournalStats {
+  totalJournals: number;
+  activeJournals: number;
+  blownJournals: number;
+  passedJournals: number;
+  totalTradesAcrossJournals: number;
+  totalPnLAcrossJournals: number;
   overallWinRate: number;
 }
+
+// Keep the old interface for backward compatibility
+export type TradingAccount = TradingJournal;
+export type AccountStats = JournalStats;

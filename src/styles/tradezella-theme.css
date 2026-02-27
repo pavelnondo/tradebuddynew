@@ -1,0 +1,492 @@
+/* TradeZella Dark Theme - Professional Trading Interface */
+
+:root {
+  /* Primary Colors - TradeZella Brand */
+  --tradezella-primary: 220 100% 50%; /* Electric Blue */
+  --tradezella-primary-foreground: 0 0% 100%;
+  --tradezella-primary-hover: 220 100% 45%;
+  --tradezella-primary-active: 220 100% 40%;
+
+  /* Secondary Colors - Professional Gray */
+  --tradezella-secondary: 220 15% 20%;
+  --tradezella-secondary-foreground: 220 15% 85%;
+  --tradezella-secondary-hover: 220 15% 25%;
+  --tradezella-secondary-active: 220 15% 30%;
+
+  /* Accent Colors - Trading Specific */
+  --tradezella-accent-profit: 142 76% 36%; /* Success Green */
+  --tradezella-accent-loss: 0 84% 60%; /* Danger Red */
+  --tradezella-accent-warning: 38 92% 50%; /* Warning Orange */
+  --tradezella-accent-info: 199 89% 48%; /* Info Cyan */
+
+  /* Background Colors - Dark Theme */
+  --tradezella-background: 220 25% 8%; /* Deep Dark Blue */
+  --tradezella-background-elevated: 220 20% 12%; /* Slightly Lighter */
+  --tradezella-background-hover: 220 20% 15%;
+  --tradezella-background-active: 220 20% 18%;
+
+  /* Surface Colors */
+  --tradezella-surface: 220 15% 10%;
+  --tradezella-surface-elevated: 220 15% 14%;
+  --tradezella-surface-hover: 220 15% 16%;
+  --tradezella-surface-active: 220 15% 18%;
+
+  /* Border Colors */
+  --tradezella-border: 220 15% 20%;
+  --tradezella-border-hover: 220 15% 25%;
+  --tradezella-border-focus: 220 100% 50%;
+
+  /* Text Colors */
+  --tradezella-text-primary: 220 15% 95%;
+  --tradezella-text-secondary: 220 15% 70%;
+  --tradezella-text-tertiary: 220 15% 50%;
+  --tradezella-text-disabled: 220 15% 35%;
+
+  /* Chart Colors */
+  --tradezella-chart-profit: 142 76% 36%;
+  --tradezella-chart-loss: 0 84% 60%;
+  --tradezella-chart-neutral: 220 15% 50%;
+  --tradezella-chart-grid: 220 15% 15%;
+  --tradezella-chart-axis: 220 15% 30%;
+
+  /* Status Colors */
+  --tradezella-status-success: 142 76% 36%;
+  --tradezella-status-error: 0 84% 60%;
+  --tradezella-status-warning: 38 92% 50%;
+  --tradezella-status-info: 199 89% 48%;
+
+  /* Interactive States */
+  --tradezella-interactive-hover: 220 100% 50% / 0.1;
+  --tradezella-interactive-active: 220 100% 50% / 0.2;
+  --tradezella-interactive-focus: 220 100% 50% / 0.3;
+
+  /* Shadows */
+  --tradezella-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --tradezella-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+  --tradezella-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+  --tradezella-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.6), 0 8px 10px -6px rgb(0 0 0 / 0.6);
+
+  /* Gradients */
+  --tradezella-gradient-primary: linear-gradient(135deg, hsl(220 100% 50%) 0%, hsl(220 100% 40%) 100%);
+  --tradezella-gradient-surface: linear-gradient(135deg, hsl(220 15% 10%) 0%, hsl(220 15% 14%) 100%);
+  --tradezella-gradient-profit: linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(142 76% 26%) 100%);
+  --tradezella-gradient-loss: linear-gradient(135deg, hsl(0 84% 60%) 0%, hsl(0 84% 50%) 100%);
+}
+
+/* Base Styles */
+.tradezella-theme {
+  background-color: hsl(var(--tradezella-background));
+  color: hsl(var(--tradezella-text-primary));
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.6;
+}
+
+/* Typography */
+.tradezella-theme h1,
+.tradezella-theme h2,
+.tradezella-theme h3,
+.tradezella-theme h4,
+.tradezella-theme h5,
+.tradezella-theme h6 {
+  color: hsl(var(--tradezella-text-primary));
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.tradezella-theme p {
+  color: hsl(var(--tradezella-text-secondary));
+}
+
+.tradezella-theme small {
+  color: hsl(var(--tradezella-text-tertiary));
+}
+
+/* Cards and Surfaces */
+.tradezella-widget {
+  background: hsl(var(--tradezella-surface));
+  border: 1px solid hsl(var(--tradezella-border));
+  border-radius: 12px;
+  box-shadow: var(--tradezella-shadow-sm);
+  transition: all 0.2s ease-in-out;
+}
+
+.tradezella-widget:hover {
+  background: hsl(var(--tradezella-surface-hover));
+  border-color: hsl(var(--tradezella-border-hover));
+  box-shadow: var(--tradezella-shadow-md);
+  transform: translateY(-1px);
+}
+
+.tradezella-widget:active {
+  background: hsl(var(--tradezella-surface-active));
+  transform: translateY(0);
+}
+
+/* Metric Cards */
+.tradezella-metric-card {
+  background: hsl(var(--tradezella-surface-elevated));
+  border: 1px solid hsl(var(--tradezella-border));
+  border-radius: 16px;
+  box-shadow: var(--tradezella-shadow-sm);
+  transition: all 0.2s ease-in-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.tradezella-metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--tradezella-gradient-primary);
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.tradezella-metric-card:hover::before {
+  opacity: 1;
+}
+
+.tradezella-metric-card:hover {
+  background: hsl(var(--tradezella-surface-hover));
+  border-color: hsl(var(--tradezella-border-hover));
+  box-shadow: var(--tradezella-shadow-md);
+  transform: translateY(-2px);
+}
+
+/* Buttons */
+.tradezella-btn-primary {
+  background: var(--tradezella-gradient-primary);
+  color: hsl(var(--tradezella-primary-foreground));
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+  box-shadow: var(--tradezella-shadow-sm);
+}
+
+.tradezella-btn-primary:hover {
+  background: hsl(var(--tradezella-primary-hover));
+  box-shadow: var(--tradezella-shadow-md);
+  transform: translateY(-1px);
+}
+
+.tradezella-btn-primary:active {
+  background: hsl(var(--tradezella-primary-active));
+  transform: translateY(0);
+}
+
+.tradezella-btn-secondary {
+  background: hsl(var(--tradezella-secondary));
+  color: hsl(var(--tradezella-secondary-foreground));
+  border: 1px solid hsl(var(--tradezella-border));
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.tradezella-btn-secondary:hover {
+  background: hsl(var(--tradezella-secondary-hover));
+  border-color: hsl(var(--tradezella-border-hover));
+  transform: translateY(-1px);
+}
+
+/* Profit/Loss Indicators */
+.tradezella-profit {
+  color: hsl(var(--tradezella-accent-profit));
+  font-weight: 600;
+}
+
+.tradezella-loss {
+  color: hsl(var(--tradezella-accent-loss));
+  font-weight: 600;
+}
+
+.tradezella-neutral {
+  color: hsl(var(--tradezella-text-secondary));
+  font-weight: 500;
+}
+
+/* Status Badges */
+.tradezella-badge-profit {
+  background: hsl(var(--tradezella-accent-profit) / 0.1);
+  color: hsl(var(--tradezella-accent-profit));
+  border: 1px solid hsl(var(--tradezella-accent-profit) / 0.2);
+  border-radius: 6px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.tradezella-badge-loss {
+  background: hsl(var(--tradezella-accent-loss) / 0.1);
+  color: hsl(var(--tradezella-accent-loss));
+  border: 1px solid hsl(var(--tradezella-accent-loss) / 0.2);
+  border-radius: 6px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.tradezella-badge-warning {
+  background: hsl(var(--tradezella-accent-warning) / 0.1);
+  color: hsl(var(--tradezella-accent-warning));
+  border: 1px solid hsl(var(--tradezella-accent-warning) / 0.2);
+  border-radius: 6px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.tradezella-badge-info {
+  background: hsl(var(--tradezella-accent-info) / 0.1);
+  color: hsl(var(--tradezella-accent-info));
+  border: 1px solid hsl(var(--tradezella-accent-info) / 0.2);
+  border-radius: 6px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Input Fields */
+.tradezella-input {
+  background: hsl(var(--tradezella-surface));
+  border: 1px solid hsl(var(--tradezella-border));
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: hsl(var(--tradezella-text-primary));
+  transition: all 0.2s ease-in-out;
+}
+
+.tradezella-input:focus {
+  outline: none;
+  border-color: hsl(var(--tradezella-border-focus));
+  box-shadow: 0 0 0 3px hsl(var(--tradezella-interactive-focus));
+}
+
+.tradezella-input::placeholder {
+  color: hsl(var(--tradezella-text-tertiary));
+}
+
+/* Charts */
+.tradezella-chart {
+  background: hsl(var(--tradezella-surface-elevated));
+  border: 1px solid hsl(var(--tradezella-border));
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.tradezella-chart-grid {
+  stroke: hsl(var(--tradezella-chart-grid));
+  stroke-width: 1;
+  opacity: 0.5;
+}
+
+.tradezella-chart-axis {
+  stroke: hsl(var(--tradezella-chart-axis));
+  stroke-width: 1;
+}
+
+.tradezella-chart-profit {
+  stroke: hsl(var(--tradezella-chart-profit));
+  fill: hsl(var(--tradezella-chart-profit) / 0.1);
+}
+
+.tradezella-chart-loss {
+  stroke: hsl(var(--tradezella-chart-loss));
+  fill: hsl(var(--tradezella-chart-loss) / 0.1);
+}
+
+/* Tables */
+.tradezella-table {
+  background: hsl(var(--tradezella-surface));
+  border: 1px solid hsl(var(--tradezella-border));
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.tradezella-table th {
+  background: hsl(var(--tradezella-surface-elevated));
+  color: hsl(var(--tradezella-text-primary));
+  font-weight: 600;
+  padding: 1rem;
+  border-bottom: 1px solid hsl(var(--tradezella-border));
+}
+
+.tradezella-table td {
+  padding: 1rem;
+  border-bottom: 1px solid hsl(var(--tradezella-border));
+  color: hsl(var(--tradezella-text-secondary));
+}
+
+.tradezella-table tr:hover {
+  background: hsl(var(--tradezella-surface-hover));
+}
+
+.tradezella-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Navigation */
+.tradezella-nav {
+  background: hsl(var(--tradezella-surface-elevated));
+  border-bottom: 1px solid hsl(var(--tradezella-border));
+  padding: 1rem 0;
+}
+
+.tradezella-nav-item {
+  color: hsl(var(--tradezella-text-secondary));
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: all 0.2s ease-in-out;
+  text-decoration: none;
+}
+
+.tradezella-nav-item:hover {
+  color: hsl(var(--tradezella-text-primary));
+  background: hsl(var(--tradezella-surface-hover));
+}
+
+.tradezella-nav-item.active {
+  color: hsl(var(--tradezella-primary));
+  background: hsl(var(--tradezella-interactive-hover));
+}
+
+/* Sidebar */
+.tradezella-sidebar {
+  background: hsl(var(--tradezella-surface-elevated));
+  border-right: 1px solid hsl(var(--tradezella-border));
+  min-height: 100vh;
+}
+
+/* Modals and Dialogs */
+.tradezella-modal {
+  background: hsl(var(--tradezella-surface-elevated));
+  border: 1px solid hsl(var(--tradezella-border));
+  border-radius: 16px;
+  box-shadow: var(--tradezella-shadow-xl);
+}
+
+.tradezella-modal-overlay {
+  background: hsl(0 0% 0% / 0.5);
+  backdrop-filter: blur(4px);
+}
+
+/* Loading States */
+.tradezella-loading {
+  background: linear-gradient(90deg, 
+    hsl(var(--tradezella-surface)) 25%, 
+    hsl(var(--tradezella-surface-hover)) 50%, 
+    hsl(var(--tradezella-surface)) 75%
+  );
+  background-size: 200% 100%;
+  animation: tradezella-shimmer 1.5s infinite;
+}
+
+@keyframes tradezella-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Scrollbars */
+.tradezella-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.tradezella-scrollbar::-webkit-scrollbar-track {
+  background: hsl(var(--tradezella-surface));
+  border-radius: 4px;
+}
+
+.tradezella-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--tradezella-border));
+  border-radius: 4px;
+}
+
+.tradezella-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--tradezella-border-hover));
+}
+
+/* Animations */
+.tradezella-fade-in {
+  animation: tradezella-fade-in 0.3s ease-in-out;
+}
+
+@keyframes tradezella-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tradezella-slide-in {
+  animation: tradezella-slide-in 0.3s ease-in-out;
+}
+
+@keyframes tradezella-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tradezella-widget {
+    border-radius: 8px;
+  }
+  
+  .tradezella-metric-card {
+    border-radius: 12px;
+  }
+  
+  .tradezella-modal {
+    border-radius: 12px;
+    margin: 1rem;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  :root {
+    --tradezella-border: 220 15% 30%;
+    --tradezella-text-tertiary: 220 15% 60%;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .tradezella-widget,
+  .tradezella-metric-card,
+  .tradezella-btn-primary,
+  .tradezella-btn-secondary,
+  .tradezella-input {
+    transition: none;
+  }
+  
+  .tradezella-loading {
+    animation: none;
+  }
+  
+  .tradezella-fade-in,
+  .tradezella-slide-in {
+    animation: none;
+  }
+}

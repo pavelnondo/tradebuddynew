@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Force Refresh - TradeBuddy</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .info {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Force Refresh TradeBuddy</h1>
+        
+        <div class="info">
+            <strong>If you're not seeing the latest changes:</strong>
+            <ol>
+                <li>Click "Clear All Caches" below</li>
+                <li>Wait for the success message</li>
+                <li>Click "Go to App" to reload with fresh cache</li>
+            </ol>
+        </div>
+        
+        <button onclick="clearAllCaches()">Clear All Caches</button>
+        <button onclick="goToApp()">Go to App</button>
+        
+        <div id="status"></div>
+        
+        <script>
+            async function clearAllCaches() {
+                const status = document.getElementById('status');
+                status.innerHTML = 'Clearing caches...';
+                
+                try {
+                    // Clear all caches
+                    const cacheNames = await caches.keys();
+                    await Promise.all(
+                        cacheNames.map(cacheName => caches.delete(cacheName))
+                    );
+                    
+                    // Unregister service worker
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(
+                        registrations.map(registration => registration.unregister())
+                    );
+                    
+                    // Clear localStorage
+                    localStorage.clear();
+                    
+                    // Clear sessionStorage
+                    sessionStorage.clear();
+                    
+                    status.innerHTML = '<div class="success">✅ All caches cleared successfully! The app will now load fresh.</div>';
+                } catch (error) {
+                    status.innerHTML = '<div class="error">❌ Error clearing caches: ' + error.message + '</div>';
+                }
+            }
+            
+            function goToApp() {
+                window.location.href = '/';
+            }
+        </script>
+    </div>
+</body>
+</html>
+
+

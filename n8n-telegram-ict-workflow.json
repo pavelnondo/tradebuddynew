@@ -1,0 +1,187 @@
+{
+  "name": "TradeBuddy – Telegram ICT Advisor",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "telegram-ict",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-telegram-ict",
+      "name": "Webhook Telegram ICT",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "telegram-ict"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract payload from our backend (telegram_polling forwards to this webhook)\nconst input = $input.first().json;\nconst body = input.body || input;\nconst msg = body.telegram_message || body;\nconst userId = msg.user_id ?? msg.user_context?.website_user_id ?? null;\nconst text = (msg.text || '').trim() || 'Give me a short trading wisdom.';\nconst username = msg.username || msg.user_context?.website_username || msg.telegram_username || 'Trader';\n\nreturn [{ json: { user_id: userId, text, username, _raw: msg } }];\n"
+      },
+      "id": "code-extract",
+      "name": "Extract Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "=http://localhost:3000/api/internal/context/{{ $json.user_id }}",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Secret",
+              "value": "=your-internal-secret-change-in-production"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000,
+          "ignoreHttpStatusErrors": true
+        }
+      },
+      "id": "http-get-context",
+      "name": "Get User Context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300],
+      "continueOnFail": true,
+      "notes": "Full DB context: profile, journals, trades, goals, analytics. X-Internal-Secret = backend INTERNAL_API_SECRET"
+    },
+    {
+      "parameters": {
+        "jsCode": "const extract = $('Extract Message').first().json;\nconst ctx = $input.first().json;\nconst hasContext = ctx && ctx.profile;\nconst profile = hasContext ? ctx.profile : null;\nconst journals = hasContext && Array.isArray(ctx.journals) ? ctx.journals : [];\nconst tradesList = hasContext && Array.isArray(ctx.trades) ? ctx.trades : [];\nconst goals = hasContext && Array.isArray(ctx.goals) ? ctx.goals : [];\nconst analytics = hasContext && ctx.analytics ? ctx.analytics : null;\n\nlet contextBlock = '';\nif (hasContext) {\n  const name = [profile.firstName, profile.lastName].filter(Boolean).join(' ') || profile.email || extract.username;\n  contextBlock += `\\n--- TRADER: ${name} ---\\n`;\n  if (journals.length > 0) {\n    contextBlock += `Journals: ${journals.map(j => `${j.name} (${j.accountType}, ${j.currency} ${j.currentBalance}, ${j.totalTrades} trades, P&L ${j.totalPnL})`).join('; ')}.\\n`;\n  }\n  if (analytics && analytics.totalTrades > 0) {\n    contextBlock += `Overall: ${analytics.totalTrades} trades, win rate ${analytics.winRate}%, total P&L ${analytics.totalPnL >= 0 ? '+' : ''}${analytics.totalPnL}, profit factor ${analytics.profitFactor}.\\n`;\n  }\n  if (goals.length > 0) {\n    contextBlock += `Goals: ${goals.slice(0, 5).map(g => `${g.title} (${g.status}, ${g.currentValue}/${g.targetValue} ${g.unit || ''})`).join('; ')}.\\n`;\n  }\n  if (tradesList.length > 0) {\n    const recent = tradesList.slice(0, 15).map(t => ({ symbol: t.symbol, type: t.trade_type || t.type, pnl: t.pnl, emotion: t.emotion, setup: t.setup_type || t.setup, notes: (t.notes || '').slice(0, 80) }));\n    contextBlock += `Recent trades (sample): ${JSON.stringify(recent)}\\n`;\n  }\n  contextBlock += '---\\n';\n} else {\n  contextBlock = '\\n(No TradeBuddy account data for this user — context unavailable.)\\n';\n}\n\nconst systemPrompt = `You are a trading coach. Use Smart Money Concepts (SMC) and institutional-style thinking to inform your answers: order blocks, fair value gaps (FVG), liquidity (equal highs/lows, stop hunts), kill zones / session timing, and the idea that price often moves to take liquidity before reversing. Be direct and practical. Do not promote any person, channel, or product; do not say \"follow X\" or \"check out Y\". Base advice on the concepts (patience, waiting for structure, not chasing, journaling). Keep replies concise for Telegram (under 400 words). Use the trader's profile, journals, goals, and trade history below to personalize advice when available.`;\n\nconst userPrompt = `User (${extract.username}) asks: \"${extract.text}\"${contextBlock}`;\nconst prompt = systemPrompt + '\\n\\n' + userPrompt;\nreturn [{ json: { prompt } }];\n"
+      },
+      "id": "code-build-prompt",
+      "name": "Build ICT Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "options": {}
+      },
+      "id": "ai-agent-ict",
+      "name": "AI Agent (DeepSeek)",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "deepseek-chat",
+      "name": "DeepSeek Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [1120, 500],
+      "credentials": {
+        "deepSeekApi": {
+          "id": "0z69JBh9GR98FLdZ",
+          "name": "DeepSeek account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const res = $input.first().json;\nlet reply = (res.output || res.text || res.choices?.[0]?.message?.content || (typeof res === 'string' ? res : '')).trim();\nif (!reply) reply = res.error?.message ? '⚠️ AI error: ' + res.error.message : 'Something went wrong. Try again.';\nreturn [{ json: { reply } }];\n"
+      },
+      "id": "code-parse-reply",
+      "name": "Parse Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Fallback when DeepSeek fails (e.g. no credentials)\nconst extract = $('Extract Message').first().json;\nconst reply = `Patience is the edge. Wait for order blocks and fair value gaps; trade when structure confirms, not on anticipation. Keep a journal and review your setups.\\n\\nYour question: \"${(extract.text || '').slice(0, 80)}\" — I'll give a fuller answer once the AI is connected.`;\nreturn [{ json: { reply } }];\n"
+      },
+      "id": "code-fallback",
+      "name": "Fallback Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 500]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "has-reply",
+              "leftValue": "={{ $json.output || $json.text || $json.choices?.[0]?.message?.content || $json.reply }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-has-ai",
+      "name": "Has AI Reply?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1240, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Telegram ICT": {
+      "main": [[{ "node": "Extract Message", "type": "main", "index": 0 }]]
+    },
+    "Extract Message": {
+      "main": [[{ "node": "Get User Context", "type": "main", "index": 0 }]]
+    },
+    "Get User Context": {
+      "main": [[{ "node": "Build ICT Prompt", "type": "main", "index": 0 }]]
+    },
+    "Build ICT Prompt": {
+      "main": [[{ "node": "AI Agent (DeepSeek)", "type": "main", "index": 0 }]]
+    },
+    "AI Agent (DeepSeek)": {
+      "main": [[{ "node": "Has AI Reply?", "type": "main", "index": 0 }]]
+    },
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [[{ "node": "AI Agent (DeepSeek)", "type": "ai_languageModel", "index": 0 }]]
+    },
+    "Has AI Reply?": {
+      "main": [
+        [{ "node": "Parse Reply", "type": "main", "index": 0 }],
+        [{ "node": "Fallback Reply", "type": "main", "index": 0 }]
+      ]
+    },
+    "Parse Reply": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    },
+    "Fallback Reply": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "tags": [{ "name": "tradebuddy" }, { "name": "telegram" }, { "name": "ict" }]
+}

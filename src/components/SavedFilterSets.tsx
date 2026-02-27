@@ -19,6 +19,15 @@ import {
   DialogTitle, 
   DialogTrigger 
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   Plus, 
   Edit, 
@@ -31,6 +40,7 @@ import {
   Target
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { filterSetsApi } from "@/services/filterSetsApi";
 
 interface FilterSet {
   id: number;
@@ -59,9 +69,10 @@ interface FilterSet {
 
 interface SavedFilterSetsProps {
   onApplyFilterSet: (filters: FilterSet['filters']) => void;
-  onSaveFilterSet: (filterSet: Omit<FilterSet, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
-  onUpdateFilterSet: (id: number, filterSet: Partial<FilterSet>) => Promise<void>;
-  onDeleteFilterSet: (id: number) => Promise<void>;
+  /** Optional: if provided, called after save/update/delete (e.g. for parent refresh) */
+  onSaveFilterSet?: (filterSet: Omit<FilterSet, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  onUpdateFilterSet?: (id: number, filterSet: Partial<FilterSet>) => Promise<void>;
+  onDeleteFilterSet?: (id: number) => Promise<void>;
   currentFilters?: FilterSet['filters'];
 }
 
@@ -110,51 +121,12 @@ export function SavedFilterSets({
   const loadFilterSets = async () => {
     try {
       setIsLoading(true);
-      // Simulate API call - in real implementation, this would fetch from backend
-      const mockFilterSets: FilterSet[] = [
-        {
-          id: 1,
-          name: 'Winning Trades',
-          description: 'Filter for profitable trades only',
-          filters: {
-            minPnL: 0,
-            timeframe: 'all',
-          },
-          isDefault: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          id: 2,
-          name: 'NQ Breakouts',
-          description: 'NQ breakout trades in trending markets',
-          filters: {
-            symbol: 'NQ',
-            setupType: 'Breakout',
-            marketCondition: 'trending',
-            timeframe: '1w',
-          },
-          isDefault: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          id: 3,
-          name: 'High Confidence',
-          description: 'Trades with high confidence levels',
-          filters: {
-            emotion: 'Confident',
-            minDuration: 5,
-            timeframe: '1m',
-          },
-          isDefault: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      ];
-      setFilterSets(mockFilterSets);
-    } catch (error) {
-      console.error('Error loading filter sets:', error);
+      const data = await filterSetsApi.getAll();
+      setFilterSets(data.map(fs => ({
+        ...fs,
+        isDefault: fs.isDefault ?? (fs as any).is_default ?? false,
+      })));
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load saved filter sets",
@@ -171,13 +143,15 @@ export function SavedFilterSets({
 
     try {
       if (editingFilterSet) {
-        await onUpdateFilterSet(editingFilterSet.id, formData);
+        await filterSetsApi.update(editingFilterSet.id, formData);
+        await onUpdateFilterSet?.(editingFilterSet.id, formData);
         toast({
           title: "Success",
           description: "Filter set updated successfully",
         });
       } else {
-        await onSaveFilterSet(formData);
+        await filterSetsApi.create(formData);
+        await onSaveFilterSet?.(formData);
         toast({
           title: "Success",
           description: "Filter set saved successfully",
@@ -188,8 +162,7 @@ export function SavedFilterSets({
       setEditingFilterSet(null);
       resetForm();
       loadFilterSets();
-    } catch (error) {
-      console.error('Error saving filter set:', error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to save filter set",
@@ -211,23 +184,33 @@ export function SavedFilterSets({
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this filter set?')) {
-      try {
-        await onDeleteFilterSet(id);
-        toast({
-          title: "Success",
-          description: "Filter set deleted successfully",
-        });
-        loadFilterSets();
-      } catch (error) {
-        console.error('Error deleting filter set:', error);
-        toast({
-          title: "Error",
-          description: "Failed to delete filter set",
-          variant: "destructive",
-        });
-      }
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [filterSetToDelete, setFilterSetToDelete] = useState<number | null>(null);
+
+  const handleDeleteClick = (id: number) => {
+    setFilterSetToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (filterSetToDelete === null) return;
+    const id = filterSetToDelete;
+    setFilterSetToDelete(null);
+    setDeleteDialogOpen(false);
+    try {
+      await filterSetsApi.delete(id);
+      await onDeleteFilterSet?.(id);
+      toast({
+        title: "Success",
+        description: "Filter set deleted successfully",
+      });
+      loadFilterSets();
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to delete filter set",
+        variant: "destructive",
+      });
     }
   };
 
@@ -582,7 +565,7 @@ export function SavedFilterSets({
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleDelete(filterSet.id)}
+                    onClick={() => handleDeleteClick(filterSet.id)}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -592,6 +575,23 @@ export function SavedFilterSets({
           ))}
         </div>
       )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete filter set?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this filter set? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button variant="destructive" onClick={handleDeleteConfirm}>
+              Delete
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

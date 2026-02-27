@@ -1,0 +1,114 @@
+/* TradeZella Specific Utilities */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  /* TradeZella Specific Utilities */
+  .tradezella-card {
+    @apply bg-card border border-border rounded-lg shadow-sm;
+  }
+  
+  .tradezella-card-modern {
+    @apply bg-card border border-border rounded-xl shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+  
+  .tradezella-gradient {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 100%);
+  }
+  
+  .tradezella-profit {
+    @apply text-green-500 bg-green-500/10 border-green-500/20;
+  }
+  
+  .tradezella-loss {
+    @apply text-red-500 bg-red-500/10 border-red-500/20;
+  }
+  
+  .tradezella-neutral {
+    @apply text-muted-foreground bg-muted border-border;
+  }
+  
+  .tradezella-button-primary {
+    @apply bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-4 py-2 rounded-lg transition-all duration-200;
+  }
+  
+  .tradezella-button-secondary {
+    @apply bg-secondary hover:bg-secondary/80 text-secondary-foreground font-medium px-4 py-2 rounded-lg transition-all duration-200;
+  }
+  
+  .tradezella-input {
+    @apply bg-input border border-border rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent;
+  }
+  
+  .tradezella-chart-container {
+    @apply bg-card border border-border rounded-xl p-4;
+  }
+  
+  .tradezella-metric-card {
+    @apply bg-card border border-border rounded-xl p-4 hover:bg-card/80 transition-all duration-300;
+  }
+  
+  .tradezella-widget {
+    @apply bg-card border border-border rounded-xl shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+  
+  .tradezella-text-gradient {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .tradezella-glow {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+  }
+  
+  .tradezella-glow-red {
+    box-shadow: 0 0 20px hsl(var(--destructive) / 0.3);
+  }
+  
+  .tradezella-glow-green {
+    box-shadow: 0 0 20px hsl(142 76% 36% / 0.3);
+  }
+  
+  /* Animation utilities */
+  .tradezella-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  .tradezella-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  .tradezella-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes slideUp {
+    from { 
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to { 
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes scaleIn {
+    from { 
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to { 
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+}

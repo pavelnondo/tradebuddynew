@@ -8,6 +8,23 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 5173,
+    // Proxy API and uploads to backend in dev
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/uploads': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
+    // Disable caching in development
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
   },
   plugins: [
     react(),

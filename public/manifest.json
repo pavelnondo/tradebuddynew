@@ -8,29 +8,21 @@
   "theme_color": "#3b82f6",
   "orientation": "portrait-primary",
   "icons": [
-    {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/favicon.ico",
-      "sizes": "32x32",
-      "type": "image/x-icon"
-    }
+    {"src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"},
+    {"src": "/favicon.ico", "sizes": "32x32", "type": "image/x-icon"}
+  ],
+  "shortcuts": [
+    {"name": "Dashboard", "url": "/dashboard", "icons": [{"src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml"}]},
+    {"name": "Add Trade", "url": "/add-trade", "icons": [{"src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml"}]},
+    {"name": "Trade History", "url": "/trade-history", "icons": [{"src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml"}]},
+    {"name": "Calendar", "url": "/calendar", "icons": [{"src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml"}]},
+    {"name": "Analysis", "url": "/analysis", "icons": [{"src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml"}]},
+    {"name": "Education", "url": "/education", "icons": [{"src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml"}]}
   ],
   "categories": ["finance", "productivity", "business"],
   "lang": "en",
   "dir": "ltr",
   "scope": "/",
   "prefer_related_applications": false,
-  "screenshots": [
-    {
-      "src": "/og-image.png",
-      "sizes": "1200x630",
-      "type": "image/png",
-      "form_factor": "wide"
-    }
-  ]
+  "screenshots": [{"src": "/og-image.png", "sizes": "1200x630", "type": "image/png", "form_factor": "wide"}]
 }

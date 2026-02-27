@@ -1,0 +1,229 @@
+{
+  "name": "Telegram Polling Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Poll Every 5 Seconds",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "getUpdates",
+        "additionalFields": {
+          "timeout": 5,
+          "limit": 10
+        }
+      },
+      "id": "get-telegram-updates",
+      "name": "Get Telegram Updates",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [460, 300],
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process each update from Telegram\nconst updates = $input.all();\nconst messages = [];\n\nfor (const update of updates) {\n  if (update.json.result && Array.isArray(update.json.result)) {\n    for (const item of update.json.result) {\n      if (item.message) {\n        messages.push({\n          json: {\n            update_id: item.update_id,\n            message: item.message,\n            chat_id: item.message.chat.id,\n            text: item.message.text || '',\n            from: item.message.from,\n            timestamp: new Date().toISOString()\n          }\n        });\n      }\n    }\n  }\n}\n\nreturn messages;"
+      },
+      "id": "process-updates",
+      "name": "Process Updates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-message",
+              "leftValue": "={{ $json.text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "rightType": "string"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-has-message",
+      "name": "Has Message?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:4001/telegram-webhook",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": {
+            "parameter": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": {
+            "parameter": [
+              {
+                "name": "message",
+                "value": "={{ $json.message }}"
+              }
+            ]
+          }
+        },
+        "options": {}
+      },
+      "id": "send-to-backend",
+      "name": "Send to Backend",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract response from backend or create default response\nconst backendResponse = $input.first().json;\nconst message = $('Process Updates').first().json.message;\n\nlet replyText = '✅ Message received!';\n\n// Check if backend returned a response\nif (backendResponse && backendResponse.message) {\n  replyText = backendResponse.message;\n} else if (backendResponse && backendResponse.reply) {\n  replyText = backendResponse.reply;\n} else if (backendResponse && backendResponse.text) {\n  replyText = backendResponse.text;\n}\n\nreturn {\n  json: {\n    chat_id: message.chat.id,\n    text: replyText,\n    original_message: message.text\n  }\n};"
+      },
+      "id": "prepare-response",
+      "name": "Prepare Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "send-telegram-reply",
+      "name": "Send Reply to Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1560, 300],
+    },
+    {
+      "parameters": {
+        "operation": "getUpdates",
+        "additionalFields": {
+          "offset": "={{ $json.update_id + 1 }}"
+        }
+      },
+      "id": "acknowledge-update",
+      "name": "Acknowledge Update",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1120, 500],
+    }
+  ],
+  "connections": {
+    "Poll Every 5 Seconds": {
+      "main": [
+        [
+          {
+            "node": "Get Telegram Updates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Telegram Updates": {
+      "main": [
+        [
+          {
+            "node": "Process Updates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Updates": {
+      "main": [
+        [
+          {
+            "node": "Has Message?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Message?": {
+      "main": [
+        [
+          {
+            "node": "Send to Backend",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Acknowledge Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to Backend": {
+      "main": [
+        [
+          {
+            "node": "Prepare Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Response": {
+      "main": [
+        [
+          {
+            "node": "Send Reply to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": []
+}
+

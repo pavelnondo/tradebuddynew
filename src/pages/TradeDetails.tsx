@@ -1,9 +1,16 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Edit, Image as ImageIcon, CheckCircle2, Clock, DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowLeft, Edit, Image as ImageIcon, CheckCircle2, Clock, DollarSign, TrendingUp, TrendingDown, Mic, Lightbulb } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
 import { API_BASE_URL } from '@/config';
+import { stripVoiceNotePlaceholders } from '@/utils/formatting';
+import { ScreenshotViewerModal } from '@/components/ScreenshotViewerModal';
+import { getScreenshotFullUrl } from '@/utils/screenshotUrl';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { getVoiceNoteAudioUrl } from '@/utils/formatting';
+import { useTheme } from '@/contexts/ThemeContext';
+import { AudioPlayer } from '@/components/AudioPlayer';
 
 interface Trade {
   id: number;
@@ -19,11 +26,13 @@ interface Trade {
   entry_time: string;
   exit_time: string | null;
   duration: number | null;
-  checklist_items: Array<{
-    id: number;
-    text: string;
-    completed: boolean;
-  }>;
+  checklist_items: Array<{ id: number; text: string; completed: boolean }>;
+  during_checklist_items?: Array<{ id: number; text: string; completed: boolean }>;
+  post_checklist_items?: Array<{ id: number; text: string; completed: boolean }>;
+  voice_note_urls?: Array<{ url: string; duration?: number; transcript?: string }>;
+  trade_grade?: string;
+  lessons_learned?: string | null;
+  rule_items?: Array<{ id: string | number; text: string; completed: boolean }>;
 }
 
 interface TradeDetailsState {
@@ -36,11 +45,13 @@ export default function TradeDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
+  const { themeConfig } = useTheme();
   const [state, setState] = useState<TradeDetailsState>({
     trade: null,
     loading: false,
     error: null
   });
+  const [screenshotModalOpen, setScreenshotModalOpen] = useState(false);
 
   // Memoized fetch function to prevent recreation
   const fetchTrade = useCallback(async (tradeId: string) => {
@@ -53,7 +64,7 @@ export default function TradeDetails() {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/trades/${tradeId}`, {
+      const response = await fetch(`${API_BASE_URL}/trades/${tradeId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Cache-Control': 'no-cache'
@@ -71,6 +82,14 @@ export default function TradeDetails() {
 
       const tradeData = await response.json();
       
+      // Debug: Log voice notes from API
+      console.log('[TradeDetails] Trade data from API:', {
+        id: tradeData.id,
+        voice_note_urls: tradeData.voice_note_urls,
+        voice_note_urls_type: typeof tradeData.voice_note_urls,
+        voice_note_urls_isArray: Array.isArray(tradeData.voice_note_urls),
+      });
+      
       // Transform API data to our interface
       const trade: Trade = {
         id: tradeData.id,
@@ -87,12 +106,91 @@ export default function TradeDetails() {
         exit_time: tradeData.exit_time || null,
         duration: tradeData.duration ? Number(tradeData.duration) : null,
         checklist_items: Array.isArray(tradeData.checklist_items) 
-          ? tradeData.checklist_items.map((item: any) => ({
+          ? tradeData.checklist_items.map((item: { id?: unknown; text?: unknown; completed?: unknown }) => ({
               id: Number(item.id) || 0,
               text: String(item.text || ''),
               completed: Boolean(item.completed)
             }))
-          : []
+          : [],
+        during_checklist_items: Array.isArray(tradeData.during_checklist_items)
+          ? tradeData.during_checklist_items.map((item: { id?: unknown; text?: unknown; completed?: unknown }) => ({
+              id: Number(item.id) || 0,
+              text: String(item.text || ''),
+              completed: Boolean(item.completed)
+            }))
+          : [],
+        post_checklist_items: Array.isArray(tradeData.post_checklist_items)
+          ? tradeData.post_checklist_items.map((item: { id?: unknown; text?: unknown; completed?: unknown }) => ({
+              id: Number(item.id) || 0,
+              text: String(item.text || ''),
+              completed: Boolean(item.completed)
+            }))
+          : [],
+        voice_note_urls: (() => {
+          const vn = tradeData.voice_note_urls;
+          console.log('[TradeDetails] Parsing voice_note_urls:', {
+            raw: vn,
+            type: typeof vn,
+            isArray: Array.isArray(vn),
+            constructor: vn?.constructor?.name,
+          });
+          if (!vn) {
+            console.log('[TradeDetails] No voice_note_urls found');
+            return [];
+          }
+          if (Array.isArray(vn)) {
+            console.log('[TradeDetails] voice_note_urls is already array:', vn.length, 'items', vn);
+            return vn;
+          }
+          if (typeof vn === 'string') {
+            try {
+              const parsed = JSON.parse(vn);
+              console.log('[TradeDetails] Parsed voice_note_urls from string:', Array.isArray(parsed) ? parsed.length : 'not array', 'items');
+              return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+              console.warn('[TradeDetails] Failed to parse voice_note_urls:', e);
+              return [];
+            }
+          }
+          // Handle object (PostgreSQL JSONB sometimes returns as object)
+          if (typeof vn === 'object' && vn !== null) {
+            // Try to convert object to array
+            if (vn.length !== undefined) {
+              try {
+                const arr = Array.from(vn);
+                console.log('[TradeDetails] Converted object to array:', arr.length, 'items', arr);
+                return arr;
+              } catch (e) {
+                console.warn('[TradeDetails] Failed to convert object to array:', e);
+              }
+            }
+            // Try Object.values
+            const values = Object.values(vn);
+            if (values.length > 0 && values[0] && typeof values[0] === 'object' && values[0].url) {
+              console.log('[TradeDetails] Extracted voice notes from object values:', values.length, 'items', values);
+              return values;
+            }
+            // If it's a single voice note object, wrap in array
+            if (vn.url) {
+              console.log('[TradeDetails] Single voice note object, wrapping in array:', [vn]);
+              return [vn];
+            }
+            console.warn('[TradeDetails] voice_note_urls is object but cannot convert:', vn);
+          }
+          console.warn('[TradeDetails] voice_note_urls is unexpected type:', typeof vn, vn);
+          return [];
+        })(),
+        trade_grade: ['A', 'B', 'C'].includes(String(tradeData.trade_grade || '').toUpperCase()) ? String(tradeData.trade_grade).toUpperCase() : undefined,
+        lessons_learned: (() => {
+          const ll = tradeData.lessons_learned || tradeData.lessonsLearned || null;
+          // Strip placeholder text from lessons_learned
+          return ll ? stripVoiceNotePlaceholders(ll) : null;
+        })(),
+        rule_items: Array.isArray(tradeData.rule_items) ? tradeData.rule_items.map((item: { id?: unknown; text?: unknown; completed?: unknown }) => ({
+          id: item.id ?? 0,
+          text: String(item.text || ''),
+          completed: Boolean(item.completed)
+        })) : []
       };
 
       setState({
@@ -102,7 +200,7 @@ export default function TradeDetails() {
       });
 
     } catch (error) {
-      console.error('Failed to fetch trade:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load trade';
       setState({
         trade: null,
         loading: false,
@@ -265,8 +363,9 @@ export default function TradeDetails() {
   const isLoss = trade.pnl < 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+      <PageContainer>
+        <div className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between bg-card rounded-lg shadow-sm border p-4">
           <Button variant="ghost" onClick={() => navigate(-1)} className="hover:bg-muted">
@@ -280,7 +379,7 @@ export default function TradeDetails() {
         </div>
 
         {/* Trade Overview Card */}
-        <Card className="shadow-lg border bg-card">
+        <Card shineBorder className="shadow-lg border bg-card">
           <CardHeader className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-t-lg">
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -292,6 +391,15 @@ export default function TradeDetails() {
                 }`}>
                   {trade.trade_type}
                 </span>
+                {trade.trade_grade && (
+                  <span className={`px-3 py-1 rounded-lg text-sm font-bold ${
+                    trade.trade_grade === 'A' ? 'bg-emerald-500/20 text-emerald-100 border border-emerald-400/30' :
+                    trade.trade_grade === 'B' ? 'bg-blue-500/20 text-blue-100 border border-blue-400/30' :
+                    'bg-gray-500/20 text-gray-100 border border-gray-400/30'
+                  }`}>
+                    Grade {trade.trade_grade}
+                  </span>
+                )}
               </div>
               <div className={`text-right ${
                 isProfit ? 'text-green-300' : isLoss ? 'text-red-300' : 'text-gray-300'
@@ -393,38 +501,108 @@ export default function TradeDetails() {
                   </div>
                   <span className="text-lg font-semibold text-foreground capitalize">{trade.emotion || 'N/A'}</span>
                 </div>
-                <div className="bg-card rounded-lg p-4 shadow-sm border">
-                  <div className="flex items-center gap-3 mb-2">
-                    <CheckCircle2 className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                    <span className="text-sm font-medium text-muted-foreground">Checklist Completion</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-semibold text-foreground">
-                      {trade.checklist_items.filter(item => item.completed).length}/{trade.checklist_items.length}
-                    </span>
-                    <div className="flex-1 bg-muted rounded-full h-2">
-                      <div 
-                        className="bg-orange-500 dark:bg-orange-400 h-2 rounded-full transition-all duration-300"
-                        style={{ 
-                          width: `${trade.checklist_items.length > 0 ? 
-                            (trade.checklist_items.filter(item => item.completed).length / trade.checklist_items.length) * 100 : 0}%` 
-                        }}
-                      />
+                {((trade.checklist_items?.length ?? 0) + (trade.during_checklist_items?.length ?? 0) + (trade.post_checklist_items?.length ?? 0) + (trade.rule_items?.length ?? 0)) > 0 && (
+                  <div className="bg-card rounded-lg p-4 shadow-sm border">
+                    <div className="flex items-center gap-3 mb-2">
+                      <CheckCircle2 className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                      <span className="text-sm font-medium text-muted-foreground">Rules & Checklist Completion</span>
+                    </div>
+                    <div className="space-y-2">
+                      {trade.checklist_items?.length ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground w-12">Pre:</span>
+                          <span className="text-sm font-semibold">{trade.checklist_items.filter(i => i.completed).length}/{trade.checklist_items.length}</span>
+                          <div className="flex-1 bg-muted rounded-full h-1.5">
+                            <div className="bg-orange-500 h-1.5 rounded-full" style={{ width: `${(trade.checklist_items.filter(i => i.completed).length / trade.checklist_items.length) * 100}%` }} />
+                          </div>
+                        </div>
+                      ) : null}
+                      {trade.during_checklist_items?.length ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground w-12">During:</span>
+                          <span className="text-sm font-semibold">{trade.during_checklist_items.filter(i => i.completed).length}/{trade.during_checklist_items.length}</span>
+                          <div className="flex-1 bg-muted rounded-full h-1.5">
+                            <div className="bg-orange-500 h-1.5 rounded-full" style={{ width: `${(trade.during_checklist_items.filter(i => i.completed).length / trade.during_checklist_items.length) * 100}%` }} />
+                          </div>
+                        </div>
+                      ) : null}
+                      {trade.post_checklist_items?.length ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground w-12">Post:</span>
+                          <span className="text-sm font-semibold">{trade.post_checklist_items.filter(i => i.completed).length}/{trade.post_checklist_items.length}</span>
+                          <div className="flex-1 bg-muted rounded-full h-1.5">
+                            <div className="bg-orange-500 h-1.5 rounded-full" style={{ width: `${(trade.post_checklist_items.filter(i => i.completed).length / trade.post_checklist_items.length) * 100}%` }} />
+                          </div>
+                        </div>
+                      ) : null}
+                      {trade.rule_items?.length ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground w-12">Rules:</span>
+                          <span className="text-sm font-semibold">{trade.rule_items.filter(i => i.completed).length}/{trade.rule_items.length}</span>
+                          <div className="flex-1 bg-muted rounded-full h-1.5">
+                            <div className="bg-orange-500 h-1.5 rounded-full" style={{ width: `${(trade.rule_items.filter(i => i.completed).length / trade.rule_items.length) * 100}%` }} />
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
 
           {/* Notes */}
-          {trade.notes && (
+          {trade.notes && stripVoiceNotePlaceholders(trade.notes) && (
             <div className="bg-amber-500/10 border border-amber-500/30 dark:border-amber-400/30 rounded-xl p-6">
               <div className="flex items-center gap-2 mb-3">
                 <Edit className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                 <h4 className="font-semibold text-amber-800 dark:text-amber-300">Trade Notes</h4>
               </div>
-              <p className="text-amber-700 dark:text-amber-200 leading-relaxed">{trade.notes}</p>
+              <p className="text-amber-700 dark:text-amber-200 leading-relaxed">{stripVoiceNotePlaceholders(trade.notes)}</p>
+            </div>
+          )}
+
+          {/* Lessons Learnt */}
+          {(trade.lessons_learned || (Array.isArray(trade.voice_note_urls) && trade.voice_note_urls.some((vn: any) => vn?.field === 'lessons'))) && (
+            <div className="bg-emerald-500/10 border border-emerald-500/30 dark:border-emerald-400/30 rounded-xl p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <Lightbulb className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <h4 className="font-semibold text-emerald-800 dark:text-emerald-300">Lessons Learnt</h4>
+              </div>
+              {trade.lessons_learned && (
+                <p className="text-emerald-700 dark:text-emerald-200 leading-relaxed">{stripVoiceNotePlaceholders(trade.lessons_learned)}</p>
+              )}
+              {/* Show voice notes for lessons only (field === 'lessons') */}
+              {(() => {
+                const voiceNotesFromTrade = trade.voice_note_urls || [];
+                const allVoiceNotes = Array.isArray(voiceNotesFromTrade) ? voiceNotesFromTrade : [];
+                const lessonsOnly = allVoiceNotes.filter((vn: any) => vn?.field === 'lessons');
+                
+                if (lessonsOnly.length === 0) return null;
+                return (
+                    <div className="mt-4 space-y-2">
+                      <h5 className="text-sm font-medium mb-2" style={{ color: 'inherit' }}>Voice Notes</h5>
+                      {lessonsOnly.map((vn: any, idx: number) => {
+                        const url = typeof vn === 'string' ? vn : (vn?.url || '');
+                        if (!url) {
+                          console.warn('[TradeDetails] Voice note missing URL:', vn);
+                          return null;
+                        }
+                        const audioUrl = getVoiceNoteAudioUrl(url);
+                        console.log('[TradeDetails] Rendering voice note', idx, ':', url, '->', audioUrl);
+                        return (
+                          <div key={idx}>
+                            <AudioPlayer
+                              src={audioUrl}
+                              duration={vn?.duration}
+                              className="w-full"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                );
+              })()}
             </div>
           )}
 
@@ -435,21 +613,18 @@ export default function TradeDetails() {
                 <ImageIcon className="w-5 h-5 text-slate-600 dark:text-slate-400" />
                 <h4 className="font-semibold text-slate-800 dark:text-slate-300">Trade Screenshot</h4>
               </div>
-              <div 
-                className="relative group bg-card rounded-lg p-4 shadow-sm border cursor-pointer hover:shadow-lg transition-all duration-300"
-                onClick={() => window.open(
-                  trade.screenshot_url!.startsWith('http') ? trade.screenshot_url! : `/uploads/${trade.screenshot_url!.split('/').pop()}`, 
-                  '_blank'
-                )}
+              <button
+                type="button"
+                onClick={() => setScreenshotModalOpen(true)}
+                className="relative block w-full group bg-card rounded-lg p-4 shadow-sm border cursor-pointer hover:shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 text-left"
+                aria-label="View trade screenshot"
               >
                 <img 
-                  src={trade.screenshot_url.startsWith('http') ? trade.screenshot_url : `/uploads/${trade.screenshot_url.split('/').pop()}`}
+                  src={getScreenshotFullUrl(trade.screenshot_url)}
                   alt="Trade Screenshot"
-                  className="max-w-full h-auto rounded-lg border-2 border-border hover:border-primary transition-all duration-300 shadow-md"
+                  className="max-w-full h-auto max-h-48 object-contain rounded-lg border-2 border-border group-hover:border-primary transition-all duration-300 shadow-md"
                   onError={(e) => {
-                    console.error('Screenshot failed to load:', trade.screenshot_url);
                     e.currentTarget.style.display = 'none';
-                    e.currentTarget.parentElement!.innerHTML = '<div class="text-center text-muted-foreground py-8">Screenshot not available</div>';
                   }}
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg flex items-center justify-center pointer-events-none">
@@ -457,46 +632,144 @@ export default function TradeDetails() {
                     <ImageIcon className="w-6 h-6 text-primary" />
                   </div>
                 </div>
-              </div>
+              </button>
+
+              <ScreenshotViewerModal
+                open={screenshotModalOpen}
+                onOpenChange={setScreenshotModalOpen}
+                screenshotUrl={trade.screenshot_url}
+              />
             </div>
           )}
 
-          {/* Checklist Items */}
-          {trade.checklist_items.length > 0 && (
+          {/* Voice Notes for Notes field - Show ALL voice notes that don't have field='lessons' */}
+          {(() => {
+            const allVoiceNotes = Array.isArray(trade.voice_note_urls) ? trade.voice_note_urls : [];
+            console.log('[TradeDetails] All voice notes for trade', trade.id, ':', allVoiceNotes);
+            
+            // Filter notes voice notes - exclude only those explicitly marked as 'lessons'
+            const notesVoiceNotes = allVoiceNotes.filter((vn: any) => {
+              if (!vn) return false;
+              const field = vn?.field;
+              // Exclude only if explicitly marked as 'lessons'
+              if (field === 'lessons') return false;
+              // Include everything else (notes, or no field specified)
+              return true;
+            });
+            
+            console.log('[TradeDetails] Notes voice notes filtered:', {
+              allVoiceNotes: allVoiceNotes.length,
+              notesVoiceNotes: notesVoiceNotes.length,
+              voiceNotes: allVoiceNotes,
+              filtered: notesVoiceNotes,
+            });
+            
+            // Always show voice notes section if we have ANY voice notes (fallback to all if filtering removed them)
+            const voiceNotesToDisplay = notesVoiceNotes.length > 0 ? notesVoiceNotes : allVoiceNotes;
+            
+            if (voiceNotesToDisplay.length > 0) {
+              console.log('[TradeDetails] Displaying', voiceNotesToDisplay.length, 'voice notes in Notes section');
+              return (
+                <div className="bg-violet-500/10 border border-violet-500/30 dark:border-violet-400/30 rounded-xl p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Mic className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                    <h4 className="font-semibold text-violet-800 dark:text-violet-300">Voice Notes (Notes)</h4>
+                  </div>
+                  <div className="space-y-4">
+                    {voiceNotesToDisplay.map((vn: any, idx: number) => {
+                      const url = typeof vn === 'string' ? vn : (vn?.url || '');
+                      if (!url) {
+                        console.warn('[TradeDetails] Voice note missing URL:', vn);
+                        return null;
+                      }
+                      console.log('[TradeDetails] Rendering notes voice note', idx, ':', url);
+                      return (
+                        <div key={idx} className="space-y-2">
+                          <AudioPlayer
+                            src={getVoiceNoteAudioUrl(url)}
+                            duration={vn?.duration}
+                            className="w-full"
+                          />
+                          {vn?.transcript && (
+                            <p className="text-sm text-muted-foreground mt-2 w-full">{vn.transcript}</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
+          {/* Rules & Checklist Items */}
+          {((trade.checklist_items?.length ?? 0) + (trade.during_checklist_items?.length ?? 0) + (trade.post_checklist_items?.length ?? 0) + (trade.rule_items?.length ?? 0)) > 0 && (
             <div className="bg-emerald-500/10 border border-emerald-500/30 dark:border-emerald-400/30 rounded-xl p-6">
               <div className="flex items-center gap-2 mb-4">
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                <h4 className="font-semibold text-emerald-800 dark:text-emerald-300">Trading Checklist</h4>
+                <h4 className="font-semibold text-emerald-800 dark:text-emerald-300">Rules & Checklists</h4>
               </div>
-              <div className="space-y-3">
-                {trade.checklist_items.map((item) => (
-                  <div key={item.id} className={`flex items-center gap-3 p-4 rounded-lg transition-all border ${
-                    item.completed 
-                      ? 'bg-green-500/10 border-green-500/30 dark:border-green-400/30' 
-                      : 'bg-card border-border'
-                  }`}>
-                    <CheckCircle2 
-                      className={`w-5 h-5 flex-shrink-0 ${
-                        item.completed 
-                          ? 'text-green-600 dark:text-green-400' 
-                          : 'text-muted-foreground'
-                      }`} 
-                    />
-                    <span className={`font-medium ${
-                      item.completed 
-                        ? 'line-through text-green-700 dark:text-green-300' 
-                        : 'text-foreground'
-                    }`}>
-                      {item.text}
-                    </span>
+              <div className="space-y-6">
+                {trade.checklist_items && trade.checklist_items.length > 0 && (
+                  <div>
+                    <h5 className="text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-2">Pre-Trade</h5>
+                    <div className="space-y-2">
+                      {trade.checklist_items.map((item, idx) => (
+                        <div key={item.id ?? `pre-${idx}`} className={`flex items-center gap-3 p-3 rounded-lg border ${item.completed ? 'bg-green-500/10 border-green-500/30' : 'bg-card border-border'}`}>
+                          <CheckCircle2 className={`w-5 h-5 flex-shrink-0 ${item.completed ? 'text-green-600' : 'text-muted-foreground'}`} />
+                          <span className={item.completed ? 'line-through text-green-700 dark:text-green-300' : 'text-foreground'}>{item.text}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
+                )}
+                {trade.during_checklist_items && trade.during_checklist_items.length > 0 && (
+                  <div>
+                    <h5 className="text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-2">During Trade</h5>
+                    <div className="space-y-2">
+                      {trade.during_checklist_items.map((item, idx) => (
+                        <div key={item.id ?? `during-${idx}`} className={`flex items-center gap-3 p-3 rounded-lg border ${item.completed ? 'bg-green-500/10 border-green-500/30' : 'bg-card border-border'}`}>
+                          <CheckCircle2 className={`w-5 h-5 flex-shrink-0 ${item.completed ? 'text-green-600' : 'text-muted-foreground'}`} />
+                          <span className={item.completed ? 'line-through text-green-700 dark:text-green-300' : 'text-foreground'}>{item.text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {trade.post_checklist_items && trade.post_checklist_items.length > 0 && (
+                  <div>
+                    <h5 className="text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-2">Post-Trade</h5>
+                    <div className="space-y-2">
+                      {trade.post_checklist_items.map((item, idx) => (
+                        <div key={item.id ?? `post-${idx}`} className={`flex items-center gap-3 p-3 rounded-lg border ${item.completed ? 'bg-green-500/10 border-green-500/30' : 'bg-card border-border'}`}>
+                          <CheckCircle2 className={`w-5 h-5 flex-shrink-0 ${item.completed ? 'text-green-600' : 'text-muted-foreground'}`} />
+                          <span className={item.completed ? 'line-through text-green-700 dark:text-green-300' : 'text-foreground'}>{item.text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {trade.rule_items && trade.rule_items.length > 0 && (
+                  <div>
+                    <h5 className="text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-2">Rules Followed</h5>
+                    <div className="space-y-2">
+                      {trade.rule_items.map((item, idx) => (
+                        <div key={item.id ?? `rule-${idx}`} className={`flex items-center gap-3 p-3 rounded-lg border ${item.completed ? 'bg-green-500/10 border-green-500/30' : 'bg-card border-border'}`}>
+                          <CheckCircle2 className={`w-5 h-5 flex-shrink-0 ${item.completed ? 'text-green-600' : 'text-muted-foreground'}`} />
+                          <span className={item.completed ? 'line-through text-green-700 dark:text-green-300' : 'text-foreground'}>{item.text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
         </CardContent>
       </Card>
-      </div>
+        </div>
+      </PageContainer>
     </div>
   );
 }

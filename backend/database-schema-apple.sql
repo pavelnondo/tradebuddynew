@@ -113,6 +113,31 @@ CREATE TABLE trade_checklists (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Goals table for planning and goal tracking
+CREATE TABLE goals (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    journal_id UUID REFERENCES trading_accounts(id) ON DELETE CASCADE,
+    
+    -- Goal details
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    goal_type VARCHAR(50) NOT NULL, -- 'profit', 'trades', 'winrate', 'custom'
+    target_value DECIMAL(15,2) NOT NULL,
+    current_value DECIMAL(15,2) DEFAULT 0,
+    unit VARCHAR(20) DEFAULT 'USD', -- 'USD', 'trades', 'percentage'
+    period VARCHAR(20) DEFAULT 'monthly', -- 'daily', 'weekly', 'monthly', 'yearly'
+    
+    -- Status and dates
+    status VARCHAR(20) DEFAULT 'active', -- 'active', 'completed', 'paused', 'cancelled'
+    start_date DATE DEFAULT CURRENT_DATE,
+    end_date DATE,
+    
+    -- Timestamps
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Performance analytics for efficient querying
 CREATE TABLE performance_metrics (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -193,6 +218,13 @@ CREATE INDEX idx_trades_trade_type ON trades(trade_type);
 CREATE INDEX idx_trades_pnl ON trades(pnl);
 
 CREATE INDEX idx_performance_metrics_user_period ON performance_metrics(user_id, period_type, period_start);
+
+CREATE INDEX idx_goals_user_id ON goals(user_id);
+CREATE INDEX idx_goals_journal_id ON goals(journal_id);
+CREATE INDEX idx_goals_status ON goals(status);
+CREATE INDEX idx_goals_goal_type ON goals(goal_type);
+CREATE INDEX idx_goals_period ON goals(period);
+CREATE INDEX idx_goals_end_date ON goals(end_date);
 CREATE INDEX idx_market_data_symbol_timeframe ON market_data(symbol, timeframe, timestamp);
 CREATE INDEX idx_user_sessions_token ON user_sessions(token_hash);
 CREATE INDEX idx_notifications_user_read ON notifications(user_id, is_read);
@@ -214,6 +246,7 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECU
 CREATE TRIGGER update_trading_accounts_updated_at BEFORE UPDATE ON trading_accounts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_trades_updated_at BEFORE UPDATE ON trades FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_checklists_updated_at BEFORE UPDATE ON checklists FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_goals_updated_at BEFORE UPDATE ON goals FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Function to calculate trade P&L
 CREATE OR REPLACE FUNCTION calculate_trade_pnl()

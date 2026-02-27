@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { useTheme } from "@/contexts/ThemeContext";
 import { 
   Mic, 
   MicOff, 
@@ -42,6 +43,7 @@ export function VoiceRecorder({
   maxDuration = 300, // 5 minutes default
   autoTranscribe = false
 }: VoiceRecorderProps) {
+  const { themeConfig } = useTheme();
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -54,70 +56,28 @@ export function VoiceRecorder({
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const hasShownDeniedToastRef = useRef(false);
 
-  // Initialize media recorder
+  // Clean up stream and recorder on unmount
   useEffect(() => {
-    const initMediaRecorder = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const recorder = new MediaRecorder(stream);
-        setMediaRecorder(recorder);
-
-        recorder.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            setAudioChunks(prev => [...prev, event.data]);
-          }
-        };
-
-        recorder.onstop = () => {
-          const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-          const audioUrl = URL.createObjectURL(audioBlob);
-          
-          // Create audio element to get duration
-          const audio = new Audio(audioUrl);
-          audio.onloadedmetadata = () => {
-            const newNote: VoiceNote = {
-              id: Date.now().toString(),
-              blob: audioBlob,
-              duration: audio.duration,
-              timestamp: new Date(),
-              isPlaying: false,
-            };
-            
-            setNotes(prev => [newNote, ...prev]);
-            onSaveNote(newNote);
-            
-            if (autoTranscribe) {
-              transcribeAudio(audioBlob);
-            }
-            
-            setAudioChunks([]);
-            setRecordingTime(0);
-          };
-        };
-      } catch (error) {
-        console.error('Error accessing microphone:', error);
-        toast({
-          title: "Microphone Access Denied",
-          description: "Please allow microphone access to record voice notes",
-          variant: "destructive",
-        });
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
       }
+      if (timerRef.current) clearInterval(timerRef.current);
     };
+  }, []);
 
-    initMediaRecorder();
-  }, [audioChunks, onSaveNote, autoTranscribe, toast]);
-
-  const startRecording = () => {
+  const startRecording = async () => {
     if (mediaRecorder && mediaRecorder.state === 'inactive') {
       setAudioChunks([]);
       mediaRecorder.start();
       setIsRecording(true);
       setIsPaused(false);
-      
-      // Start timer
       timerRef.current = setInterval(() => {
-        setRecordingTime(prev => {
+        setRecordingTime((prev) => {
           if (prev >= maxDuration) {
             stopRecording();
             return maxDuration;
@@ -125,6 +85,104 @@ export function VoiceRecorder({
           return prev + 1;
         });
       }, 1000);
+      return;
+    }
+
+    // Lazy init: only request mic when user clicks Start
+    try {
+      hasShownDeniedToastRef.current = false;
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
+      const recorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) chunks.push(event.data);
+      };
+
+      recorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+        setMediaRecorder(null);
+
+        const audioBlob = chunks.length > 0 ? new Blob(chunks, { type: 'audio/webm' }) : new Blob([], { type: 'audio/webm' });
+        if (audioBlob.size === 0) {
+          setRecordingTime(0);
+          return;
+        }
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        
+        // Create note immediately, update duration when metadata loads
+        const newNote: VoiceNote = {
+          id: Date.now().toString(),
+          blob: audioBlob,
+          duration: 0, // Will be updated when metadata loads
+          timestamp: new Date(),
+          isPlaying: false,
+        };
+        
+        console.log('[VoiceRecorder] Recording stopped, blob size:', audioBlob.size, 'creating note:', newNote.id);
+        
+        // Add to internal state immediately
+        setNotes((prev) => {
+          const updated = [newNote, ...prev];
+          console.log('[VoiceRecorder] Updated internal notes state:', updated.length, 'items');
+          return updated;
+        });
+        
+        // Call callback immediately so parent component gets the note right away
+        console.log('[VoiceRecorder] Calling onSaveNote callback immediately');
+        onSaveNote(newNote);
+        
+        // Update duration when metadata loads (update internal state only, don't call callback again)
+        audio.onloadedmetadata = () => {
+          console.log('[VoiceRecorder] Audio metadata loaded, duration:', audio.duration);
+          setNotes((prev) => prev.map(n => 
+            n.id === newNote.id ? { ...n, duration: audio.duration } : n
+          ));
+        };
+        
+        // Fallback: if metadata doesn't load within 2 seconds, proceed anyway
+        setTimeout(() => {
+          if (audio.readyState < 2) { // HAVE_CURRENT_DATA
+            console.warn('[VoiceRecorder] Audio metadata taking too long, proceeding without duration');
+          }
+        }, 2000);
+        
+        audio.onerror = (err) => {
+          console.error('[VoiceRecorder] Error loading audio metadata:', err);
+        };
+        
+        if (autoTranscribe) transcribeAudio(audioBlob);
+        setAudioChunks([]);
+        setRecordingTime(0);
+      };
+
+      setMediaRecorder(recorder);
+      setAudioChunks([]);
+      recorder.start();
+      setIsRecording(true);
+      setIsPaused(false);
+      timerRef.current = setInterval(() => {
+        setRecordingTime((prev) => {
+          if (prev >= maxDuration) {
+            stopRecording();
+            return maxDuration;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+    } catch {
+      if (!hasShownDeniedToastRef.current) {
+        hasShownDeniedToastRef.current = true;
+        toast({
+          title: "Microphone Access Denied",
+          description: "Please allow microphone access to record voice notes",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -134,6 +192,7 @@ export function VoiceRecorder({
       setIsPaused(true);
       if (timerRef.current) {
         clearInterval(timerRef.current);
+        timerRef.current = null;
       }
     }
   };
@@ -161,9 +220,9 @@ export function VoiceRecorder({
       mediaRecorder.stop();
       setIsRecording(false);
       setIsPaused(false);
-      
       if (timerRef.current) {
         clearInterval(timerRef.current);
+        timerRef.current = null;
       }
     }
   };
@@ -201,8 +260,7 @@ export function VoiceRecorder({
         setTranscript('Voice note transcribed (simulated)');
         setIsTranscribing(false);
       }, 2000);
-    } catch (error) {
-      console.error('Transcription error:', error);
+    } catch {
       setIsTranscribing(false);
     }
   };
@@ -222,13 +280,13 @@ export function VoiceRecorder({
   return (
     <div className="space-y-4">
       {/* Recording Controls */}
-      <Card className="card-modern">
+      <Card className="rounded-2xl" shineBorder style={{ backgroundColor: themeConfig.card, borderColor: themeConfig.border }}>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Mic className="w-5 h-5 mr-2" />
+          <CardTitle className="flex items-center" style={{ color: themeConfig.foreground }}>
+            <Mic className="w-5 h-5 mr-2" style={{ color: themeConfig.accent }} />
             Voice Notes
           </CardTitle>
-          <CardDescription>
+          <CardDescription style={{ color: themeConfig.mutedForeground }}>
             Record your trade reasoning and thoughts while trading
           </CardDescription>
         </CardHeader>
@@ -240,36 +298,52 @@ export function VoiceRecorder({
                 {isRecording && (
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm font-medium">
+                    <span className="text-sm font-medium" style={{ color: themeConfig.foreground }}>
                       {isPaused ? 'Paused' : 'Recording'}
                     </span>
                   </div>
                 )}
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm" style={{ color: themeConfig.mutedForeground }}>
                   {formatTime(recordingTime)} / {formatTime(maxDuration)}
                 </div>
               </div>
               
               <div className="flex items-center space-x-2">
                 {!isRecording ? (
-                  <Button onClick={startRecording} size="sm">
+                  <Button 
+                    type="button" 
+                    onClick={startRecording} 
+                    size="sm"
+                    style={{ backgroundColor: themeConfig.accent, color: themeConfig.accentForeground }}
+                  >
                     <Mic className="w-4 h-4 mr-2" />
                     Start Recording
                   </Button>
                 ) : (
                   <>
                     {isPaused ? (
-                      <Button onClick={resumeRecording} size="sm">
+                      <Button 
+                        type="button" 
+                        onClick={resumeRecording} 
+                        size="sm"
+                        style={{ backgroundColor: themeConfig.accent, color: themeConfig.accentForeground }}
+                      >
                         <Play className="w-4 h-4 mr-2" />
                         Resume
                       </Button>
                     ) : (
-                      <Button onClick={pauseRecording} size="sm" variant="outline">
+                      <Button 
+                        type="button" 
+                        onClick={pauseRecording} 
+                        size="sm" 
+                        variant="outline"
+                        style={{ borderColor: themeConfig.border }}
+                      >
                         <Pause className="w-4 h-4 mr-2" />
                         Pause
                       </Button>
                     )}
-                    <Button onClick={stopRecording} size="sm" variant="destructive">
+                    <Button type="button" onClick={stopRecording} size="sm" variant="destructive">
                       <Square className="w-4 h-4 mr-2" />
                       Stop
                     </Button>
@@ -280,33 +354,44 @@ export function VoiceRecorder({
 
             {/* Progress Bar */}
             {isRecording && (
-              <div className="w-full bg-muted rounded-full h-2">
+              <div className="w-full rounded-full h-2" style={{ backgroundColor: themeConfig.muted + '40' }}>
                 <div 
-                  className="bg-red-500 h-2 rounded-full transition-all duration-1000"
-                  style={{ width: `${(recordingTime / maxDuration) * 100}%` }}
+                  className="h-2 rounded-full transition-all duration-1000"
+                  style={{ 
+                    width: `${(recordingTime / maxDuration) * 100}%`,
+                    backgroundColor: themeConfig.destructive
+                  }}
                 ></div>
               </div>
             )}
 
             {/* Transcription */}
             {isTranscribing && (
-              <div className="p-3 bg-muted rounded-lg">
+              <div className="p-3 rounded-lg" style={{ backgroundColor: themeConfig.muted + '40' }}>
                 <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                  <span className="text-sm">Transcribing audio...</span>
+                  <div 
+                    className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin"
+                    style={{ borderColor: themeConfig.accent }}
+                  ></div>
+                  <span className="text-sm" style={{ color: themeConfig.foreground }}>Transcribing audio...</span>
                 </div>
               </div>
             )}
 
             {transcript && (
               <div className="space-y-2">
-                <Label htmlFor="transcript">Transcription</Label>
+                <Label htmlFor="transcript" style={{ color: themeConfig.foreground }}>Transcription</Label>
                 <Textarea
                   id="transcript"
                   value={transcript}
                   onChange={(e) => setTranscript(e.target.value)}
                   placeholder="Transcribed text will appear here..."
                   rows={3}
+                  style={{ 
+                    backgroundColor: themeConfig.card, 
+                    borderColor: themeConfig.border,
+                    color: themeConfig.foreground
+                  }}
                 />
               </div>
             )}
@@ -316,32 +401,52 @@ export function VoiceRecorder({
 
       {/* Voice Notes List */}
       {notes.length > 0 && (
-        <Card className="card-modern">
+        <Card className="rounded-2xl" shineBorder style={{ backgroundColor: themeConfig.card, borderColor: themeConfig.border }}>
           <CardHeader>
-            <CardTitle>Recorded Notes</CardTitle>
-            <CardDescription>
+            <CardTitle style={{ color: themeConfig.foreground }}>Recorded Notes</CardTitle>
+            <CardDescription style={{ color: themeConfig.mutedForeground }}>
               {notes.length} voice note{notes.length !== 1 ? 's' : ''} recorded
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {notes.map((note) => (
-                <div key={note.id} className="flex items-center justify-between p-3 border rounded-lg">
+                <div 
+                  key={note.id} 
+                  className="flex items-center justify-between p-3 rounded-lg"
+                  style={{ 
+                    backgroundColor: themeConfig.muted + '20',
+                    borderColor: themeConfig.border,
+                    border: `1px solid ${themeConfig.border}`
+                  }}
+                >
                   <div className="flex items-center space-x-3">
                     <div className="flex items-center space-x-2">
                       {note.isPlaying ? (
                         <Button
+                          type="button"
                           size="sm"
                           variant="outline"
-                          onClick={() => pauseNote(note)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            pauseNote(note);
+                          }}
+                          style={{ borderColor: themeConfig.border }}
                         >
                           <Pause className="w-4 h-4" />
                         </Button>
                       ) : (
                         <Button
+                          type="button"
                           size="sm"
                           variant="outline"
-                          onClick={() => playNote(note)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            playNote(note);
+                          }}
+                          style={{ borderColor: themeConfig.border }}
                         >
                           <Play className="w-4 h-4" />
                         </Button>
@@ -349,23 +454,25 @@ export function VoiceRecorder({
                     </div>
                     
                     <div>
-                      <div className="text-sm font-medium">
+                      <div className="text-sm font-medium" style={{ color: themeConfig.foreground }}>
                         {note.timestamp.toLocaleTimeString()}
                       </div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-xs" style={{ color: themeConfig.mutedForeground }}>
                         Duration: {formatDuration(note.duration)}
                       </div>
                     </div>
                   </div>
                   
                   <div className="flex items-center space-x-2">
-                    <Badge variant="outline">
+                    <Badge variant="outline" style={{ borderColor: themeConfig.border, color: themeConfig.mutedForeground }}>
                       {formatDuration(note.duration)}
                     </Badge>
                     <Button
+                      type="button"
                       size="sm"
                       variant="outline"
                       onClick={() => deleteNote(note.id)}
+                      style={{ borderColor: themeConfig.border }}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>

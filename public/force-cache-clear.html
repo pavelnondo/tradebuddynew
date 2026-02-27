@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Force Cache Clear - TradeBuddy</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: background 0.3s;
+        }
+        button:hover { background: #0056b3; }
+        .countdown {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Force Cache Clear</h1>
+        <div id="status" class="status info">Preparing to clear all caches...</div>
+        <div id="countdown" class="countdown"></div>
+        <button onclick="forceClear()">Clear Cache Now</button>
+        <button onclick="window.location.href='/'">Go to App</button>
+        
+        <script>
+            let countdown = 5;
+            
+            function updateStatus(message, type) {
+                const status = document.getElementById('status');
+                status.textContent = message;
+                status.className = `status ${type}`;
+            }
+            
+            function updateCountdown() {
+                const countdownEl = document.getElementById('countdown');
+                if (countdown > 0) {
+                    countdownEl.textContent = `Redirecting in ${countdown} seconds...`;
+                    countdown--;
+                    setTimeout(updateCountdown, 1000);
+                } else {
+                    countdownEl.textContent = 'Redirecting now...';
+                    window.location.href = '/';
+                }
+            }
+            
+            async function forceClear() {
+                updateStatus('Clearing all caches...', 'info');
+                
+                try {
+                    // Clear all caches
+                    if ('caches' in window) {
+                        const cacheNames = await caches.keys();
+                        await Promise.all(
+                            cacheNames.map(cacheName => caches.delete(cacheName))
+                        );
+                        updateStatus(`Cleared ${cacheNames.length} caches`, 'success');
+                    }
+                    
+                    // Clear localStorage
+                    localStorage.clear();
+                    updateStatus('Cleared localStorage', 'success');
+                    
+                    // Clear sessionStorage
+                    sessionStorage.clear();
+                    updateStatus('Cleared sessionStorage', 'success');
+                    
+                    // Clear IndexedDB
+                    if ('indexedDB' in window) {
+                        try {
+                            const databases = await indexedDB.databases();
+                            await Promise.all(
+                                databases.map(db => {
+                                    return new Promise((resolve, reject) => {
+                                        const deleteReq = indexedDB.deleteDatabase(db.name);
+                                        deleteReq.onsuccess = () => resolve();
+                                        deleteReq.onerror = () => reject();
+                                    });
+                                })
+                            );
+                            updateStatus('Cleared IndexedDB', 'success');
+                        } catch (e) {
+                            updateStatus('IndexedDB clear failed (normal)', 'info');
+                        }
+                    }
+                    
+                    // Force reload with cache bypass
+                    updateStatus('All caches cleared! Redirecting...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/?v=' + Date.now() + '&nocache=1';
+                    }, 1000);
+                    
+                } catch (error) {
+                    updateStatus('Error clearing caches: ' + error.message, 'error');
+                }
+            }
+            
+            // Auto-start countdown
+            updateCountdown();
+            
+            // Auto-clear after 2 seconds
+            setTimeout(forceClear, 2000);
+        </script>
+    </div>
+</body>
+</html>
+
+

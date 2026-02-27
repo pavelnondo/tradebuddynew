@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,11 +15,27 @@ import {
   RefreshCw
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { API_BASE_URL } from "@/config";
+
+interface Trade {
+  id: string;
+  [key: string]: unknown;
+}
+
+interface Goal {
+  id: string;
+  [key: string]: unknown;
+}
+
+interface Habit {
+  id: string;
+  [key: string]: unknown;
+}
 
 interface OfflineData {
-  trades: any[];
-  goals: any[];
-  habits: any[];
+  trades: Trade[];
+  goals: Goal[];
+  habits: Habit[];
   lastSync: string;
 }
 
@@ -27,7 +44,11 @@ interface OfflineSupportProps {
 }
 
 export function OfflineSupport({ children }: OfflineSupportProps) {
+  const location = useLocation();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  // Don't show offline UI on auth pages - user has no data to sync yet
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
   const [isSyncing, setIsSyncing] = useState(false);
   const [offlineData, setOfflineData] = useState<OfflineData>({
     trades: [],
@@ -35,18 +56,58 @@ export function OfflineSupport({ children }: OfflineSupportProps) {
     habits: [],
     lastSync: new Date().toISOString()
   });
-  const [pendingActions, setPendingActions] = useState<any[]>([]);
+  interface PendingAction {
+    type: string;
+    data: unknown;
+    timestamp: string;
+  }
+  const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
   const { toast } = useToast();
 
-  // Monitor online/offline status
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-      toast({
-        title: "Connection Restored",
-        description: "You're back online. Syncing data...",
+  // Check if API is actually reachable (uses same base as rest of app - /api in dev via proxy)
+  const checkApiHealth = async (): Promise<boolean> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/health`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(3000), // 3 second timeout
       });
-      syncOfflineData();
+      return response.ok;
+    } catch {
+      return false;
+    }
+  };
+
+  // Monitor online/offline status with API health checks
+  useEffect(() => {
+    // Initial API health check
+    checkApiHealth().then(apiOnline => {
+      if (navigator.onLine && apiOnline) {
+        setIsOnline(true);
+      } else {
+        setIsOnline(false);
+      }
+    });
+
+    const handleOnline = async () => {
+      // When browser says online, verify API is actually reachable
+      const apiOnline = await checkApiHealth();
+      if (apiOnline) {
+        setIsOnline(true);
+        toast({
+          title: "Connection Restored",
+          description: "You're back online. Syncing data...",
+        });
+        syncOfflineData();
+      } else {
+        // Browser says online but API is not reachable
+        setIsOnline(false);
+        toast({
+          title: "API Unavailable",
+          description: "Connection restored but server is not reachable. Check your backend.",
+          variant: "destructive",
+        });
+      }
     };
 
     const handleOffline = () => {
@@ -61,11 +122,25 @@ export function OfflineSupport({ children }: OfflineSupportProps) {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
+    // Periodic API health check every 30 seconds
+    const healthCheckInterval = setInterval(async () => {
+      if (navigator.onLine) {
+        const apiOnline = await checkApiHealth();
+        if (apiOnline !== isOnline) {
+          setIsOnline(apiOnline);
+          if (apiOnline) {
+            syncOfflineData();
+          }
+        }
+      }
+    }, 30000); // Check every 30 seconds
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      clearInterval(healthCheckInterval);
     };
-  }, [toast]);
+  }, [toast, isOnline]);
 
   // Load offline data from IndexedDB
   useEffect(() => {
@@ -87,8 +162,8 @@ export function OfflineSupport({ children }: OfflineSupportProps) {
         habits: habits || [],
         lastSync: localStorage.getItem('lastSync') || new Date().toISOString()
       });
-    } catch (error) {
-      console.error('Failed to load offline data:', error);
+    } catch {
+      // Silently fail - offline data loading is optional
     }
   };
 
@@ -125,7 +200,7 @@ export function OfflineSupport({ children }: OfflineSupportProps) {
     });
   };
 
-  const saveOfflineData = async (type: string, data: any) => {
+  const saveOfflineData = async (type: string, data: unknown) => {
     try {
       const db = await openDB();
       const transaction = db.transaction([type], 'readwrite');
@@ -140,12 +215,12 @@ export function OfflineSupport({ children }: OfflineSupportProps) {
       }
       
       await loadOfflineData();
-    } catch (error) {
-      console.error('Failed to save offline data:', error);
+    } catch {
+      // Silently fail - offline data saving is optional
     }
   };
 
-  const addPendingAction = async (action: any) => {
+  const addPendingAction = async (action: PendingAction) => {
     try {
       const db = await openDB();
       const transaction = db.transaction(['pendingActions'], 'readwrite');
@@ -157,8 +232,8 @@ export function OfflineSupport({ children }: OfflineSupportProps) {
       });
       
       setPendingActions(prev => [...prev, action]);
-    } catch (error) {
-      console.error('Failed to add pending action:', error);
+    } catch {
+      // Silently fail - pending actions are optional
     }
   };
 
@@ -184,8 +259,8 @@ export function OfflineSupport({ children }: OfflineSupportProps) {
           
           // Remove successful action
           await store.delete(action.id);
-        } catch (error) {
-          console.error('Failed to sync action:', error);
+        } catch {
+          // Continue with next action if one fails
         }
       }
       
@@ -198,8 +273,7 @@ export function OfflineSupport({ children }: OfflineSupportProps) {
       });
       
       await loadOfflineData();
-    } catch (error) {
-      console.error('Sync failed:', error);
+    } catch {
       toast({
         title: "Sync Failed",
         description: "Some data could not be synchronized.",
@@ -230,16 +304,10 @@ export function OfflineSupport({ children }: OfflineSupportProps) {
 
   return (
     <div className="relative">
-      {/* Offline Status Indicator */}
-      <div className="fixed top-4 right-4 z-50">
-        <Badge className={`${status.color} flex items-center space-x-1`}>
-          {status.icon}
-          <span>{status.text}</span>
-        </Badge>
-      </div>
+      {/* Offline Status Indicator - REMOVED */}
 
-      {/* Offline Banner */}
-      {!isOnline && (
+      {/* Offline Banner - hidden on login/register (no data to sync yet) */}
+      {!isOnline && !isAuthPage && (
         <div className="bg-yellow-50 dark:bg-yellow-950/20 border-b border-yellow-200 dark:border-yellow-800 p-3">
           <div className="container mx-auto flex items-center justify-between">
             <div className="flex items-center space-x-2">
@@ -264,8 +332,8 @@ export function OfflineSupport({ children }: OfflineSupportProps) {
         </div>
       )}
 
-      {/* Offline Data Summary */}
-      {!isOnline && (
+      {/* Offline Data Summary - hidden on login/register */}
+      {!isOnline && !isAuthPage && (
         <Card className="m-4 border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center space-x-2">
@@ -353,14 +421,14 @@ export function useOfflineAPI() {
       const store = transaction.objectStore('pendingActions');
       
       await store.add({
-        url,
+        url: url,
         method: options.method || 'GET',
         headers: options.headers,
         body: options.body,
         timestamp: new Date().toISOString()
       });
-    } catch (error) {
-      console.error('Failed to queue offline action:', error);
+    } catch {
+      // Silently fail - offline queuing is optional
     }
   };
 

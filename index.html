@@ -3,8 +3,9 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="Cache-Control" content="no-cache" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Trade Buddy - Professional Trading Journal</title>
     <meta name="description" content="Professional trading journal and analysis platform for serious traders" />
@@ -33,11 +34,11 @@
           // Add cache-busting parameter to force fresh service worker
           const swUrl = '/sw.js?v=' + Date.now();
           navigator.serviceWorker.register(swUrl)
-            .then((registration) => {
-              console.log('SW registered: ', registration);
+            .then(() => {
+              // Service worker registered successfully
             })
-            .catch((registrationError) => {
-              console.log('SW registration failed: ', registrationError);
+            .catch(() => {
+              // Service worker registration failed - app will work without offline support
             });
         });
       }
